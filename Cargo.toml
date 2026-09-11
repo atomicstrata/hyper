@@ -1,0 +1,34 @@
+[workspace]
+resolver = "2"
+members = ["crates/hyper-viz", "crates/hyper-viz-bevy"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+authors = ["Bregy Malpartida <bregy@atomicstrata.ai>"]
+rust-version = "1.85"
+
+[workspace.dependencies]
+hyper-viz = { path = "crates/hyper-viz" }
+hyper-viz-bevy = { path = "crates/hyper-viz-bevy" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+
+[package]
+name = "hyper"
+description = "General-purpose hypergraph visualization (library + 3D viewer)"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+hyper-viz = { workspace = true }
+hyper-viz-bevy = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

@@ -1,0 +1,26 @@
+[package]
+name = "hyper-viz-bevy"
+description = "Native 3D interactive hypergraph viewer (Bevy + egui)"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+hyper-viz = { workspace = true }
+bevy = { version = "0.18", default-features = true, features = ["wayland"] }
+bevy_egui = "0.39"
+bevy_panorbit_camera = "0.34"
+winit = "0.30"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
+
+[[example]]
+name = "view"
+path = "examples/view.rs"

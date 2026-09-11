@@ -1,0 +1,560 @@
+use std::collections::HashSet;
+
+use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
+use hyper_viz::{NodeRole, hull_from_points, scaled_radius};
+
+use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
+use crate::hyperedge_hull::HyperedgeHullSettings;
+use crate::pick::{
+    PointerHit, Ray, best_hyperedge_hit, ray_hits_sphere, ray_hits_triangle, ray_segment_hit,
+    resolve_hit,
+};
+use crate::render::{Hovered, SceneNodeEntity, Selected};
+
+#[derive(Resource, Default)]
+pub struct LassoState {
+    pub enabled: bool,
+    pub is_drawing: bool,
+    pub points: Vec<Vec2>,
+}
+
+#[derive(Resource, Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PointerTarget {
+    #[default]
+    None,
+    Vertex(usize),
+    Hyperedge(usize),
+}
+
+#[derive(Resource, Default)]
+pub struct SelectionState {
+    pub base_selection: Vec<usize>,
+    pub hyperedges: Vec<usize>,
+    pub generation: u64,
+    last_applied_generation: u64,
+}
+
+impl SelectionState {
+    pub fn has_selection(&self) -> bool {
+        !self.base_selection.is_empty() || !self.hyperedges.is_empty()
+    }
+
+    pub fn clear(&mut self) {
+        self.base_selection.clear();
+        self.hyperedges.clear();
+        self.generation += 1;
+    }
+
+    pub fn set_selection(&mut self, nodes: Vec<usize>) {
+        self.base_selection = nodes;
+        self.hyperedges.clear();
+        self.generation += 1;
+    }
+
+    pub fn set_hyperedge(&mut self, he_index: usize, members: Vec<usize>) {
+        self.hyperedges = vec![he_index];
+        self.base_selection = members;
+        self.generation += 1;
+    }
+
+    pub fn bump(&mut self) {
+        self.generation += 1;
+    }
+
+    fn needs_apply(&self) -> bool {
+        self.generation != self.last_applied_generation
+    }
+
+    fn mark_applied(&mut self) {
+        self.last_applied_generation = self.generation;
+    }
+}
+
+pub struct InteractionPlugin;
+
+impl Plugin for InteractionPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<LassoState>()
+            .init_resource::<SelectionState>()
+            .init_resource::<PointerTarget>()
+            .add_systems(
+                Update,
+                (
+                    clear_selection_on_reload,
+                    keyboard_controls.run_if(resource_exists::<GraphLayout>),
+                    pointer_hover.run_if(resource_exists::<GraphLayout>),
+                    click_selection.run_if(resource_exists::<GraphLayout>),
+                    lasso_interaction.run_if(resource_exists::<GraphLayout>),
+                    disable_orbit_on_lasso,
+                    apply_selection_state.run_if(resource_exists::<GraphLayout>),
+                ),
+            );
+    }
+}
+
+fn clear_selection_on_reload(
+    epoch: Res<GraphSceneEpoch>,
+    mut last_epoch: Local<Option<u64>>,
+    mut sel_state: ResMut<SelectionState>,
+) {
+    if *last_epoch == Some(epoch.0) {
+        return;
+    }
+    *last_epoch = Some(epoch.0);
+    if epoch.0 > 0 {
+        sel_state.clear();
+    }
+}
+
+fn keyboard_controls(keys: Res<ButtonInput<KeyCode>>, mut layout: ResMut<GraphLayout>) {
+    if keys.just_pressed(KeyCode::Space) {
+        layout.running = !layout.running;
+        tracing::info!(running = layout.running, "Layout toggled");
+    }
+}
+
+fn pointer_over_ui(contexts: &mut bevy_egui::EguiContexts) -> bool {
+    contexts
+        .ctx_mut()
+        .map(|ctx| ctx.wants_pointer_input())
+        .unwrap_or(false)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pointer_hover(
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    layout: Res<GraphLayout>,
+    settings: Res<LayoutSettings>,
+    hull_settings: Option<Res<HyperedgeHullSettings>>,
+    mut hovered_q: Query<(Entity, &SceneNodeEntity), With<Hovered>>,
+    node_q: Query<(Entity, &SceneNodeEntity, &Transform, &Visibility)>,
+    mut commands: Commands,
+    mut contexts: bevy_egui::EguiContexts,
+    lasso: Res<LassoState>,
+    mut target: ResMut<PointerTarget>,
+) {
+    if lasso.enabled || pointer_over_ui(&mut contexts) {
+        *target = PointerTarget::None;
+        clear_hovered(&mut commands, &hovered_q);
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+    let Some(cursor) = window.cursor_position() else {
+        *target = PointerTarget::None;
+        clear_hovered(&mut commands, &hovered_q);
+        return;
+    };
+    let Ok((camera, cam_transform)) = cameras.single() else {
+        return;
+    };
+    let Ok(ray3) = camera.viewport_to_world(cam_transform, cursor) else {
+        return;
+    };
+    let ray = Ray {
+        origin: ray3.origin,
+        dir: *ray3.direction,
+    };
+
+    let hide_hubs = hull_settings.as_ref().is_some_and(|s| s.hide_hubs);
+    let pick_radius = scaled_radius(layout.node_count, settings.node_size) * 1.8;
+
+    let mut best_vertex: Option<(usize, f32)> = None;
+    let mut best_vertex_entity: Option<Entity> = None;
+    let mut entity_by_index: Vec<Option<Entity>> = vec![None; layout.node_count];
+
+    for (entity, node, transform, visibility) in node_q.iter() {
+        if node.index < entity_by_index.len() {
+            entity_by_index[node.index] = Some(entity);
+        }
+        if *visibility == Visibility::Hidden {
+            continue;
+        }
+        let Some(scene_node) = layout.scene.nodes.get(node.index) else {
+            continue;
+        };
+        if hide_hubs && scene_node.role == NodeRole::HyperedgeHub {
+            continue;
+        }
+        let Some(t) = ray_hits_sphere(ray, transform.translation, pick_radius) else {
+            continue;
+        };
+        if best_vertex.is_none_or(|(_, best_t)| t < best_t) {
+            best_vertex = Some((node.index, t));
+            best_vertex_entity = Some(entity);
+        }
+    }
+
+    let hulls_on = hull_settings.as_ref().is_none_or(|s| s.enabled);
+    let mut hull_hits: Vec<(usize, usize, f32)> = Vec::new();
+    for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
+        if he.member_indices.len() == 2 {
+            let (Some(p1), Some(p2)) = (
+                layout.position_at(he.member_indices[0]),
+                layout.position_at(he.member_indices[1]),
+            ) else {
+                continue;
+            };
+            if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
+                hull_hits.push((he_index, 2, t));
+            }
+            continue;
+        }
+        if !hulls_on || he.member_indices.len() < 3 {
+            continue;
+        }
+        let mut pts = Vec::new();
+        for idx in &he.member_indices {
+            let Some(pos) = layout.position_at(*idx) else {
+                continue;
+            };
+            pts.push([pos.x, pos.y, pos.z]);
+        }
+        let Some(mesh) = hull_from_points(&pts) else {
+            continue;
+        };
+        let mut best_t: Option<f32> = None;
+        for tri in mesh.indices.chunks_exact(3) {
+            let a = Vec3::from(mesh.positions[tri[0] as usize]);
+            let b = Vec3::from(mesh.positions[tri[1] as usize]);
+            let c = Vec3::from(mesh.positions[tri[2] as usize]);
+            if let Some(t) = ray_hits_triangle(ray, a, b, c) {
+                if best_t.is_none_or(|cur| t < cur) {
+                    best_t = Some(t);
+                }
+            }
+        }
+        if let Some(t) = best_t {
+            hull_hits.push((he_index, he.member_indices.len(), t));
+        }
+    }
+
+    let hyperedge = best_hyperedge_hit(&hull_hits);
+    let hit = resolve_hit(best_vertex, hyperedge);
+
+    *target = match hit {
+        Some(PointerHit::Vertex(i)) => PointerTarget::Vertex(i),
+        Some(PointerHit::Hyperedge(i)) => PointerTarget::Hyperedge(i),
+        None => PointerTarget::None,
+    };
+
+    let mut keep: HashSet<Entity> = HashSet::new();
+    match *target {
+        PointerTarget::Vertex(idx) => {
+            if let Some(entity) = best_vertex_entity {
+                keep.insert(entity);
+            } else if let Some(entity) = entity_by_index.get(idx).copied().flatten() {
+                keep.insert(entity);
+            }
+        }
+        PointerTarget::Hyperedge(he_idx) => {
+            if let Some(he) = layout.scene.hyperedges.get(he_idx) {
+                for &idx in &he.member_indices {
+                    if let Some(entity) = entity_by_index.get(idx).copied().flatten() {
+                        keep.insert(entity);
+                    }
+                }
+                if !hide_hubs {
+                    if let Some(entity) = entity_by_index.get(he.hub_index).copied().flatten() {
+                        keep.insert(entity);
+                    }
+                }
+            }
+        }
+        PointerTarget::None => {}
+    }
+
+    for (entity, _) in hovered_q.iter_mut() {
+        if !keep.contains(&entity) {
+            commands.entity(entity).remove::<Hovered>();
+        }
+    }
+    for entity in keep {
+        commands.entity(entity).insert(Hovered);
+    }
+}
+
+fn clear_hovered(
+    commands: &mut Commands,
+    hovered_q: &Query<(Entity, &SceneNodeEntity), With<Hovered>>,
+) {
+    for (entity, _) in hovered_q.iter() {
+        commands.entity(entity).remove::<Hovered>();
+    }
+}
+
+#[derive(Clone, Copy)]
+struct PendingPointerClick {
+    screen: Vec2,
+    target: PointerTarget,
+}
+
+/// Movement beyond this is an orbit drag, not a selection click.
+pub(crate) const CLICK_MAX_DRAG_PX: f32 = 6.0;
+
+pub(crate) fn is_selection_click(press: Vec2, release: Vec2) -> bool {
+    press.distance(release) <= CLICK_MAX_DRAG_PX
+}
+
+#[allow(clippy::too_many_arguments)]
+fn click_selection(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    selected_q: Query<(Entity, &SceneNodeEntity), With<Selected>>,
+    mut commands: Commands,
+    mut contexts: bevy_egui::EguiContexts,
+    keys: Res<ButtonInput<KeyCode>>,
+    lasso: Res<LassoState>,
+    mut sel_state: ResMut<SelectionState>,
+    layout: Res<GraphLayout>,
+    target: Res<PointerTarget>,
+    mut pending: Local<Option<PendingPointerClick>>,
+) {
+    if lasso.enabled {
+        pending.take();
+        return;
+    }
+    if pointer_over_ui(&mut contexts) {
+        if mouse.just_pressed(MouseButton::Left) {
+            pending.take();
+        }
+        return;
+    }
+
+    if mouse.just_pressed(MouseButton::Left) {
+        let Ok(window) = windows.single() else {
+            return;
+        };
+        if let Some(screen) = window.cursor_position() {
+            *pending = Some(PendingPointerClick {
+                screen,
+                target: *target,
+            });
+        }
+        return;
+    }
+
+    if !mouse.just_released(MouseButton::Left) {
+        return;
+    }
+    let Some(start) = pending.take() else {
+        return;
+    };
+    let Ok(window) = windows.single() else {
+        return;
+    };
+    let Some(release) = window.cursor_position() else {
+        return;
+    };
+    if !is_selection_click(start.screen, release) {
+        return;
+    }
+
+    let multi = keys.pressed(KeyCode::ShiftLeft)
+        || keys.pressed(KeyCode::ShiftRight)
+        || keys.pressed(KeyCode::SuperLeft)
+        || keys.pressed(KeyCode::SuperRight);
+
+    match start.target {
+        PointerTarget::Vertex(idx) => {
+            if multi {
+                if !sel_state.base_selection.contains(&idx) {
+                    sel_state.base_selection.push(idx);
+                }
+                sel_state.bump();
+            } else {
+                sel_state.set_selection(vec![idx]);
+            }
+        }
+        PointerTarget::Hyperedge(he_idx) => {
+            let Some(he) = layout.scene.hyperedges.get(he_idx) else {
+                return;
+            };
+            let members = he.member_indices.clone();
+            if multi {
+                for idx in &members {
+                    if !sel_state.base_selection.contains(idx) {
+                        sel_state.base_selection.push(*idx);
+                    }
+                }
+                if !sel_state.hyperedges.contains(&he_idx) {
+                    sel_state.hyperedges.push(he_idx);
+                }
+                sel_state.bump();
+            } else {
+                sel_state.set_hyperedge(he_idx, members);
+            }
+        }
+        PointerTarget::None if !multi => {
+            sel_state.clear();
+        }
+        PointerTarget::None => {}
+    }
+
+    let effective: HashSet<usize> = sel_state.base_selection.iter().copied().collect();
+    for (entity, node) in selected_q.iter() {
+        if !effective.contains(&node.index) {
+            commands.entity(entity).remove::<Selected>();
+        }
+    }
+}
+
+fn disable_orbit_on_lasso(
+    mut cam_q: Query<&mut bevy_panorbit_camera::PanOrbitCamera>,
+    lasso: Res<LassoState>,
+) {
+    if lasso.is_changed() {
+        for mut cam in cam_q.iter_mut() {
+            cam.enabled = !lasso.enabled;
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn lasso_interaction(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    mut lasso: ResMut<LassoState>,
+    mut sel_state: ResMut<SelectionState>,
+    layout: Res<GraphLayout>,
+    node_q: Query<(&SceneNodeEntity, &Transform, &Visibility)>,
+    mut contexts: bevy_egui::EguiContexts,
+) {
+    if !lasso.enabled {
+        return;
+    }
+    if pointer_over_ui(&mut contexts) {
+        return;
+    }
+
+    let Ok(window) = windows.single() else {
+        return;
+    };
+    let Some(cursor) = window.cursor_position() else {
+        return;
+    };
+
+    if mouse.just_pressed(MouseButton::Left) {
+        lasso.is_drawing = true;
+        lasso.points.clear();
+        lasso.points.push(cursor);
+    }
+
+    if lasso.is_drawing
+        && mouse.pressed(MouseButton::Left)
+        && lasso
+            .points
+            .last()
+            .is_none_or(|p| (*p - cursor).length() > 4.0)
+    {
+        lasso.points.push(cursor);
+    }
+
+    if lasso.is_drawing && mouse.just_released(MouseButton::Left) {
+        lasso.is_drawing = false;
+        if lasso.points.len() < 3 {
+            lasso.points.clear();
+            return;
+        }
+
+        let Ok((camera, cam_transform)) = cameras.single() else {
+            return;
+        };
+
+        let mut selected = Vec::new();
+        for (node, transform, visibility) in node_q.iter() {
+            if *visibility == Visibility::Hidden {
+                continue;
+            }
+            if layout
+                .scene
+                .nodes
+                .get(node.index)
+                .is_some_and(|n| n.role == NodeRole::HyperedgeHub)
+            {
+                continue;
+            }
+            if let Ok(screen) = camera.world_to_viewport(cam_transform, transform.translation) {
+                if crate::pick::point_in_polygon(screen, &lasso.points) {
+                    selected.push(node.index);
+                }
+            }
+        }
+
+        selected.sort_unstable();
+        selected.dedup();
+        sel_state.set_selection(selected);
+        lasso.points.clear();
+    }
+}
+
+fn apply_selection_state(
+    mut sel_state: ResMut<SelectionState>,
+    mut node_q: Query<(Entity, &SceneNodeEntity), With<Selected>>,
+    all_nodes: Query<(Entity, &SceneNodeEntity)>,
+    mut commands: Commands,
+) {
+    if !sel_state.needs_apply() {
+        return;
+    }
+
+    let effective: HashSet<usize> = sel_state.base_selection.iter().copied().collect();
+
+    for (entity, node) in node_q.iter_mut() {
+        if !effective.contains(&node.index) {
+            commands.entity(entity).remove::<Selected>();
+        }
+    }
+
+    for (entity, node) in all_nodes.iter() {
+        if effective.contains(&node.index) {
+            commands.entity(entity).insert(Selected);
+        }
+    }
+
+    sel_state.mark_applied();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper_viz::{Hypergraph, Projection, project};
+
+    #[test]
+    fn drag_is_not_a_selection_click() {
+        let press = Vec2::new(100.0, 80.0);
+        assert!(is_selection_click(press, Vec2::new(104.0, 82.0)));
+        assert!(!is_selection_click(press, Vec2::new(140.0, 80.0)));
+    }
+
+    #[test]
+    fn set_hyperedge_selects_members() {
+        let scene = project(&sample(), Projection::Bipartite);
+        let he = scene
+            .hyperedges
+            .iter()
+            .find(|h| he_label(h) == "Paper A")
+            .expect("paper a");
+        let mut state = SelectionState::default();
+        state.set_hyperedge(0, he.member_indices.clone());
+        assert_eq!(state.hyperedges, vec![0]);
+        assert_eq!(state.base_selection.len(), 3);
+    }
+
+    fn sample() -> Hypergraph {
+        Hypergraph::new()
+            .vertex("a", "Alice", "person")
+            .vertex("b", "Bob", "person")
+            .vertex("c", "Carol", "person")
+            .hyperedge("paper-a", ["a", "b", "c"], "Paper A")
+    }
+
+    fn he_label(he: &hyper_viz::SceneHyperedge) -> &str {
+        &he.label
+    }
+}

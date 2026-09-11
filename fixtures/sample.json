@@ -1,0 +1,20 @@
+{
+  "version": "hypergraph.v1",
+  "meta": {
+    "id": "demo-coauthorship",
+    "title": "Coauthorship hypergraph"
+  },
+  "vertices": [
+    { "id": "alice", "label": "Alice", "kind": "person" },
+    { "id": "bob", "label": "Bob", "kind": "person" },
+    { "id": "carol", "label": "Carol", "kind": "person" },
+    { "id": "dave", "label": "Dave", "kind": "person" },
+    { "id": "eve", "label": "Eve", "kind": "person" }
+  ],
+  "hyperedges": [
+    { "id": "paper-a", "label": "Paper A", "vertices": ["alice", "bob", "carol"] },
+    { "id": "paper-b", "label": "Paper B", "vertices": ["bob", "dave"] },
+    { "id": "paper-c", "label": "Paper C", "vertices": ["alice", "eve", "dave", "carol"] },
+    { "id": "lab", "label": "Lab group", "vertices": ["alice", "bob", "carol", "dave", "eve"] }
+  ]
+}
