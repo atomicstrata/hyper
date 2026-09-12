@@ -3163,6 +3163,7 @@ dependencies = [
  "hyper-viz",
  "serde",
  "serde_json",
+ "tempfile",
  "tracing",
  "tracing-subscriber",
  "winit",

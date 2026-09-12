@@ -149,8 +149,10 @@ pub fn init_graph(
         return;
     };
 
-    if let (Some(watch), Some(path)) = (watch.as_mut(), settings.graph_path.as_ref()) {
-        watch.last_mtime = std::fs::metadata(path).ok().and_then(|m| m.modified().ok());
+    if let Some(watch) = watch.as_mut() {
+        // The file may have been replaced while the initial scene was loading.
+        // Let the first poll validate it before claiming any timestamp.
+        watch.last_mtime = None;
     }
 
     tracing::info!(
@@ -186,22 +188,26 @@ pub fn poll_graph_watch(
     let Ok(mtime) = std::fs::metadata(&watch.path).and_then(|m| m.modified()) else {
         return;
     };
+    if layout.is_some() && watch.last_mtime == Some(mtime) {
+        return;
+    }
 
-    let Ok(new_layout) = layout_from_path(&watch.path, &settings) else {
+    let Ok(graph) = load_json(&watch.path) else {
         return;
     };
+    let scene = project(&graph, settings.projection);
 
     if layout
         .as_ref()
-        .is_some_and(|current| current.scene == new_layout.scene)
+        .is_some_and(|current| current.scene == scene)
     {
         watch.last_mtime = Some(mtime);
         return;
     }
 
     let merged = match layout.as_ref() {
-        Some(current) => GraphLayout::from_scene_preserve(current, new_layout.scene, &settings),
-        None => new_layout,
+        Some(current) => GraphLayout::from_scene_preserve(current, scene, &settings),
+        None => GraphLayout::from_scene(scene, &settings),
     };
 
     let next_epoch = epoch.0 + 1;
@@ -279,5 +285,117 @@ pub fn step_layout(mut layout: ResMut<GraphLayout>) {
 
     for _ in 0..iters {
         layout.layout.step();
+    }
+}
+
+#[cfg(test)]
+mod watch_tests {
+    use super::*;
+    use hyper_viz::{Hypergraph, Vertex, save_json};
+    use std::time::Duration;
+
+    fn fixture() -> (tempfile::TempDir, App) {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let path = tmp.path().join("graph.json");
+        let graph = Hypergraph::new();
+        save_json(&path, &graph).unwrap();
+        let settings = LayoutSettings {
+            watch: true,
+            ..Default::default()
+        };
+        let layout = GraphLayout::from_scene(project(&graph, settings.projection), &settings);
+        let mut time = Time::<()>::default();
+        time.advance_by(Duration::from_millis(500));
+        let mut app = App::new();
+        app.insert_resource(time)
+            .insert_resource(settings)
+            .insert_resource(layout)
+            .insert_resource(GraphSceneEpoch::default())
+            .insert_resource(GraphWatchState {
+                path: path.to_str().unwrap().into(),
+                last_mtime: Some(std::fs::metadata(&path).unwrap().modified().unwrap()),
+            })
+            .add_systems(Update, poll_graph_watch);
+        (tmp, app)
+    }
+
+    #[test]
+    fn unchanged_file_stamp_does_not_replace_the_live_scene() {
+        let (_tmp, mut app) = fixture();
+        // An embedding host may have changed the live scene since the file was
+        // consumed. An unchanged file must not overwrite it on the next poll.
+        let mut live = Hypergraph::new();
+        live.vertices.push(Vertex::new("v", "Live node"));
+        let settings = app.world().resource::<LayoutSettings>();
+        let layout = GraphLayout::from_scene(project(&live, settings.projection), settings);
+        app.insert_resource(layout);
+        app.update();
+        assert_eq!(app.world().resource::<GraphLayout>().node_count, 1);
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 0);
+    }
+
+    #[test]
+    fn first_poll_validates_file_against_the_initial_scene() {
+        let (_tmp, mut app) = fixture();
+        let mut initial = Hypergraph::new();
+        initial.vertices.push(Vertex::new("old", "Old node"));
+        let settings = app.world().resource::<LayoutSettings>();
+        let initial = project(&initial, settings.projection);
+        let path = app.world().resource::<GraphWatchState>().path.clone();
+        app.world_mut().resource_mut::<LayoutSettings>().graph_path = Some(path);
+        app.insert_resource(crate::InitialScene(initial));
+        app.add_systems(Startup, init_graph);
+        app.update();
+        // The file contains the newer empty scene; its timestamp must not be
+        // claimed by initialization of an older scene.
+        assert_eq!(app.world().resource::<GraphLayout>().node_count, 0);
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 1);
+    }
+
+    #[test]
+    fn changed_file_reloads_once_and_preserves_existing_positions() {
+        let (tmp, mut app) = fixture();
+        let path = tmp.path().join("graph.json");
+        let mut graph = Hypergraph::new();
+        graph.vertices.push(Vertex::new("v", "Node"));
+        save_json(&path, &graph).unwrap();
+        // Force a pending version independently of filesystem timestamp granularity.
+        app.world_mut().resource_mut::<GraphWatchState>().last_mtime = None;
+        app.update();
+        assert_eq!(app.world().resource::<GraphLayout>().node_count, 1);
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 1);
+        let position = app.world().resource::<GraphLayout>().layout.positions[0];
+        graph.vertices[0].label = "Renamed".into();
+        save_json(&path, &graph).unwrap();
+        app.world_mut().resource_mut::<GraphWatchState>().last_mtime = None;
+        app.update();
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 2);
+        assert_eq!(
+            app.world().resource::<GraphLayout>().layout.positions[0],
+            position
+        );
+        app.update();
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 2);
+    }
+
+    #[test]
+    fn invalid_file_keeps_scene_and_retries_the_same_stamp() {
+        let (tmp, mut app) = fixture();
+        let path = tmp.path().join("graph.json");
+        std::fs::write(&path, "partial JSON").unwrap();
+        app.world_mut().resource_mut::<GraphWatchState>().last_mtime = None;
+        app.update();
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 0);
+        assert!(
+            app.world()
+                .resource::<GraphWatchState>()
+                .last_mtime
+                .is_none()
+        );
+        let mut graph = Hypergraph::new();
+        graph.vertices.push(Vertex::new("v", "Node"));
+        save_json(&path, &graph).unwrap();
+        app.update();
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 1);
     }
 }
