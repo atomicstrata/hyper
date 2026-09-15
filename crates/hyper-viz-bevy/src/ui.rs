@@ -3,13 +3,16 @@ use std::collections::HashSet;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
-use hyper_viz::{NodeRole, hyperedge_color, kind_color};
+use bevy_panorbit_camera::PanOrbitCamera;
+use hyper_viz::{NodeRole, hyperedge_color, kind_color, scaled_radius};
 
 use crate::graph::{GraphLayout, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{LassoState, PointerTarget, SelectionState};
 use crate::node_visual::{
-    NodeLabelMode, NodeRenderSettings, label_visible_for, truncate_label, visual_spec_for,
+    HYPEREDGE_LABEL_BASE_PT, LABEL_REFERENCE_PX, NodeLabelMode, NodeRenderSettings,
+    VERTEX_LABEL_BASE_PT, label_font_size, label_visible_for, projected_radius_px, truncate_label,
+    visual_spec_for,
 };
 use crate::render::{Hovered, SceneNodeEntity, Selected};
 
@@ -45,7 +48,7 @@ fn ui_panels(
         Option<&Selected>,
         Option<&Hovered>,
     )>,
-    camera_q: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    camera_q: Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
 ) {
     *frame_count += 1;
     if *frame_count < 3 {
@@ -61,12 +64,16 @@ fn ui_panels(
         return;
     };
 
+    let (vertex_font_pt, hyperedge_font_pt) =
+        shared_label_font_sizes(&layout, &render_settings, settings.node_size, &camera_q);
+
     draw_labels(
         ctx,
         &layout,
         &render_settings,
         settings.node_size,
         hull_settings.hide_hubs || render_settings.hyperedge_labels,
+        vertex_font_pt,
         &camera_q,
         &label_q,
     );
@@ -75,6 +82,7 @@ fn ui_panels(
         &layout,
         &render_settings,
         &sel_state,
+        hyperedge_font_pt,
         &camera_q,
         &label_q,
     );
@@ -227,6 +235,13 @@ fn ui_panels(
                             NodeLabelMode::All => NodeLabelMode::Capped,
                         };
                     }
+                    ui.add(
+                        egui::Slider::new(&mut render_settings.label_scale, 0.5..=3.0).text("size"),
+                    );
+                    ui.add(
+                        egui::Slider::new(&mut render_settings.label_variation, 0.0..=2.0)
+                            .text("variation"),
+                    );
                 });
 
             if !layout.scene.warnings.is_empty() {
@@ -241,13 +256,45 @@ fn ui_panels(
         });
 }
 
+fn shared_label_font_sizes(
+    layout: &GraphLayout,
+    render_settings: &NodeRenderSettings,
+    node_size: f32,
+    camera_q: &Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
+) -> (f32, f32) {
+    let screen_radius = camera_q
+        .single()
+        .ok()
+        .and_then(|(camera, cam_transform, orbit)| {
+            let world_radius = scaled_radius(layout.node_count, node_size);
+            projected_radius_px(camera, cam_transform, orbit.focus, world_radius)
+        })
+        .unwrap_or(LABEL_REFERENCE_PX);
+    (
+        label_font_size(
+            VERTEX_LABEL_BASE_PT,
+            render_settings.label_scale,
+            render_settings.label_variation,
+            screen_radius,
+        ),
+        label_font_size(
+            HYPEREDGE_LABEL_BASE_PT,
+            render_settings.label_scale,
+            render_settings.label_variation,
+            screen_radius,
+        ),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
 fn draw_labels(
     ctx: &egui::Context,
     layout: &GraphLayout,
     render_settings: &NodeRenderSettings,
     node_size: f32,
     hide_hubs: bool,
-    camera_q: &Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    font_pt: f32,
+    camera_q: &Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
     label_q: &Query<(
         &SceneNodeEntity,
         &Transform,
@@ -255,7 +302,7 @@ fn draw_labels(
         Option<&Hovered>,
     )>,
 ) {
-    let Ok((camera, cam_transform)) = camera_q.single() else {
+    let Ok((camera, cam_transform, _)) = camera_q.single() else {
         return;
     };
 
@@ -265,14 +312,11 @@ fn draw_labels(
     ));
 
     for (node, transform, selected, hovered) in label_q.iter() {
-        let show = label_visible_for(
+        if !label_visible_for(
             render_settings,
             layout.node_count,
             selected.is_some() || hovered.is_some(),
-        ) || visual_spec_for(layout, render_settings, node_size, node.index)
-            .label_visible_by_default;
-
-        if !show {
+        ) {
             continue;
         }
 
@@ -297,10 +341,10 @@ fn draw_labels(
 
         let spec = visual_spec_for(layout, render_settings, node_size, node.index);
         painter.text(
-            egui::pos2(screen.x, screen.y - 12.0),
+            egui::pos2(screen.x, screen.y - font_pt.max(12.0)),
             egui::Align2::CENTER_BOTTOM,
             spec.label,
-            egui::FontId::proportional(11.0 * render_settings.label_scale),
+            egui::FontId::proportional(font_pt),
             color,
         );
     }
@@ -311,7 +355,8 @@ fn draw_hyperedge_labels(
     layout: &GraphLayout,
     render_settings: &NodeRenderSettings,
     sel_state: &SelectionState,
-    camera_q: &Query<(&Camera, &GlobalTransform), With<Camera3d>>,
+    font_pt: f32,
+    camera_q: &Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
     label_q: &Query<(
         &SceneNodeEntity,
         &Transform,
@@ -323,7 +368,7 @@ fn draw_hyperedge_labels(
         return;
     }
 
-    let Ok((camera, cam_transform)) = camera_q.single() else {
+    let Ok((camera, cam_transform, _)) = camera_q.single() else {
         return;
     };
 
@@ -383,7 +428,7 @@ fn draw_hyperedge_labels(
             egui::pos2(screen.x, screen.y - 4.0),
             egui::Align2::CENTER_CENTER,
             text,
-            egui::FontId::proportional(12.0 * render_settings.label_scale),
+            egui::FontId::proportional(font_pt),
             color,
         );
     }

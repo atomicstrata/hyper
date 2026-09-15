@@ -1,3 +1,4 @@
+pub mod animation;
 pub mod camera;
 pub mod graph;
 pub mod hyperedge_hull;
@@ -132,6 +133,7 @@ fn build_app(
         .init_resource::<graph::GraphSceneEpoch>()
         .add_plugins(camera::CameraPlugin)
         .add_plugins(render::RenderPlugin)
+        .add_plugins(animation::StatusAnimationPlugin)
         .add_plugins(hyperedge_hull::HyperedgeHullPlugin)
         .add_plugins(ui::UiPlugin)
         .add_plugins(interaction::InteractionPlugin)

@@ -4,8 +4,11 @@ use bevy::asset::RenderAssetUsages;
 use bevy::mesh::Indices;
 use bevy::prelude::*;
 use bevy::render::render_resource::PrimitiveTopology;
-use hyper_viz::{Emphasis, NodeRole, hull_from_points, hull_style_emphasized};
+use hyper_viz::{
+    Emphasis, NodeRole, StatusMotion, apply_motion_rgba, hull_from_points, hull_style_emphasized,
+};
 
+use crate::animation::{StatusBursts, motion_for};
 use crate::graph::GraphLayout;
 use crate::interaction::{PointerTarget, SelectionState};
 use crate::render::SceneNodeEntity;
@@ -76,6 +79,8 @@ fn sync_hyperedge_hulls(
     )>,
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
+    bursts: Option<Res<StatusBursts>>,
+    time: Res<Time>,
 ) {
     if !settings.enabled {
         for (entity, _, _, _) in existing.iter() {
@@ -138,8 +143,19 @@ fn sync_hyperedge_hulls(
         );
         let style =
             hull_style_emphasized(&hyperedge.id, &hyperedge.status, settings.opacity, emphasis);
-        let fill = Color::srgba(style.fill.r, style.fill.g, style.fill.b, style.fill.a);
-        let wire = Color::srgba(style.wire.r, style.wire.g, style.wire.b, style.wire.a);
+        let motion = bursts.as_deref().map_or(StatusMotion::default(), |bursts| {
+            motion_for(
+                &hyperedge.status,
+                &hyperedge.id,
+                time.elapsed_secs(),
+                bursts,
+                &hyper_viz::hyperedge_status_key(&hyperedge.id),
+            )
+        });
+        let tinted = apply_motion_rgba(style.fill, motion);
+        let fill = Color::srgba(tinted.r, tinted.g, tinted.b, tinted.a);
+        let wire_tinted = apply_motion_rgba(style.wire, motion);
+        let wire = Color::srgba(wire_tinted.r, wire_tinted.g, wire_tinted.b, wire_tinted.a);
 
         let wire_cache = HullWireCache {
             member_scene_indices,

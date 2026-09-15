@@ -177,7 +177,7 @@ impl Hypergraph {
 
 /// Built-in coauthorship sample used by the CLI when no file is given.
 pub fn sample_coauthorship() -> Hypergraph {
-    Hypergraph::new()
+    let mut graph = Hypergraph::new()
         .with_id("demo-coauthorship")
         .with_title("Coauthorship hypergraph")
         .vertex("alice", "Alice", "person")
@@ -185,10 +185,18 @@ pub fn sample_coauthorship() -> Hypergraph {
         .vertex("carol", "Carol", "person")
         .vertex("dave", "Dave", "person")
         .vertex("eve", "Eve", "person")
-        .hyperedge("paper-a", ["alice", "bob", "carol"], "Paper A")
-        .hyperedge("paper-b", ["bob", "dave"], "Paper B")
-        .hyperedge("paper-c", ["alice", "eve", "dave", "carol"], "Paper C")
-        .hyperedge("lab", ["alice", "bob", "carol", "dave", "eve"], "Lab group")
+        .hyperedge("paper-a", ["alice", "bob", "carol"], "Paper A · active")
+        .hyperedge("paper-b", ["bob", "dave"], "Paper B · shadowed")
+        .hyperedge(
+            "paper-c",
+            ["alice", "eve", "dave", "carol"],
+            "Paper C · rejected",
+        )
+        .hyperedge("lab", ["alice", "bob", "carol", "dave", "eve"], "Lab group");
+    graph.hyperedges[0].status = "active".into();
+    graph.hyperedges[1].status = "shadowed".into();
+    graph.hyperedges[2].status = "rejected".into();
+    graph
 }
 
 #[cfg(test)]

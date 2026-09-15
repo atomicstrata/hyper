@@ -1,8 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy::prelude::*;
-use hyper_viz::{Emphasis, emphasis_radius_scale, emphasize, link_style_for};
+use hyper_viz::{Emphasis, apply_motion_rgba, emphasis_radius_scale, emphasize, link_style_for};
 
+use crate::animation::{StatusBursts, motion_for, node_motion};
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{PointerTarget, SelectionState};
@@ -35,6 +36,7 @@ pub struct RenderPlugin;
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NodeRenderSettings>()
+            .init_resource::<crate::animation::StatusBursts>()
             .add_systems(Startup, setup_assets)
             .add_systems(
                 Update,
@@ -134,6 +136,8 @@ fn update_node_positions(
     layout: Res<GraphLayout>,
     settings: Res<crate::graph::LayoutSettings>,
     render_settings: Res<NodeRenderSettings>,
+    bursts: Res<StatusBursts>,
+    time: Res<Time>,
     mut query: Query<(
         &SceneNodeEntity,
         &mut Transform,
@@ -141,13 +145,18 @@ fn update_node_positions(
         Option<&Selected>,
     )>,
 ) {
+    let elapsed = time.elapsed_secs();
     for (node, mut transform, hovered, selected) in query.iter_mut() {
         if let Some(pos) = layout.position_at(node.index) {
             transform.translation = pos;
         }
         let spec = visual_spec_for(&layout, &render_settings, settings.node_size, node.index);
-        let scale =
-            Vec3::splat(spec.radius * emphasis_radius_scale(hovered.is_some(), selected.is_some()));
+        let motion = node_motion(&layout.scene, node.index, elapsed, &bursts);
+        let scale = Vec3::splat(
+            spec.radius
+                * emphasis_radius_scale(hovered.is_some(), selected.is_some())
+                * motion.scale,
+        );
         if transform.scale != scale {
             transform.scale = scale;
         }
@@ -159,12 +168,15 @@ fn draw_links(
     hull_settings: Option<Res<HyperedgeHullSettings>>,
     pointer: Option<Res<PointerTarget>>,
     sel_state: Option<Res<SelectionState>>,
+    bursts: Res<StatusBursts>,
+    time: Res<Time>,
     mut gizmos: Gizmos,
 ) {
     if layout.link_count > 5000 {
         return;
     }
 
+    let elapsed = time.elapsed_secs();
     let hide_hubs = hull_settings.as_ref().is_some_and(|s| s.hide_hubs);
     let hovered_he = pointer.and_then(|p| match *p {
         PointerTarget::Hyperedge(i) => Some(i),
@@ -194,6 +206,7 @@ fn draw_links(
                     selected_hes.contains(&he_index),
                 ),
             );
+            apply_link_status_motion(&mut style, Some(&he.status), Some(&he.id), elapsed, &bursts);
             gizmos.line(
                 p1,
                 p2,
@@ -229,9 +242,35 @@ fn draw_links(
                 he_idx.is_some_and(|i| selected_hes.contains(&i)),
             ),
         );
+        apply_link_status_motion(
+            &mut style,
+            link.and_then(|l| l.status.as_deref()),
+            link.and_then(|l| l.hyperedge_id.as_deref()),
+            elapsed,
+            &bursts,
+        );
         let color = Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a);
         gizmos.line(p1, p2, color);
     }
+}
+
+fn apply_link_status_motion(
+    style: &mut hyper_viz::LinkVisualStyle,
+    status: Option<&str>,
+    hyperedge_id: Option<&str>,
+    elapsed: f32,
+    bursts: &StatusBursts,
+) {
+    let id = hyperedge_id.unwrap_or("");
+    let motion = motion_for(
+        status.unwrap_or(""),
+        id,
+        elapsed,
+        bursts,
+        &hyper_viz::hyperedge_status_key(id),
+    );
+    let tinted = apply_motion_rgba(style.color, motion);
+    style.color = tinted;
 }
 
 fn apply_link_emphasis(style: &mut hyper_viz::LinkVisualStyle, emphasis: Emphasis) {
@@ -256,15 +295,34 @@ fn highlight_selected(
         Option<&Hovered>,
     )>,
     layout: Option<Res<GraphLayout>>,
+    bursts: Option<Res<StatusBursts>>,
+    time: Res<Time>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let Some(layout) = layout else {
         return;
     };
+    let elapsed = time.elapsed_secs();
+    let bursts = bursts.as_deref();
 
     for (node, mat, selected, hovered) in query.iter() {
         let emphasis = Emphasis::from_flags(hovered.is_some(), selected.is_some());
         apply_node_emphasis(&mut materials, &mat.0, &layout, node.index, emphasis);
+        let Some(bursts) = bursts else {
+            continue;
+        };
+        let motion = node_motion(&layout.scene, node.index, elapsed, bursts);
+        if motion.glow <= 1e-4 {
+            continue;
+        }
+        if let Some(material) = materials.get_mut(&mat.0) {
+            material.emissive = LinearRgba::new(
+                material.emissive.red + motion.glow,
+                material.emissive.green + motion.glow,
+                material.emissive.blue + motion.glow,
+                material.emissive.alpha,
+            );
+        }
     }
 }
 

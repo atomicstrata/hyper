@@ -8,6 +8,7 @@ pub mod error;
 pub mod hull;
 pub mod io;
 pub mod layout;
+pub mod motion;
 pub mod project;
 pub mod scene;
 pub mod schema;
@@ -17,6 +18,11 @@ pub use error::VizError;
 pub use hull::{HullMesh, hull_from_points};
 pub use io::{from_json_str, load_json, save_json};
 pub use layout::{ForceLayout3D, LayoutConfig, Vec3, layout_edges_from_scene};
+pub use motion::{
+    ONE_SHOT_CAP, ONE_SHOT_SECS, StatusMotion, apply_motion_rgba, hyperedge_status_key, id_phase,
+    looping_status, one_shot_ids, one_shot_motion, scene_status_snapshot, status_motion,
+    status_motion_for, vertex_status_key,
+};
 pub use project::{Projection, project};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,

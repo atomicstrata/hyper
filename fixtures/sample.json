@@ -12,9 +12,9 @@
     { "id": "eve", "label": "Eve", "kind": "person" }
   ],
   "hyperedges": [
-    { "id": "paper-a", "label": "Paper A", "vertices": ["alice", "bob", "carol"] },
-    { "id": "paper-b", "label": "Paper B", "vertices": ["bob", "dave"] },
-    { "id": "paper-c", "label": "Paper C", "vertices": ["alice", "eve", "dave", "carol"] },
+    { "id": "paper-a", "label": "Paper A · active", "vertices": ["alice", "bob", "carol"], "status": "active" },
+    { "id": "paper-b", "label": "Paper B · shadowed", "vertices": ["bob", "dave"], "status": "shadowed" },
+    { "id": "paper-c", "label": "Paper C · rejected", "vertices": ["alice", "eve", "dave", "carol"], "status": "rejected" },
     { "id": "lab", "label": "Lab group", "vertices": ["alice", "bob", "carol", "dave", "eve"] }
   ]
 }
