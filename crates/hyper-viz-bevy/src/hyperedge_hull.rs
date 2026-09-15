@@ -9,9 +9,12 @@ use hyper_viz::{
 };
 
 use crate::animation::{StatusBursts, motion_for};
-use crate::graph::GraphLayout;
+use crate::graph::{GraphLayout, GraphSceneEpoch};
 use crate::interaction::{PointerTarget, SelectionState};
 use crate::render::SceneNodeEntity;
+
+const TOPOLOGY_INTERVAL: u32 = 8;
+const WIREFRAME_ALL_LIMIT: usize = 64;
 
 #[derive(Resource, Debug, Clone)]
 pub struct HyperedgeHullSettings {
@@ -38,11 +41,13 @@ pub struct HyperedgeHullEntity {
 }
 
 #[derive(Component, Clone)]
-struct HullWireCache {
+pub(crate) struct HullWireCache {
     /// Maps hull vertex index → scene node index.
-    member_scene_indices: Vec<usize>,
-    edges: Vec<(u32, u32)>,
-    wire_color: Color,
+    pub member_scene_indices: Vec<usize>,
+    pub positions: Vec<[f32; 3]>,
+    pub indices: Vec<u32>,
+    pub edges: Vec<(u32, u32)>,
+    pub wire_color: Color,
 }
 
 pub struct HyperedgeHullPlugin;
@@ -69,6 +74,7 @@ fn sync_hyperedge_hulls(
     mut commands: Commands,
     layout: Res<GraphLayout>,
     settings: Res<HyperedgeHullSettings>,
+    epoch: Res<GraphSceneEpoch>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     existing: Query<(
@@ -77,10 +83,13 @@ fn sync_hyperedge_hulls(
         &Mesh3d,
         &MeshMaterial3d<StandardMaterial>,
     )>,
+    mut caches: Query<&mut HullWireCache>,
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
     bursts: Option<Res<StatusBursts>>,
     time: Res<Time>,
+    mut frame: Local<u32>,
+    mut last_epoch: Local<u64>,
 ) {
     if !settings.enabled {
         for (entity, _, _, _) in existing.iter() {
@@ -88,6 +97,12 @@ fn sync_hyperedge_hulls(
         }
         return;
     }
+
+    *frame = frame.wrapping_add(1);
+    let rebuild_topo = (layout.running && (*frame % TOPOLOGY_INTERVAL == 1))
+        || epoch.0 != *last_epoch
+        || settings.is_changed();
+    *last_epoch = epoch.0;
 
     let selected_hubs: HashSet<usize> = sel_state
         .base_selection
@@ -115,26 +130,20 @@ fn sync_hyperedge_hulls(
     }
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
-        let mut member_scene_indices = Vec::new();
-        let mut member_positions = Vec::new();
+        let mut all_scene_indices = Vec::new();
+        let mut all_positions = Vec::new();
         for idx in &hyperedge.member_indices {
             let Some(pos) = layout.position_at(*idx) else {
                 continue;
             };
-            member_scene_indices.push(*idx);
-            member_positions.push([pos.x, pos.y, pos.z]);
+            all_scene_indices.push(*idx);
+            all_positions.push([pos.x, pos.y, pos.z]);
         }
 
-        // Slight per-arity inflate so nested sets (e.g. Paper C ⊂ Lab) don't z-fight.
-        let inflate = 1.02 + 0.02 * member_positions.len() as f32;
-        inflate_from_centroid(&mut member_positions, inflate);
-
-        let Some(hull_mesh) = hull_from_points(&member_positions) else {
-            if let Some((entity, _, _)) = live.remove(&he_index) {
-                commands.entity(entity).despawn();
-            }
-            continue;
-        };
+        // Hull the real member positions, then pad the shell a little so nested
+        // sets do not z-fight. Do not scale by full arity: 0.02 * n on a 400-member
+        // folder explodes the hull into empty space.
+        let inflate = nest_inflate(all_positions.len());
 
         let emphasis = Emphasis::from_flags(
             hovered_he == Some(he_index),
@@ -157,23 +166,56 @@ fn sync_hyperedge_hulls(
         let wire_tinted = apply_motion_rgba(style.wire, motion);
         let wire = Color::srgba(wire_tinted.r, wire_tinted.g, wire_tinted.b, wire_tinted.a);
 
-        let wire_cache = HullWireCache {
-            member_scene_indices,
-            edges: hull_mesh.edges.clone(),
-            wire_color: wire,
-        };
-
         if let Some((entity, mesh_handle, mat_handle)) = live.remove(&he_index) {
+            let can_skin = !rebuild_topo
+                && caches.get(entity).is_ok_and(|cache| {
+                    !cache.member_scene_indices.is_empty() && cache.indices.len() >= 3
+                });
+            if can_skin {
+                if let Ok(mut cache) = caches.get_mut(entity) {
+                    cache.wire_color = wire;
+                    if layout.running {
+                        cache.positions = skin_hull_positions(&cache.member_scene_indices, &layout);
+                        inflate_from_centroid(&mut cache.positions, inflate);
+                        if let Some(mesh) = meshes.get_mut(&mesh_handle) {
+                            mesh.insert_attribute(
+                                Mesh::ATTRIBUTE_POSITION,
+                                cache.positions.clone(),
+                            );
+                        }
+                    }
+                }
+                if let Some(current) = materials.get(&mat_handle) {
+                    if current.base_color != fill {
+                        if let Some(mat) = materials.get_mut(&mat_handle) {
+                            mat.base_color = fill;
+                        }
+                    }
+                }
+                continue;
+            }
+
+            let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
+                commands.entity(entity).despawn();
+                continue;
+            };
+            inflate_from_centroid(&mut hull_mesh.positions, inflate);
+            let cache = cache_from_hull(&hull_mesh, &all_scene_indices, wire);
             if let Some(mesh) = meshes.get_mut(&mesh_handle) {
                 apply_hull_mesh(mesh, &hull_mesh);
             }
             if let Some(mat) = materials.get_mut(&mat_handle) {
                 mat.base_color = fill;
             }
-            commands.entity(entity).insert(wire_cache);
+            commands.entity(entity).insert(cache);
             continue;
         }
 
+        let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
+            continue;
+        };
+        inflate_from_centroid(&mut hull_mesh.positions, inflate);
+        let cache = cache_from_hull(&hull_mesh, &all_scene_indices, wire);
         let mesh_handle = meshes.add(build_mesh(&hull_mesh));
         commands.spawn((
             HyperedgeHullEntity {
@@ -182,7 +224,7 @@ fn sync_hyperedge_hulls(
             Mesh3d(mesh_handle),
             MeshMaterial3d(hull_material(&mut materials, fill)),
             Transform::default(),
-            wire_cache,
+            cache,
         ));
     }
 
@@ -191,24 +233,66 @@ fn sync_hyperedge_hulls(
     }
 }
 
+fn skin_hull_positions(scene_indices: &[usize], layout: &GraphLayout) -> Vec<[f32; 3]> {
+    scene_indices
+        .iter()
+        .map(|idx| {
+            layout
+                .position_at(*idx)
+                .map(|p| [p.x, p.y, p.z])
+                .unwrap_or([0.0, 0.0, 0.0])
+        })
+        .collect()
+}
+
+fn cache_from_hull(
+    hull_mesh: &hyper_viz::HullMesh,
+    all_scene_indices: &[usize],
+    wire: Color,
+) -> HullWireCache {
+    let member_scene_indices = hull_mesh
+        .sources
+        .iter()
+        .map(|&i| all_scene_indices.get(i).copied().unwrap_or(0))
+        .collect();
+    HullWireCache {
+        member_scene_indices,
+        positions: hull_mesh.positions.clone(),
+        indices: hull_mesh.indices.clone(),
+        edges: hull_mesh.edges.clone(),
+        wire_color: wire,
+    }
+}
+
 fn draw_hull_wireframes(
-    layout: Res<GraphLayout>,
-    hulls: Query<(&HullWireCache,)>,
+    hulls: Query<(&HyperedgeHullEntity, &HullWireCache)>,
+    sel_state: Res<SelectionState>,
+    pointer: Option<Res<PointerTarget>>,
     mut gizmos: Gizmos,
 ) {
-    for (cache,) in hulls.iter() {
+    let hull_count = hulls.iter().len();
+    let hovered = pointer.and_then(|p| match *p {
+        PointerTarget::Hyperedge(i) => Some(i),
+        _ => None,
+    });
+    for (entity, cache) in hulls.iter() {
+        let emphasized = hovered == Some(entity.hyperedge_index)
+            || sel_state.hyperedges.contains(&entity.hyperedge_index);
+        if hull_count > WIREFRAME_ALL_LIMIT && !emphasized {
+            continue;
+        }
         for &(a, b) in &cache.edges {
-            let Some(a_idx) = cache.member_scene_indices.get(a as usize) else {
+            let Some(p1) = cache.positions.get(a as usize) else {
                 continue;
             };
-            let Some(b_idx) = cache.member_scene_indices.get(b as usize) else {
+            let Some(p2) = cache.positions.get(b as usize) else {
                 continue;
             };
-            let (Some(p1), Some(p2)) = (layout.position_at(*a_idx), layout.position_at(*b_idx))
-            else {
-                continue;
-            };
-            gizmos.line(p1, p2, cache.wire_color);
+            gizmos.line(
+                Vec3::from_array(*p1),
+                Vec3::from_array(*p2),
+                cache.wire_color,
+            );
         }
     }
 }
@@ -257,6 +341,13 @@ fn apply_hull_mesh(mesh: &mut Mesh, hull: &hyper_viz::HullMesh) {
     mesh.insert_indices(Indices::U32(hull.indices.clone()));
 }
 
+/// Tiny extra shell so nested hulls do not z-fight. Capped so a 400-member
+/// folder still wraps its vertices instead of filling the view.
+fn nest_inflate(member_count: usize) -> f32 {
+    const ARITY_CAP: usize = 6;
+    1.02 + 0.02 * member_count.min(ARITY_CAP) as f32
+}
+
 fn inflate_from_centroid(points: &mut [[f32; 3]], scale: f32) {
     if points.is_empty() {
         return;
@@ -275,5 +366,32 @@ fn inflate_from_centroid(points: &mut [[f32; 3]], scale: f32) {
         p[0] = c[0] + (p[0] - c[0]) * scale;
         p[1] = c[1] + (p[1] - c[1]) * scale;
         p[2] = c[2] + (p[2] - c[2]) * scale;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn nest_inflate_matches_small_arity_and_caps_large_sets() {
+        assert!((nest_inflate(3) - 1.08).abs() < 1e-5);
+        assert!((nest_inflate(6) - 1.14).abs() < 1e-5);
+        assert_eq!(nest_inflate(6), nest_inflate(400));
+        assert!(nest_inflate(400) < 1.2);
+    }
+
+    #[test]
+    fn inflate_does_not_move_centroid() {
+        let mut points = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.0]];
+        inflate_from_centroid(&mut points, 1.1);
+        let c = [
+            (points[0][0] + points[1][0] + points[2][0]) / 3.0,
+            (points[0][1] + points[1][1] + points[2][1]) / 3.0,
+            (points[0][2] + points[1][2] + points[2][2]) / 3.0,
+        ];
+        assert!((c[0] - 2.0 / 3.0).abs() < 1e-5);
+        assert!((c[1] - 2.0 / 3.0).abs() < 1e-5);
+        assert!(c[2].abs() < 1e-5);
     }
 }

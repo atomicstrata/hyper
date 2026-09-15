@@ -110,12 +110,7 @@ pub fn visual_spec_for(
     let base_radius = scaled_radius(layout.node_count, node_size);
     let style = node_style(
         node,
-        layout
-            .scene
-            .hyperedges
-            .iter()
-            .find(|he| he.hub_index == index)
-            .map(|he| he.status.as_str()),
+        layout.hub_status.get(index).and_then(|s| s.as_deref()),
     );
 
     NodeVisualSpec {
@@ -162,6 +157,7 @@ pub fn material_for_node_emphasized(
     materials.add(rgba_to_material(base, emissive))
 }
 
+#[allow(dead_code)]
 pub fn apply_node_emphasis(
     materials: &mut Assets<StandardMaterial>,
     handle: &Handle<StandardMaterial>,
@@ -176,14 +172,13 @@ pub fn apply_node_emphasis(
     }
 }
 
-fn node_emphasized_rgba(layout: &GraphLayout, index: usize, emphasis: Emphasis) -> (Rgba, Rgba) {
+pub(crate) fn node_emphasized_rgba(
+    layout: &GraphLayout,
+    index: usize,
+    emphasis: Emphasis,
+) -> (Rgba, Rgba) {
     let node = &layout.scene.nodes[index];
-    let status = layout
-        .scene
-        .hyperedges
-        .iter()
-        .find(|he| he.hub_index == index)
-        .map(|he| he.status.as_str());
+    let status = layout.hub_status.get(index).and_then(|s| s.as_deref());
     let style = node_style(node, status);
     let base = emphasize(style.base, emphasis);
     let glow = match emphasis {

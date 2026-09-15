@@ -211,6 +211,7 @@ fn ui_panels(
                     ui.checkbox(&mut hull_settings.hide_hubs, "Hide extra-node hubs");
                     ui.label("Each hyperedge is a set: hull if arity ≥ 3, line if 2.");
                     ui.label("Uncheck “Hide extra-node hubs” to see one node per hyperedge.");
+                    ui.label("Sets larger than 24 members use extreme-point sampling.");
                     if hull_settings.enabled {
                         ui.add(
                             egui::Slider::new(&mut hull_settings.opacity, 0.05..=0.6)

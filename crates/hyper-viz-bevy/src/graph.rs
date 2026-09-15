@@ -12,6 +12,8 @@ pub struct GraphLayout {
     pub running: bool,
     pub iterations_per_frame: usize,
     pub scene: HypergraphScene,
+    /// Hyperedge status keyed by hub scene index (avoids O(nodes×edges) scans).
+    pub hub_status: Vec<Option<String>>,
 }
 
 impl GraphLayout {
@@ -67,7 +69,7 @@ impl Default for LayoutSettings {
     fn default() -> Self {
         Self {
             config: LayoutConfig::default(),
-            iterations_per_frame: 10,
+            iterations_per_frame: 4,
             node_size: 1.0,
             graph_path: None,
             watch: false,
@@ -90,6 +92,7 @@ impl GraphLayout {
         let layout = ForceLayout3D::from_scene(&scene, settings.config.clone());
         let link_count = layout.edges.len();
         let node_count = scene.node_count();
+        let hub_status = hub_status_from_scene(&scene);
 
         Self {
             layout,
@@ -98,6 +101,7 @@ impl GraphLayout {
             running: true,
             iterations_per_frame: settings.iterations_per_frame,
             scene,
+            hub_status,
         }
     }
 
@@ -123,9 +127,20 @@ impl GraphLayout {
             link_count,
             running: old.running,
             iterations_per_frame: old.iterations_per_frame,
+            hub_status: hub_status_from_scene(&scene),
             scene,
         }
     }
+}
+
+fn hub_status_from_scene(scene: &HypergraphScene) -> Vec<Option<String>> {
+    let mut hub_status = vec![None; scene.node_count()];
+    for he in &scene.hyperedges {
+        if let Some(slot) = hub_status.get_mut(he.hub_index) {
+            *slot = Some(he.status.clone());
+        }
+    }
+    hub_status
 }
 
 pub fn init_graph(
@@ -275,10 +290,10 @@ pub fn step_layout(mut layout: ResMut<GraphLayout>) {
         return;
     }
 
-    let iters = if layout.node_count >= 5000 {
+    let iters = if layout.node_count >= 800 {
         layout.iterations_per_frame.min(2)
-    } else if layout.node_count >= 1000 {
-        layout.iterations_per_frame.min(5)
+    } else if layout.node_count >= 400 {
+        layout.iterations_per_frame.min(3)
     } else {
         layout.iterations_per_frame
     };

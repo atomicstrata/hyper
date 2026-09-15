@@ -8,7 +8,7 @@ use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{PointerTarget, SelectionState};
 use crate::node_visual::{
-    NodeRenderSettings, apply_node_emphasis, material_for_node, visual_spec_for,
+    NodeRenderSettings, material_for_node, node_emphasized_rgba, visual_spec_for,
 };
 
 #[derive(Component)]
@@ -307,21 +307,26 @@ fn highlight_selected(
 
     for (node, mat, selected, hovered) in query.iter() {
         let emphasis = Emphasis::from_flags(hovered.is_some(), selected.is_some());
-        apply_node_emphasis(&mut materials, &mat.0, &layout, node.index, emphasis);
-        let Some(bursts) = bursts else {
+        let (base, emissive) = node_emphasized_rgba(&layout, node.index, emphasis);
+        let new_color = Color::srgba(base.r, base.g, base.b, base.a);
+        let new_emissive = LinearRgba::new(emissive.r, emissive.g, emissive.b, emissive.a);
+        let mut glow = LinearRgba::NONE;
+        if let Some(bursts) = bursts {
+            let motion = node_motion(&layout.scene, node.index, elapsed, bursts);
+            if motion.glow > 1e-4 {
+                glow = LinearRgba::new(motion.glow, motion.glow, motion.glow, 0.0);
+            }
+        }
+        let target_emissive = new_emissive + glow;
+        let Some(current) = materials.get(&mat.0) else {
             continue;
         };
-        let motion = node_motion(&layout.scene, node.index, elapsed, bursts);
-        if motion.glow <= 1e-4 {
+        if current.base_color == new_color && current.emissive == target_emissive {
             continue;
         }
         if let Some(material) = materials.get_mut(&mat.0) {
-            material.emissive = LinearRgba::new(
-                material.emissive.red + motion.glow,
-                material.emissive.green + motion.glow,
-                material.emissive.blue + motion.glow,
-                material.emissive.alpha,
-            );
+            material.base_color = new_color;
+            material.emissive = target_emissive;
         }
     }
 }
