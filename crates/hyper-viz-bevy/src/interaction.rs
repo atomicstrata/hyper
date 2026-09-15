@@ -34,6 +34,8 @@ pub struct SelectionState {
     pub hyperedges: Vec<usize>,
     pub generation: u64,
     last_applied_generation: u64,
+    node_ids: Vec<String>,
+    hyperedge_ids: Vec<String>,
 }
 
 impl SelectionState {
@@ -45,6 +47,41 @@ impl SelectionState {
     pub fn clear(&mut self) {
         self.base_selection.clear();
         self.hyperedges.clear();
+        self.node_ids.clear();
+        self.hyperedge_ids.clear();
+        self.generation += 1;
+    }
+
+    pub fn remember_ids(&mut self, scene: &hyper_viz::HypergraphScene) {
+        self.node_ids = self
+            .base_selection
+            .iter()
+            .filter_map(|index| scene.nodes.get(*index).map(|node| node.id.clone()))
+            .collect();
+        self.hyperedge_ids = self
+            .hyperedges
+            .iter()
+            .filter_map(|index| scene.hyperedges.get(*index).map(|he| he.id.clone()))
+            .collect();
+    }
+
+    pub fn remap_ids(&mut self, scene: &hyper_viz::HypergraphScene) {
+        self.base_selection = self
+            .node_ids
+            .iter()
+            .filter_map(|id| {
+                scene
+                    .nodes
+                    .iter()
+                    .find(|node| node.id == *id)
+                    .map(|node| node.index)
+            })
+            .collect();
+        self.hyperedges = self
+            .hyperedge_ids
+            .iter()
+            .filter_map(|id| scene.hyperedges.iter().position(|he| he.id == *id))
+            .collect();
         self.generation += 1;
     }
 
@@ -83,7 +120,7 @@ impl Plugin for InteractionPlugin {
             .add_systems(
                 Update,
                 (
-                    clear_selection_on_reload,
+                    remap_selection_on_reload,
                     keyboard_controls.run_if(resource_exists::<GraphLayout>),
                     pointer_hover.run_if(resource_exists::<GraphLayout>),
                     click_selection.run_if(resource_exists::<GraphLayout>),
@@ -95,17 +132,49 @@ impl Plugin for InteractionPlugin {
     }
 }
 
-fn clear_selection_on_reload(
+fn remap_selection_on_reload(
     epoch: Res<GraphSceneEpoch>,
+    layout: Option<Res<GraphLayout>>,
     mut last_epoch: Local<Option<u64>>,
     mut sel_state: ResMut<SelectionState>,
+    mut focus: ResMut<FocusScope>,
+    mut focus_ids: Local<Option<HashSet<String>>>,
 ) {
+    let Some(layout) = layout else {
+        return;
+    };
     if *last_epoch == Some(epoch.0) {
+        sel_state.remember_ids(&layout.scene);
+        *focus_ids = focus.nodes.as_ref().map(|nodes| {
+            nodes
+                .iter()
+                .filter_map(|index| layout.scene.nodes.get(*index).map(|node| node.id.clone()))
+                .collect()
+        });
         return;
     }
     *last_epoch = Some(epoch.0);
-    if epoch.0 > 0 {
-        sel_state.clear();
+    if epoch.0 == 0 {
+        return;
+    }
+    sel_state.remap_ids(&layout.scene);
+    if let Some(ids) = focus_ids.as_ref() {
+        let remapped: HashSet<usize> = ids
+            .iter()
+            .filter_map(|id| {
+                layout
+                    .scene
+                    .nodes
+                    .iter()
+                    .find(|node| node.id == *id)
+                    .map(|node| node.index)
+            })
+            .collect();
+        if remapped.is_empty() {
+            focus.clear();
+        } else {
+            focus.nodes = Some(remapped);
+        }
     }
 }
 
@@ -545,6 +614,7 @@ fn lasso_interaction(
 
 fn apply_selection_state(
     mut sel_state: ResMut<SelectionState>,
+    layout: Res<GraphLayout>,
     mut node_q: Query<(Entity, &SceneNodeEntity), With<Selected>>,
     all_nodes: Query<(Entity, &SceneNodeEntity)>,
     mut commands: Commands,
@@ -567,6 +637,7 @@ fn apply_selection_state(
         }
     }
 
+    sel_state.remember_ids(&layout.scene);
     sel_state.mark_applied();
 }
 
@@ -594,6 +665,31 @@ mod tests {
         state.set_hyperedge(0, he.member_indices.clone());
         assert_eq!(state.hyperedges, vec![0]);
         assert_eq!(state.base_selection.len(), 3);
+    }
+
+    #[test]
+    fn remap_keeps_selection_when_indices_shift() {
+        let mut first = Hypergraph::new();
+        first.add_vertex(hyper_viz::Vertex::new("keep", "Keep"));
+        first.add_vertex(hyper_viz::Vertex::new("other", "Other"));
+        let left = project(&first, Projection::Bipartite);
+        let keep = left
+            .nodes
+            .iter()
+            .find(|n| n.id == "keep")
+            .expect("keep")
+            .index;
+        let mut state = SelectionState::default();
+        state.set_selection(vec![keep]);
+        state.remember_ids(&left);
+
+        let mut second = Hypergraph::new();
+        second.add_vertex(hyper_viz::Vertex::new("other", "Other"));
+        second.add_vertex(hyper_viz::Vertex::new("keep", "Keep"));
+        let right = project(&second, Projection::Bipartite);
+        state.remap_ids(&right);
+        assert_eq!(state.base_selection.len(), 1);
+        assert_eq!(right.nodes[state.base_selection[0]].id, "keep");
     }
 
     fn sample() -> Hypergraph {

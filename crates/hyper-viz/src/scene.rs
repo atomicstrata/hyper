@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -108,6 +108,63 @@ impl HypergraphScene {
     }
 }
 
+/// True when two scenes show the same vertices/hyperedges even if indices moved.
+/// Used so a live reload that only reorders agents does not rebuild the view.
+pub fn scenes_equivalent(left: &HypergraphScene, right: &HypergraphScene) -> bool {
+    if left.meta != right.meta {
+        return false;
+    }
+    if left.nodes.len() != right.nodes.len() || left.hyperedges.len() != right.hyperedges.len() {
+        return false;
+    }
+    let left_nodes: HashMap<&str, &SceneNode> = left
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), node))
+        .collect();
+    for node in &right.nodes {
+        let Some(other) = left_nodes.get(node.id.as_str()) else {
+            return false;
+        };
+        if other.role != node.role
+            || other.kind != node.kind
+            || other.label != node.label
+            || other.status != node.status
+            || other.hyperedge_id != node.hyperedge_id
+        {
+            return false;
+        }
+    }
+
+    let left_edges: HashMap<&str, &SceneHyperedge> = left
+        .hyperedges
+        .iter()
+        .map(|he| (he.id.as_str(), he))
+        .collect();
+    for he in &right.hyperedges {
+        let Some(other) = left_edges.get(he.id.as_str()) else {
+            return false;
+        };
+        if other.kind != he.kind || other.label != he.label || other.status != he.status {
+            return false;
+        }
+        let left_members: HashSet<&str> = other
+            .member_indices
+            .iter()
+            .filter_map(|index| left.nodes.get(*index).map(|node| node.id.as_str()))
+            .collect();
+        let right_members: HashSet<&str> = he
+            .member_indices
+            .iter()
+            .filter_map(|index| right.nodes.get(*index).map(|node| node.id.as_str()))
+            .collect();
+        if left_members != right_members {
+            return false;
+        }
+    }
+    true
+}
+
 /// One-hop incident neighborhood: seeds plus every hyperedge that contains a
 /// seed (hub + all members). Not a transitive closure.
 pub fn neighborhood(
@@ -177,5 +234,33 @@ mod tests {
     fn empty_seeds_yield_empty_neighborhood() {
         let scene = backlog_scene();
         assert!(neighborhood(&scene, []).is_empty());
+    }
+
+    #[test]
+    fn scenes_equivalent_ignores_vertex_order() {
+        let mut first = Hypergraph::new().with_id("p").with_title("P");
+        first.add_vertex(Vertex::new("a", "A").with_kind("repo"));
+        first.add_vertex(Vertex::new("b", "B").with_kind("worktree"));
+        first.add_hyperedge(Hyperedge::new("ab", ["a", "b"]).with_kind("repo-membership"));
+        let mut second = Hypergraph::new().with_id("p").with_title("P");
+        second.add_vertex(Vertex::new("b", "B").with_kind("worktree"));
+        second.add_vertex(Vertex::new("a", "A").with_kind("repo"));
+        second.add_hyperedge(Hyperedge::new("ab", ["a", "b"]).with_kind("repo-membership"));
+        let left = project(&first, Projection::Bipartite);
+        let right = project(&second, Projection::Bipartite);
+        assert_ne!(left.nodes[0].id, right.nodes[0].id);
+        assert!(scenes_equivalent(&left, &right));
+    }
+
+    #[test]
+    fn scenes_equivalent_detects_status_change() {
+        let mut first = Hypergraph::new();
+        first.add_vertex(Vertex::new("a", "A").with_status("attention"));
+        let mut second = Hypergraph::new();
+        second.add_vertex(Vertex::new("a", "A").with_status("shadowed"));
+        assert!(!scenes_equivalent(
+            &project(&first, Projection::Bipartite),
+            &project(&second, Projection::Bipartite)
+        ));
     }
 }

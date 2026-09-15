@@ -48,7 +48,7 @@ pub use motion::{
 pub use project::{Projection, project};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,
-    SceneNode, neighborhood,
+    SceneNode, neighborhood, scenes_equivalent,
 };
 pub use schema::{GRAPH_VERSION, GraphMeta, Hyperedge, Hypergraph, Vertex, sample_coauthorship};
 pub use semantics::{

@@ -60,7 +60,8 @@ fn auto_fit_camera(
     if layout.iterations() < 20 {
         return;
     }
-    if *fitted_epoch == Some(epoch.0) {
+    // Fit once. Live reloads used to re-frame every epoch and yank the camera.
+    if fitted_epoch.is_some() {
         return;
     }
     let indices = frame_indices(&layout, &attention, &focus);

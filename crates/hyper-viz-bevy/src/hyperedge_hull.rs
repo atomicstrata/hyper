@@ -40,6 +40,7 @@ impl Default for HyperedgeHullSettings {
 #[derive(Component)]
 pub struct HyperedgeHullEntity {
     pub hyperedge_index: usize,
+    pub hyperedge_id: String,
 }
 
 #[derive(Component, Clone)]
@@ -125,10 +126,11 @@ fn sync_hyperedge_hulls(
         _ => None,
     });
 
-    let mut live: HashMap<usize, (Entity, Handle<Mesh>, Handle<StandardMaterial>)> = HashMap::new();
+    let mut live: HashMap<String, (Entity, Handle<Mesh>, Handle<StandardMaterial>)> =
+        HashMap::new();
     for (entity, hull, mesh3d, mat) in existing.iter() {
         live.insert(
-            hull.hyperedge_index,
+            hull.hyperedge_id.clone(),
             (entity, mesh3d.0.clone(), mat.0.clone()),
         );
     }
@@ -184,7 +186,11 @@ fn sync_hyperedge_hulls(
         );
         let wire = Color::srgba(wire_tinted.r, wire_tinted.g, wire_tinted.b, wire_tinted.a);
 
-        if let Some((entity, mesh_handle, mat_handle)) = live.remove(&he_index) {
+        if let Some((entity, mesh_handle, mat_handle)) = live.remove(&hyperedge.id) {
+            commands.entity(entity).insert(HyperedgeHullEntity {
+                hyperedge_index: he_index,
+                hyperedge_id: hyperedge.id.clone(),
+            });
             let can_skin = !rebuild_topo
                 && caches.get(entity).is_ok_and(|cache| {
                     !cache.member_scene_indices.is_empty() && cache.indices.len() >= 3
@@ -238,6 +244,7 @@ fn sync_hyperedge_hulls(
         commands.spawn((
             HyperedgeHullEntity {
                 hyperedge_index: he_index,
+                hyperedge_id: hyperedge.id.clone(),
             },
             Mesh3d(mesh_handle),
             MeshMaterial3d(hull_material(&mut materials, fill)),
