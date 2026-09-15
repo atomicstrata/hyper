@@ -91,6 +91,7 @@ impl AmGraphExport {
                     id: v.id,
                     label: v.label,
                     kind: v.kind,
+                    status: String::new(),
                     weight: None,
                     attrs: serde_json::Map::new(),
                 })

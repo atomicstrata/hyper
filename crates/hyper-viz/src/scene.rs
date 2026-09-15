@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::schema::Hypergraph;
@@ -25,6 +27,9 @@ pub struct SceneNode {
     pub label: String,
     /// When `role == HyperedgeHub`, the source hyperedge id.
     pub hyperedge_id: Option<SceneId>,
+    /// Copied from the source vertex or hyperedge. Empty means default/active.
+    #[serde(default)]
+    pub status: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -100,5 +105,77 @@ impl HypergraphScene {
             .iter()
             .map(|link| (link.source, link.target))
             .collect()
+    }
+}
+
+/// One-hop incident neighborhood: seeds plus every hyperedge that contains a
+/// seed (hub + all members). Not a transitive closure.
+pub fn neighborhood(
+    scene: &HypergraphScene,
+    seed_node_indices: impl IntoIterator<Item = SceneIndex>,
+) -> HashSet<SceneIndex> {
+    let seeds: HashSet<SceneIndex> = seed_node_indices.into_iter().collect();
+    let mut out = seeds.clone();
+    for he in &scene.hyperedges {
+        let hits = seeds.contains(&he.hub_index)
+            || he.member_indices.iter().any(|index| seeds.contains(index));
+        if hits {
+            out.insert(he.hub_index);
+            out.extend(he.member_indices.iter().copied());
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::{Projection, project};
+    use crate::schema::{Hyperedge, Hypergraph, Vertex};
+
+    fn backlog_scene() -> HypergraphScene {
+        let mut graph = Hypergraph::new();
+        graph.add_vertex(Vertex::new("repo", "mind").with_kind("repo"));
+        graph.add_vertex(
+            Vertex::new("issue", "#3")
+                .with_kind("issue")
+                .with_status("shadowed"),
+        );
+        graph.add_vertex(Vertex::new("wt", "main").with_kind("worktree"));
+        graph.add_hyperedge(
+            Hyperedge::new("github-backlog", ["repo", "issue"])
+                .with_kind("github-backlog")
+                .with_status("shadowed"),
+        );
+        graph
+            .add_hyperedge(Hyperedge::new("repo-mem", ["repo", "wt"]).with_kind("repo-membership"));
+        project(&graph, Projection::Bipartite)
+    }
+
+    #[test]
+    fn issue_seed_pulls_backlog_and_repo_not_worktree() {
+        let scene = backlog_scene();
+        let issue = scene
+            .nodes
+            .iter()
+            .find(|n| n.id == "issue")
+            .expect("issue")
+            .index;
+        let scoped = neighborhood(&scene, [issue]);
+        let ids: HashSet<_> = scoped
+            .iter()
+            .filter_map(|i| scene.nodes.get(*i).map(|n| n.id.as_str()))
+            .collect();
+        assert!(ids.contains("issue"));
+        assert!(ids.contains("repo"));
+        assert!(ids.contains("github-backlog"));
+        assert!(!ids.contains("wt"));
+        assert!(!ids.contains("repo-mem"));
+    }
+
+    #[test]
+    fn empty_seeds_yield_empty_neighborhood() {
+        let scene = backlog_scene();
+        assert!(neighborhood(&scene, []).is_empty());
     }
 }

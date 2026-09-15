@@ -141,8 +141,9 @@ only — this is not a web app.
 | `vertices[].id` | yes | Stable id referenced by hyperedges |
 | `vertices[].label` | no | Falls back to `id` |
 | `vertices[].kind` | no | Free-form; used only for color |
+| `vertices[].status` | no | `active` (default), `shadowed`, `rejected`, `attention` |
 | `hyperedges[].vertices` | yes | Member vertex ids |
-| `hyperedges[].status` | no | `active` (default), `shadowed`, `rejected` |
+| `hyperedges[].status` | no | `active` (default), `shadowed`, `rejected`, `attention` |
 | `*.attrs` | no | Opaque JSON map for the host app |
 
 ## How the graph is drawn
@@ -178,6 +179,9 @@ almost no movement) selects. Orbiting does not change selection.
 | Scroll | Zoom |
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
+| A | Toggle attention highlight (dims non-`attention` status) |
+| F | Frame camera on focus / selection / attention / live-work |
+| Shift+F | Isolate the selected incident neighborhood (toggle) |
 | Clear selection | Button in the Selection panel |
 
 Picking hits vertices, hull triangles, and arity-2 segments. Hidden hubs are

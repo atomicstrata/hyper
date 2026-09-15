@@ -48,14 +48,14 @@ pub use motion::{
 pub use project::{Projection, project};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,
-    SceneNode,
+    SceneNode, neighborhood,
 };
 pub use schema::{GRAPH_VERSION, GraphMeta, Hyperedge, Hypergraph, Vertex, sample_coauthorship};
 pub use semantics::{
-    EdgeStatus, Emphasis, HullVisualStyle, LinkVisualStyle, NodeVisualStyle, Rgba,
+    EdgeStatus, Emphasis, HullVisualStyle, LinkVisualStyle, NodeVisualStyle, Rgba, attention_dim,
     emphasis_radius_scale, emphasize, hub_color, hull_style, hull_style_emphasized, hull_style_for,
-    hyperedge_color, kind_color, link_color, link_color_for, link_style, link_style_for,
-    node_style, parse_status, scaled_radius, status_opacity,
+    hyperedge_color, is_live_status, kind_color, link_color, link_color_for, link_style,
+    link_style_for, node_style, parse_status, scaled_radius, status_opacity,
 };
 
 /// Common types for host applications that build, project, and lay out a hypergraph.

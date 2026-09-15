@@ -85,6 +85,7 @@ fn scene_vertex_node(index: SceneIndex, vertex: &Vertex) -> SceneNode {
             vertex.label.clone()
         },
         hyperedge_id: None,
+        status: vertex.status.clone(),
     }
 }
 
@@ -132,6 +133,7 @@ fn project_bipartite(graph: &Hypergraph) -> HypergraphScene {
             },
             label: hub_label(edge),
             hyperedge_id: Some(edge.id.clone()),
+            status: edge.status.clone(),
         });
 
         let mut member_indices = Vec::new();
@@ -303,5 +305,21 @@ mod tests {
             .count();
         assert_eq!(hullable, 3);
         assert_eq!(dyadic, 1);
+    }
+
+    #[test]
+    fn projects_vertex_and_hub_status() {
+        let mut graph = sample_graph();
+        graph.vertices[0].status = "attention".into();
+        graph.hyperedges[0].status = "shadowed".into();
+        let scene = project(&graph, Projection::Bipartite);
+        let vertex = scene.nodes.iter().find(|n| n.id == "v:1").unwrap();
+        let hub = scene
+            .nodes
+            .iter()
+            .find(|n| n.role == NodeRole::HyperedgeHub)
+            .unwrap();
+        assert_eq!(vertex.status, "attention");
+        assert_eq!(hub.status, "shadowed");
     }
 }
