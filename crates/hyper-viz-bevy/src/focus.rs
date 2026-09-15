@@ -67,16 +67,24 @@ pub fn live_work_indices(scene: &HypergraphScene) -> Vec<usize> {
         .collect()
 }
 
+/// AABB center plus a perspective distance that keeps the box in view.
+/// Uses Bevy's default 45° vertical FOV (`tan(fov/2) ≈ 0.414`).
 pub fn camera_fit(positions: &[Vec3]) -> Option<(Vec3, f32)> {
     if positions.is_empty() {
         return None;
     }
-    let centroid = positions.iter().copied().sum::<Vec3>() / positions.len() as f32;
-    let max_dist = positions
-        .iter()
-        .map(|p| (*p - centroid).length())
-        .fold(0.0f32, f32::max);
-    Some((centroid, (max_dist * 2.5).max(8.0)))
+    let mut min = positions[0];
+    let mut max = positions[0];
+    for p in &positions[1..] {
+        min = min.min(*p);
+        max = max.max(*p);
+    }
+    let center = (min + max) * 0.5;
+    let half_extents = (max - min) * 0.5;
+    let radius = half_extents.length().max(1.0);
+    let tan_half_fov = 0.414_213_56; // tan(22.5°)
+    let distance = (radius / tan_half_fov * 1.2).max(8.0);
+    Some((center, distance))
 }
 
 pub fn positions_for(layout: &GraphLayout, indices: &[usize]) -> Vec<Vec3> {
@@ -90,13 +98,9 @@ pub fn frame_indices(
     layout: &GraphLayout,
     attention: &AttentionMode,
     focus: &FocusScope,
-    selection: &[usize],
 ) -> Vec<usize> {
     if let Some(nodes) = &focus.nodes {
         return nodes.iter().copied().collect();
-    }
-    if !selection.is_empty() {
-        return selection.to_vec();
     }
     if attention.on {
         let attn = attention_indices(&layout.scene);
@@ -162,6 +166,43 @@ mod tests {
     #[test]
     fn camera_fit_empty_is_none() {
         assert!(camera_fit(&[]).is_none());
+    }
+
+    #[test]
+    fn camera_fit_frames_elongated_aabb() {
+        let (focus, radius) = camera_fit(&[
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(100.0, 0.0, 0.0),
+            Vec3::new(50.0, 20.0, 0.0),
+        ])
+        .expect("fit");
+        assert!((focus.x - 50.0).abs() < 1e-5);
+        assert!((focus.y - 10.0).abs() < 1e-5);
+        assert!(radius > 80.0, "wide graphs need more than the 8-unit floor");
+    }
+
+    #[test]
+    fn frame_indices_uses_live_work_not_shadowed() {
+        use crate::graph::{GraphLayout, LayoutSettings};
+        use hyper_viz::{Hypergraph, Projection, Vertex};
+
+        let mut graph = Hypergraph::new();
+        graph.add_vertex(Vertex::new("live", "Live").with_status("attention"));
+        graph.add_vertex(Vertex::new("backlog", "Backlog").with_status("shadowed"));
+        let layout = GraphLayout::from_scene(
+            graph.project(Projection::Bipartite),
+            &LayoutSettings::default(),
+        );
+        let indices = frame_indices(
+            &layout,
+            &AttentionMode { on: false },
+            &FocusScope::default(),
+        );
+        let ids: Vec<&str> = indices
+            .iter()
+            .map(|i| layout.scene.nodes[*i].id.as_str())
+            .collect();
+        assert_eq!(ids, vec!["live"]);
     }
 
     #[test]

@@ -180,7 +180,7 @@ almost no movement) selects. Orbiting does not change selection.
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
 | A | Toggle attention highlight (dims non-`attention` status) |
-| F | Frame camera on focus / selection / attention / live-work |
+| F | Frame camera on the current scope (focus, attention, or live-work) |
 | Shift+F | Isolate the selected incident neighborhood (toggle) |
 | Clear selection | Button in the Selection panel |
 
