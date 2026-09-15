@@ -2,6 +2,10 @@
 
 const EPS: f32 = 1e-5;
 
+/// Face-enumeration is O(n⁴). Cap input size so large membership sets (repos with
+/// dozens of PRs, workspace folders) stay interactive. Extreme points are kept.
+pub const MAX_HULL_VERTICES: usize = 24;
+
 /// Triangle mesh for a hyperedge hull: member positions + indexed faces.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HullMesh {
@@ -9,20 +13,90 @@ pub struct HullMesh {
     pub indices: Vec<u32>,
     /// Undirected edges for wireframe overlays.
     pub edges: Vec<(u32, u32)>,
+    /// For each mesh vertex, the index into the original `points` slice.
+    pub sources: Vec<usize>,
 }
 
 /// Build a hull mesh from member vertex positions.
 ///
 /// - 3 points → filled triangle
 /// - 4 points → tetrahedron (or coplanar triangle fan)
-/// - 5+ points → 3D convex hull via face enumeration
+/// - 5+ points → 3D convex hull via face enumeration (input capped at [`MAX_HULL_VERTICES`])
 pub fn hull_from_points(points: &[[f32; 3]]) -> Option<HullMesh> {
     match points.len() {
         0..=2 => None,
         3 => Some(triangle_mesh(points)),
         4 => Some(tetrahedron_or_fan(points)),
-        _ => convex_hull_mesh(points),
+        n => {
+            if n > MAX_HULL_VERTICES {
+                let keep = select_hull_vertices(points, MAX_HULL_VERTICES);
+                let subset: Vec<[f32; 3]> = keep.iter().map(|&i| points[i]).collect();
+                let mut mesh = convex_hull_mesh(&subset)?;
+                mesh.sources = keep;
+                Some(mesh)
+            } else {
+                convex_hull_mesh(points)
+            }
+        }
     }
+}
+
+fn identity_sources(n: usize) -> Vec<usize> {
+    (0..n).collect()
+}
+
+/// Farthest-point sample plus AABB extrema so large sets still enclose the volume.
+#[allow(clippy::needless_range_loop)]
+pub fn select_hull_vertices(points: &[[f32; 3]], max: usize) -> Vec<usize> {
+    let n = points.len();
+    if n <= max {
+        return (0..n).collect();
+    }
+
+    let mut chosen = Vec::with_capacity(max);
+    for axis in 0..3 {
+        let mut lo = 0usize;
+        let mut hi = 0usize;
+        for i in 1..n {
+            if points[i][axis] < points[lo][axis] {
+                lo = i;
+            }
+            if points[i][axis] > points[hi][axis] {
+                hi = i;
+            }
+        }
+        if !chosen.contains(&lo) {
+            chosen.push(lo);
+        }
+        if chosen.len() < max && !chosen.contains(&hi) {
+            chosen.push(hi);
+        }
+    }
+
+    while chosen.len() < max {
+        let mut best = 0usize;
+        let mut best_d = -1.0f32;
+        for i in 0..n {
+            if chosen.contains(&i) {
+                continue;
+            }
+            let d = chosen
+                .iter()
+                .map(|&j| dist2(points[i], points[j]))
+                .fold(f32::MAX, f32::min);
+            if d > best_d {
+                best_d = d;
+                best = i;
+            }
+        }
+        chosen.push(best);
+    }
+    chosen
+}
+
+fn dist2(a: [f32; 3], b: [f32; 3]) -> f32 {
+    let d = sub(a, b);
+    length_squared(d)
 }
 
 fn triangle_mesh(points: &[[f32; 3]]) -> HullMesh {
@@ -33,6 +107,7 @@ fn triangle_mesh(points: &[[f32; 3]]) -> HullMesh {
         positions,
         indices,
         edges,
+        sources: identity_sources(3),
     }
 }
 
@@ -69,6 +144,7 @@ fn tetrahedron_mesh(points: &[[f32; 3]]) -> HullMesh {
         positions: points.to_vec(),
         indices,
         edges,
+        sources: identity_sources(points.len()),
     }
 }
 
@@ -92,6 +168,7 @@ fn coplanar_fan(points: &[[f32; 3]]) -> HullMesh {
         positions: points.to_vec(),
         indices,
         edges,
+        sources: identity_sources(points.len()),
     }
 }
 
@@ -145,6 +222,7 @@ fn convex_hull_mesh(points: &[[f32; 3]]) -> Option<HullMesh> {
         positions: points.to_vec(),
         indices,
         edges,
+        sources: identity_sources(points.len()),
     })
 }
 
@@ -404,5 +482,29 @@ mod tests {
     #[test]
     fn two_points_yield_none() {
         assert!(hull_from_points(&[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]).is_none());
+    }
+
+    #[test]
+    fn large_point_cloud_is_capped_and_fast() {
+        let points: Vec<[f32; 3]> = (0..80)
+            .map(|i| {
+                let t = i as f32 * 0.37;
+                [
+                    t.sin() * 4.0,
+                    (t * 0.51).cos() * 4.0,
+                    (t * 0.19).sin() * 4.0,
+                ]
+            })
+            .collect();
+        let start = std::time::Instant::now();
+        let hull = hull_from_points(&points).expect("capped hull");
+        assert!(
+            start.elapsed().as_millis() < 50,
+            "capped hull should be cheap, took {:?}",
+            start.elapsed()
+        );
+        assert!(hull.positions.len() <= MAX_HULL_VERTICES);
+        assert_eq!(hull.sources.len(), hull.positions.len());
+        assert!(hull.sources.iter().all(|&i| i < points.len()));
     }
 }

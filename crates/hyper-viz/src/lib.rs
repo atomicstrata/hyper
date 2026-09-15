@@ -37,7 +37,7 @@ pub mod schema;
 pub mod semantics;
 
 pub use error::VizError;
-pub use hull::{HullMesh, hull_from_points};
+pub use hull::{HullMesh, MAX_HULL_VERTICES, hull_from_points, select_hull_vertices};
 pub use io::{from_json_str, load_json, save_json};
 pub use layout::{ForceLayout3D, LayoutConfig, Vec3, layout_edges_from_scene};
 pub use motion::{

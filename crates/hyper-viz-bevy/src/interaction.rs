@@ -2,10 +2,10 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use hyper_viz::{NodeRole, hull_from_points, scaled_radius};
+use hyper_viz::{NodeRole, scaled_radius};
 
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
-use crate::hyperedge_hull::HyperedgeHullSettings;
+use crate::hyperedge_hull::{HullWireCache, HyperedgeHullEntity, HyperedgeHullSettings};
 use crate::pick::{
     PointerHit, Ray, best_hyperedge_hit, ray_hits_sphere, ray_hits_triangle, ray_segment_hit,
     resolve_hit,
@@ -131,6 +131,7 @@ fn pointer_hover(
     hull_settings: Option<Res<HyperedgeHullSettings>>,
     mut hovered_q: Query<(Entity, &SceneNodeEntity), With<Hovered>>,
     node_q: Query<(Entity, &SceneNodeEntity, &Transform, &Visibility)>,
+    hulls: Query<(&HyperedgeHullEntity, &HullWireCache)>,
     mut commands: Commands,
     mut contexts: bevy_egui::EguiContexts,
     lasso: Res<LassoState>,
@@ -192,45 +193,39 @@ fn pointer_hover(
 
     let hulls_on = hull_settings.as_ref().is_none_or(|s| s.enabled);
     let mut hull_hits: Vec<(usize, usize, f32)> = Vec::new();
-    for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
-        if he.member_indices.len() == 2 {
-            let (Some(p1), Some(p2)) = (
-                layout.position_at(he.member_indices[0]),
-                layout.position_at(he.member_indices[1]),
-            ) else {
+    if hulls_on {
+        for (entity, cache) in hulls.iter() {
+            if cache.indices.len() < 3 {
                 continue;
-            };
-            if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
-                hull_hits.push((he_index, 2, t));
             }
-            continue;
-        }
-        if !hulls_on || he.member_indices.len() < 3 {
-            continue;
-        }
-        let mut pts = Vec::new();
-        for idx in &he.member_indices {
-            let Some(pos) = layout.position_at(*idx) else {
-                continue;
-            };
-            pts.push([pos.x, pos.y, pos.z]);
-        }
-        let Some(mesh) = hull_from_points(&pts) else {
-            continue;
-        };
-        let mut best_t: Option<f32> = None;
-        for tri in mesh.indices.chunks_exact(3) {
-            let a = Vec3::from(mesh.positions[tri[0] as usize]);
-            let b = Vec3::from(mesh.positions[tri[1] as usize]);
-            let c = Vec3::from(mesh.positions[tri[2] as usize]);
-            if let Some(t) = ray_hits_triangle(ray, a, b, c) {
-                if best_t.is_none_or(|cur| t < cur) {
-                    best_t = Some(t);
+            let mut best_t: Option<f32> = None;
+            for tri in cache.indices.chunks_exact(3) {
+                let a = Vec3::from_array(cache.positions[tri[0] as usize]);
+                let b = Vec3::from_array(cache.positions[tri[1] as usize]);
+                let c = Vec3::from_array(cache.positions[tri[2] as usize]);
+                if let Some(t) = ray_hits_triangle(ray, a, b, c) {
+                    if best_t.is_none_or(|cur| t < cur) {
+                        best_t = Some(t);
+                    }
                 }
             }
+            if let Some(t) = best_t {
+                hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
+            }
         }
-        if let Some(t) = best_t {
-            hull_hits.push((he_index, he.member_indices.len(), t));
+    }
+    for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
+        if he.member_indices.len() != 2 {
+            continue;
+        }
+        let (Some(p1), Some(p2)) = (
+            layout.position_at(he.member_indices[0]),
+            layout.position_at(he.member_indices[1]),
+        ) else {
+            continue;
+        };
+        if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
+            hull_hits.push((he_index, 2, t));
         }
     }
 
