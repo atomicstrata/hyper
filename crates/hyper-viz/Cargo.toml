@@ -6,9 +6,19 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords = ["hypergraph", "visualization", "graph", "layout", "force-directed"]
+categories = ["visualization", "science", "data-structures"]
 
 [lib]
 path = "src/lib.rs"
+name = "hyper_viz"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 rand = "0.8"

@@ -6,9 +6,19 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords = ["hypergraph", "visualization", "bevy", "3d", "egui"]
+categories = ["visualization", "game-development"]
 
 [lib]
 path = "src/lib.rs"
+name = "hyper_viz_bevy"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 hyper-viz = { workspace = true }
@@ -16,10 +26,7 @@ bevy = { version = "0.18", default-features = true, features = ["wayland"] }
 bevy_egui = "0.39"
 bevy_panorbit_camera = "0.34"
 winit = "0.30"
-serde = { workspace = true }
-serde_json = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { version = "0.3", features = ["fmt"] }
 
 [[example]]
 name = "view"
@@ -27,3 +34,4 @@ path = "examples/view.rs"
 
 [dev-dependencies]
 tempfile = "3"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

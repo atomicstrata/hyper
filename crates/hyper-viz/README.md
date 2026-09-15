@@ -1,10 +1,41 @@
 # hyper-viz
 
-Domain-agnostic hypergraph visualization core: schema, scene IR, projections,
+Domain-agnostic hypergraph visualization **library**: schema, scene IR, projections,
 Barnes-Hut layout, convex hulls, and visual semantics. **No Bevy.**
+
+This is the crate other Rust projects should depend on.
+
+```toml
+hyper-viz = { git = "https://github.com/atomicstrata/hyper.git" }
+# or
+hyper-viz = { path = "../hyper/crates/hyper-viz" }
+```
 
 Workspace overview, JSON schema, and embedding examples live in the
 [root README](../../README.md).
+
+## Quick start
+
+```rust
+use hyper_viz::prelude::*;
+
+let graph = Hypergraph::new()
+    .with_title("Reactions")
+    .vertex("h2", "H2", "molecule")
+    .vertex("o2", "O2", "molecule")
+    .vertex("h2o", "H2O", "molecule")
+    .hyperedge("combust", ["h2", "o2", "h2o"], "2H2 + O2 → 2H2O");
+
+let scene = graph.project(Projection::Bipartite);
+let mut layout = ForceLayout3D::from_scene(&scene, LayoutConfig::default());
+for _ in 0..32 {
+    layout.step();
+}
+```
+
+```bash
+cargo run -p hyper-viz --example project_scene
+```
 
 ## Modules
 
@@ -16,6 +47,8 @@ Workspace overview, JSON schema, and embedding examples live in the
 | `layout` | Headless 3D force layout (`ForceLayout3D`) |
 | `hull` | Convex hull from member positions (arity ≥ 3) |
 | `semantics` | Kind/id colors, status, hover/selected **emphasis** |
+
+`prelude` re-exports the types a host typically needs.
 
 ## Emphasis
 

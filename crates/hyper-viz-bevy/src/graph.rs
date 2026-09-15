@@ -39,7 +39,7 @@ impl GraphLayout {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct LayoutSettings {
     pub config: LayoutConfig,
     pub iterations_per_frame: usize,

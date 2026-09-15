@@ -3161,8 +3161,6 @@ dependencies = [
  "bevy_egui",
  "bevy_panorbit_camera",
  "hyper-viz",
- "serde",
- "serde_json",
  "tempfile",
  "tracing",
  "tracing-subscriber",

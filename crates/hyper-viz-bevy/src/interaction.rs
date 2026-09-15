@@ -36,6 +36,7 @@ pub struct SelectionState {
 }
 
 impl SelectionState {
+    #[allow(dead_code)]
     pub fn has_selection(&self) -> bool {
         !self.base_selection.is_empty() || !self.hyperedges.is_empty()
     }

@@ -8,6 +8,8 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Bregy Malpartida <bregy@atomicstrata.ai>"]
 rust-version = "1.85"
+repository = "https://github.com/atomicstrata/hyper"
+homepage = "https://github.com/atomicstrata/hyper"
 
 [workspace.dependencies]
 hyper-viz = { path = "crates/hyper-viz" }
@@ -19,12 +21,16 @@ tracing = "0.1"
 
 [package]
 name = "hyper"
-description = "General-purpose hypergraph visualization (library + 3D viewer)"
+description = "CLI for the hyper-viz hypergraph visualization libraries"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+publish = false
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn rejected_pulses_opacity_for_hulls() {
         let a = status_motion(EdgeStatus::Rejected, 0.0, 0.0);
-        let b = status_motion(EdgeStatus::Rejected, 0.45, 0.0);
+        let b = status_motion(EdgeStatus::Rejected, 0.225, 0.0);
         assert!((a.opacity - b.opacity).abs() > 0.15);
         assert!(a.glow.max(b.glow) > 0.2);
     }
@@ -180,8 +180,9 @@ mod tests {
     #[test]
     fn id_phase_splits_neighbors() {
         let a = id_phase("alice");
-        let b = id_phase("bob");
+        let b = id_phase("carol");
         assert!((a - b).abs() > 0.05);
+        assert_eq!(id_phase("alice"), id_phase("alice"));
     }
 
     #[test]

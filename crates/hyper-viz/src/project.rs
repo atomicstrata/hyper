@@ -29,6 +29,17 @@ impl Projection {
 }
 
 pub fn project(graph: &Hypergraph, projection: Projection) -> HypergraphScene {
+    project_inner(graph, projection)
+}
+
+impl Hypergraph {
+    /// Project this hypergraph into a render-agnostic [`HypergraphScene`].
+    pub fn project(&self, projection: Projection) -> HypergraphScene {
+        project_inner(self, projection)
+    }
+}
+
+fn project_inner(graph: &Hypergraph, projection: Projection) -> HypergraphScene {
     match projection {
         Projection::Bipartite => project_bipartite(graph),
         Projection::CliqueExpansion => project_clique(graph),

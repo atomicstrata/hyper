@@ -20,6 +20,7 @@ pub struct NodeRenderSettings {
     /// How strongly font size follows on-screen node size (0 = constant).
     pub label_variation: f32,
     pub truncate_len: usize,
+    #[allow(dead_code)]
     pub label_offset: f32,
 }
 
@@ -85,8 +86,10 @@ pub fn projected_radius_px(
 pub struct NodeVisualSpec {
     pub index: usize,
     pub label: String,
+    #[allow(dead_code)]
     pub role: NodeRole,
     pub radius: f32,
+    #[allow(dead_code)]
     pub label_visible_by_default: bool,
 }
 
