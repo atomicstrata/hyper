@@ -40,6 +40,7 @@ mod camera;
 mod focus;
 mod graph;
 mod hyperedge_hull;
+mod inspect;
 mod interaction;
 mod node_visual;
 mod pick;

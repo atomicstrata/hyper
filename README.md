@@ -176,13 +176,18 @@ almost no movement) selects. Orbiting does not change selection.
 | Left click | Select the vertex or hyperedge under the cursor |
 | Click empty space | Clear selection |
 | Shift / Cmd + click | Add to selection |
-| Scroll | Zoom |
+| Scroll | Zoom (HUD windows steal scroll when the pointer is over them) |
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
 | A | Isolate `attention` status: hide other hulls, boost remaining fills, label those nodes |
 | F | Frame camera on the current scope (focus, attention, or live-work) |
 | Shift+F | Isolate the selected incident neighborhood (toggle) |
-| Clear selection | Button in the Selection panel |
+| Clear selection | Button in the Selection window |
+
+The **Selection** window lists selected hyperedges and vertices with kind,
+label, status, and a location taken from the id (`repo:…`, `wt:…`, `pr:…`).
+Click a row to narrow the selection to that node. Pointer over any HUD window
+does not orbit or zoom the scene.
 
 Picking hits vertices, hull triangles, and arity-2 segments. Hidden hubs are
 not pickable.

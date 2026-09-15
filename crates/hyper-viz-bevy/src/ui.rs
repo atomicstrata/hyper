@@ -9,6 +9,7 @@ use hyper_viz::{EdgeStatus, NodeRole, hyperedge_color, kind_color, parse_status,
 use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
 use crate::graph::{GraphLayout, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
+use crate::inspect::{InspectNode, inspect_selection};
 use crate::interaction::{LassoState, PointerTarget, SelectionState};
 use crate::node_visual::{
     HYPEREDGE_LABEL_BASE_PT, LABEL_REFERENCE_PX, NodeLabelMode, NodeRenderSettings,
@@ -118,172 +119,258 @@ fn ui_panels(
 
     egui::Window::new("Hypergraph")
         .default_pos(panel_pos)
-        .default_size(egui::vec2(240.0, 520.0))
+        .default_size(egui::vec2(260.0, 420.0))
+        .resizable(true)
+        .max_height((viewport.height() - 64.0).max(200.0))
+        .show(ctx, |ui| {
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                    egui::CollapsingHeader::new("Graph")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            if !layout.scene.meta.title.is_empty() {
+                                ui.label(format!("Title: {}", layout.scene.meta.title));
+                            }
+                            if !layout.scene.meta.id.is_empty() {
+                                ui.label(format!("Id: {}", layout.scene.meta.id));
+                            }
+                            ui.label(format!("Vertices: {}", layout.scene.vertices_count()));
+                            ui.label(format!("Hyperedges: {}", layout.scene.hyperedge_count()));
+                            let hullable = layout
+                                .scene
+                                .hyperedges
+                                .iter()
+                                .filter(|he| he.member_indices.len() >= 3)
+                                .count();
+                            let dyadic = layout
+                                .scene
+                                .hyperedges
+                                .iter()
+                                .filter(|he| he.member_indices.len() == 2)
+                                .count();
+                            ui.label(format!("Hulls / dyadic: {hullable} / {dyadic}"));
+                            ui.label(format!("Hover: {}", pointer_label(&layout, *pointer)));
+                            ui.label(format!("Scene nodes: {}", layout.node_count));
+                            ui.label(format!("Links: {}", layout.link_count));
+                            ui.label(format!("Iterations: {}", layout.iterations()));
+                            ui.label(format!("FPS: {:.0}", fps));
+                            ui.checkbox(&mut attention.on, "Attention (A)");
+                        });
+
+                    egui::CollapsingHeader::new("Navigation")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            ui.checkbox(&mut lasso.enabled, "Lasso select (disables orbit)");
+                            let mut focused = focus.is_active();
+                            if ui
+                                .checkbox(&mut focused, "Focus neighborhood (Shift+F)")
+                                .changed()
+                            {
+                                if focused && !focus.is_active() {
+                                    toggle_focus(
+                                        &mut focus,
+                                        &layout,
+                                        &sel_state.base_selection,
+                                        &sel_state.hyperedges,
+                                    );
+                                } else if !focused {
+                                    focus.clear();
+                                }
+                            }
+                            if ui.button("Frame (F)").clicked() {
+                                frame.pending = true;
+                            }
+                            ui.label(
+                                "Left drag: orbit (keeps selection) · Click: select · Scroll: zoom",
+                            );
+                            ui.label("A: attention · F: frame · Shift+F: focus · Esc: clear focus");
+                        });
+
+                    egui::CollapsingHeader::new("Layout")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            ui.checkbox(&mut layout.running, "Running (Space)");
+                            ui.add(
+                                egui::Slider::new(&mut settings.iterations_per_frame, 1..=50)
+                                    .text("iters/frame"),
+                            );
+                            layout.iterations_per_frame = settings.iterations_per_frame;
+
+                            ui.add(
+                                egui::Slider::new(&mut settings.config.dt, 0.01..=1.0).text("dt"),
+                            );
+                            layout.layout.config.dt = settings.config.dt;
+
+                            ui.add(
+                                egui::Slider::new(&mut settings.config.damping, 0.5..=0.99)
+                                    .text("damping"),
+                            );
+                            layout.layout.config.damping = settings.config.damping;
+
+                            ui.add(
+                                egui::Slider::new(&mut settings.config.repulsion, 10.0..=5000.0)
+                                    .logarithmic(true)
+                                    .text("repulsion"),
+                            );
+                            layout.layout.config.repulsion = settings.config.repulsion;
+
+                            ui.add(
+                                egui::Slider::new(&mut settings.config.attraction, 0.0001..=0.1)
+                                    .logarithmic(true)
+                                    .text("attraction"),
+                            );
+                            layout.layout.config.attraction = settings.config.attraction;
+
+                            ui.add(
+                                egui::Slider::new(&mut settings.config.ideal_length, 5.0..=200.0)
+                                    .text("ideal_length"),
+                            );
+                            layout.layout.config.ideal_length = settings.config.ideal_length;
+                        });
+
+                    egui::CollapsingHeader::new("Selection")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            let count = sel_state.base_selection.len();
+                            ui.label(format!("Selected vertices: {count}"));
+                            ui.label(format!(
+                                "Selected hyperedges: {}",
+                                sel_state.hyperedges.len()
+                            ));
+                            ui.label("Names and locations are in the Selection window.");
+                            if ui.button("Clear selection").clicked() {
+                                sel_state.clear();
+                            }
+                        });
+
+                    egui::CollapsingHeader::new("Hyperedge hulls")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            ui.checkbox(&mut hull_settings.enabled, "Show hulls");
+                            ui.checkbox(&mut hull_settings.hide_hubs, "Hide extra-node hubs");
+                            ui.label("Each hyperedge is a set: hull if arity ≥ 3, line if 2.");
+                            ui.label(
+                                "Uncheck “Hide extra-node hubs” to see one node per hyperedge.",
+                            );
+                            ui.label("Sets larger than 24 members use extreme-point sampling.");
+                            if hull_settings.enabled {
+                                ui.add(
+                                    egui::Slider::new(&mut hull_settings.opacity, 0.05..=0.6)
+                                        .text("opacity"),
+                                );
+                                ui.checkbox(&mut hull_settings.wireframe, "Wireframe edges");
+                            }
+                        });
+
+                    egui::CollapsingHeader::new("Labels")
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            ui.checkbox(&mut render_settings.labels_enabled, "Vertex labels");
+                            ui.checkbox(&mut render_settings.hyperedge_labels, "Hyperedge labels");
+                            if ui
+                                .button(format!("Mode: {:?}", render_settings.label_mode))
+                                .clicked()
+                            {
+                                render_settings.label_mode = match render_settings.label_mode {
+                                    NodeLabelMode::Capped => NodeLabelMode::SelectionOnly,
+                                    NodeLabelMode::SelectionOnly => NodeLabelMode::All,
+                                    NodeLabelMode::All => NodeLabelMode::Capped,
+                                };
+                            }
+                            ui.add(
+                                egui::Slider::new(&mut render_settings.label_scale, 0.5..=3.0)
+                                    .text("size"),
+                            );
+                            ui.add(
+                                egui::Slider::new(&mut render_settings.label_variation, 0.0..=2.0)
+                                    .text("variation"),
+                            );
+                        });
+
+                    if !layout.scene.warnings.is_empty() {
+                        egui::CollapsingHeader::new("Warnings")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                for warning in &layout.scene.warnings {
+                                    ui.colored_label(egui::Color32::YELLOW, warning);
+                                }
+                            });
+                    }
+                });
+        });
+
+    draw_selection_window(ctx, &layout, &mut sel_state);
+}
+
+fn draw_selection_window(
+    ctx: &egui::Context,
+    layout: &GraphLayout,
+    sel_state: &mut SelectionState,
+) {
+    let report = inspect_selection(
+        &layout.scene,
+        &sel_state.base_selection,
+        &sel_state.hyperedges,
+    );
+    egui::Window::new("Selection")
+        .default_pos(egui::pos2(16.0, 48.0))
+        .default_size(egui::vec2(320.0, 420.0))
         .resizable(true)
         .show(ctx, |ui| {
-            egui::CollapsingHeader::new("Graph")
-                .default_open(true)
-                .show(ui, |ui| {
-                    if !layout.scene.meta.title.is_empty() {
-                        ui.label(format!("Title: {}", layout.scene.meta.title));
-                    }
-                    if !layout.scene.meta.id.is_empty() {
-                        ui.label(format!("Id: {}", layout.scene.meta.id));
-                    }
-                    ui.label(format!("Vertices: {}", layout.scene.vertices_count()));
-                    ui.label(format!("Hyperedges: {}", layout.scene.hyperedge_count()));
-                    let hullable = layout
-                        .scene
-                        .hyperedges
-                        .iter()
-                        .filter(|he| he.member_indices.len() >= 3)
-                        .count();
-                    let dyadic = layout
-                        .scene
-                        .hyperedges
-                        .iter()
-                        .filter(|he| he.member_indices.len() == 2)
-                        .count();
-                    ui.label(format!("Hulls / dyadic: {hullable} / {dyadic}"));
-                    ui.label(format!("Hover: {}", pointer_label(&layout, *pointer)));
-                    ui.label(format!("Scene nodes: {}", layout.node_count));
-                    ui.label(format!("Links: {}", layout.link_count));
-                    ui.label(format!("Iterations: {}", layout.iterations()));
-                    ui.label(format!("FPS: {:.0}", fps));
-                    ui.checkbox(&mut attention.on, "Attention (A)");
-                });
-
-            egui::CollapsingHeader::new("Navigation")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.checkbox(&mut lasso.enabled, "Lasso select (disables orbit)");
-                    let mut focused = focus.is_active();
-                    if ui
-                        .checkbox(&mut focused, "Focus neighborhood (Shift+F)")
-                        .changed()
-                    {
-                        if focused && !focus.is_active() {
-                            toggle_focus(
-                                &mut focus,
-                                &layout,
-                                &sel_state.base_selection,
-                                &sel_state.hyperedges,
-                            );
-                        } else if !focused {
-                            focus.clear();
-                        }
-                    }
-                    if ui.button("Frame (F)").clicked() {
-                        frame.pending = true;
-                    }
-                    ui.label("Left drag: orbit (keeps selection) · Click: select · Scroll: zoom");
-                    ui.label("A: attention · F: frame · Shift+F: focus · Esc: clear focus");
-                });
-
-            egui::CollapsingHeader::new("Layout")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.checkbox(&mut layout.running, "Running (Space)");
-                    ui.add(
-                        egui::Slider::new(&mut settings.iterations_per_frame, 1..=50)
-                            .text("iters/frame"),
-                    );
-                    layout.iterations_per_frame = settings.iterations_per_frame;
-
-                    ui.add(egui::Slider::new(&mut settings.config.dt, 0.01..=1.0).text("dt"));
-                    layout.layout.config.dt = settings.config.dt;
-
-                    ui.add(
-                        egui::Slider::new(&mut settings.config.damping, 0.5..=0.99).text("damping"),
-                    );
-                    layout.layout.config.damping = settings.config.damping;
-
-                    ui.add(
-                        egui::Slider::new(&mut settings.config.repulsion, 10.0..=5000.0)
-                            .logarithmic(true)
-                            .text("repulsion"),
-                    );
-                    layout.layout.config.repulsion = settings.config.repulsion;
-
-                    ui.add(
-                        egui::Slider::new(&mut settings.config.attraction, 0.0001..=0.1)
-                            .logarithmic(true)
-                            .text("attraction"),
-                    );
-                    layout.layout.config.attraction = settings.config.attraction;
-
-                    ui.add(
-                        egui::Slider::new(&mut settings.config.ideal_length, 5.0..=200.0)
-                            .text("ideal_length"),
-                    );
-                    layout.layout.config.ideal_length = settings.config.ideal_length;
-                });
-
-            egui::CollapsingHeader::new("Selection")
-                .default_open(true)
-                .show(ui, |ui| {
-                    let count = sel_state.base_selection.len();
-                    ui.label(format!("Selected vertices: {count}"));
-                    ui.label(format!(
-                        "Selected hyperedges: {}",
-                        sel_state.hyperedges.len()
-                    ));
-                    if ui.button("Clear selection").clicked() {
-                        sel_state.clear();
-                    }
-                });
-
-            egui::CollapsingHeader::new("Hyperedge hulls")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.checkbox(&mut hull_settings.enabled, "Show hulls");
-                    ui.checkbox(&mut hull_settings.hide_hubs, "Hide extra-node hubs");
-                    ui.label("Each hyperedge is a set: hull if arity ≥ 3, line if 2.");
-                    ui.label("Uncheck “Hide extra-node hubs” to see one node per hyperedge.");
-                    ui.label("Sets larger than 24 members use extreme-point sampling.");
-                    if hull_settings.enabled {
-                        ui.add(
-                            egui::Slider::new(&mut hull_settings.opacity, 0.05..=0.6)
-                                .text("opacity"),
-                        );
-                        ui.checkbox(&mut hull_settings.wireframe, "Wireframe edges");
-                    }
-                });
-
-            egui::CollapsingHeader::new("Labels")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.checkbox(&mut render_settings.labels_enabled, "Vertex labels");
-                    ui.checkbox(&mut render_settings.hyperedge_labels, "Hyperedge labels");
-                    if ui
-                        .button(format!("Mode: {:?}", render_settings.label_mode))
-                        .clicked()
-                    {
-                        render_settings.label_mode = match render_settings.label_mode {
-                            NodeLabelMode::Capped => NodeLabelMode::SelectionOnly,
-                            NodeLabelMode::SelectionOnly => NodeLabelMode::All,
-                            NodeLabelMode::All => NodeLabelMode::Capped,
-                        };
-                    }
-                    ui.add(
-                        egui::Slider::new(&mut render_settings.label_scale, 0.5..=3.0).text("size"),
-                    );
-                    ui.add(
-                        egui::Slider::new(&mut render_settings.label_variation, 0.0..=2.0)
-                            .text("variation"),
-                    );
-                });
-
-            if !layout.scene.warnings.is_empty() {
-                egui::CollapsingHeader::new("Warnings")
-                    .default_open(false)
-                    .show(ui, |ui| {
-                        for warning in &layout.scene.warnings {
-                            ui.colored_label(egui::Color32::YELLOW, warning);
-                        }
-                    });
+            ui.label(format!(
+                "{} hyperedges · {} other vertices",
+                report.hyperedges.len(),
+                report.vertices.len()
+            ));
+            if ui.button("Clear").clicked() {
+                sel_state.clear();
             }
+            ui.separator();
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                    if report.hyperedges.is_empty() && report.vertices.is_empty() {
+                        ui.weak("Click a node or hull. Shift/Cmd-click adds.");
+                        return;
+                    }
+                    let mut pick = None;
+                    for he in &report.hyperedges {
+                        ui.strong(format!("{} · {}", he.kind, he.title));
+                        ui.label(egui::RichText::new(&he.location).small().weak());
+                        if !he.status.is_empty() {
+                            ui.label(format!("status: {}", he.status));
+                        }
+                        ui.label(format!("{} members", he.members.len()));
+                        for member in he.members.iter().take(80) {
+                            if inspect_node_row(ui, member).clicked() {
+                                pick = Some(member.index);
+                            }
+                        }
+                        if he.members.len() > 80 {
+                            ui.weak(format!("…and {} more", he.members.len() - 80));
+                        }
+                        ui.separator();
+                    }
+                    for node in &report.vertices {
+                        if inspect_node_row(ui, node).clicked() {
+                            pick = Some(node.index);
+                        }
+                    }
+                    if let Some(index) = pick {
+                        sel_state.set_selection(vec![index]);
+                    }
+                });
         });
+}
+
+fn inspect_node_row(ui: &mut egui::Ui, node: &InspectNode) -> egui::Response {
+    let resp = ui.selectable_label(false, format!("{}  {}", node.kind, node.title));
+    ui.label(egui::RichText::new(&node.location).small().weak());
+    if !node.status.is_empty() {
+        ui.label(format!("status: {}", node.status));
+    }
+    resp
 }
 
 fn shared_label_font_sizes(

@@ -159,7 +159,7 @@ fn keyboard_controls(
 fn pointer_over_ui(contexts: &mut bevy_egui::EguiContexts) -> bool {
     contexts
         .ctx_mut()
-        .map(|ctx| ctx.wants_pointer_input())
+        .map(|ctx| ctx.is_pointer_over_area() || ctx.wants_pointer_input())
         .unwrap_or(false)
 }
 

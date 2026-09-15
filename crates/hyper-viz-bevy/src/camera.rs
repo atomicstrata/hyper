@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiGlobalSettings, PrimaryEguiContext};
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_panorbit_camera::{EguiFocusIncludesHover, PanOrbitCamera, PanOrbitCameraPlugin};
 
 use hyper_viz::NodeRole;
 
@@ -15,6 +15,9 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PanOrbitCameraPlugin)
+            // Hovering a window must block orbit/zoom; wants_pointer_input alone
+            // misses scroll and the first click frame.
+            .insert_resource(EguiFocusIncludesHover(true))
             .add_systems(Startup, spawn_camera)
             .add_systems(
                 Update,
