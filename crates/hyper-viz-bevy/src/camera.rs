@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_egui::{EguiGlobalSettings, PrimaryEguiContext};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
-use crate::graph::GraphLayout;
+use crate::focus::{
+    AttentionMode, FocusScope, FrameRequest, camera_fit, frame_indices, positions_for,
+};
+use crate::graph::{GraphLayout, GraphSceneEpoch};
+use crate::interaction::SelectionState;
 
 pub struct CameraPlugin;
 
@@ -12,7 +16,10 @@ impl Plugin for CameraPlugin {
             .add_systems(Startup, spawn_camera)
             .add_systems(
                 Update,
-                auto_fit_camera.run_if(resource_exists::<GraphLayout>),
+                (
+                    auto_fit_camera.run_if(resource_exists::<GraphLayout>),
+                    apply_frame_request.run_if(resource_exists::<GraphLayout>),
+                ),
             );
     }
 }
@@ -36,28 +43,59 @@ fn spawn_camera(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalSett
 
 fn auto_fit_camera(
     layout: Res<GraphLayout>,
+    epoch: Res<GraphSceneEpoch>,
+    attention: Res<AttentionMode>,
+    focus: Res<FocusScope>,
+    sel_state: Option<Res<SelectionState>>,
     mut cam_q: Query<&mut PanOrbitCamera>,
-    mut fitted: Local<bool>,
+    mut fitted_epoch: Local<Option<u64>>,
 ) {
-    if *fitted || layout.iterations() < 20 {
+    if layout.iterations() < 20 {
         return;
     }
-
-    let positions: Vec<Vec3> = layout.bevy_positions();
-    if positions.is_empty() {
+    if *fitted_epoch == Some(epoch.0) {
         return;
     }
-
-    let centroid = positions.iter().copied().sum::<Vec3>() / positions.len() as f32;
-    let max_dist = positions
-        .iter()
-        .map(|p| (*p - centroid).length())
-        .fold(0.0f32, f32::max);
-
-    if let Ok(mut cam) = cam_q.single_mut() {
-        cam.focus = centroid;
-        cam.radius = Some(max_dist * 2.5);
+    let selection = sel_state
+        .as_ref()
+        .map(|s| s.base_selection.as_slice())
+        .unwrap_or(&[]);
+    let indices = frame_indices(&layout, &attention, &focus, selection);
+    let positions = positions_for(&layout, &indices);
+    if apply_camera_fit(&mut cam_q, &positions) {
+        *fitted_epoch = Some(epoch.0);
     }
+}
 
-    *fitted = true;
+fn apply_frame_request(
+    layout: Res<GraphLayout>,
+    attention: Res<AttentionMode>,
+    focus: Res<FocusScope>,
+    sel_state: Option<Res<SelectionState>>,
+    mut request: ResMut<FrameRequest>,
+    mut cam_q: Query<&mut PanOrbitCamera>,
+) {
+    if !request.pending {
+        return;
+    }
+    request.pending = false;
+    let selection = sel_state
+        .as_ref()
+        .map(|s| s.base_selection.as_slice())
+        .unwrap_or(&[]);
+    let indices = frame_indices(&layout, &attention, &focus, selection);
+    let positions = positions_for(&layout, &indices);
+    apply_camera_fit(&mut cam_q, &positions);
+}
+
+fn apply_camera_fit(cam_q: &mut Query<&mut PanOrbitCamera>, positions: &[Vec3]) -> bool {
+    let Some((focus, radius)) = camera_fit(positions) else {
+        return false;
+    };
+    let Ok(mut cam) = cam_q.single_mut() else {
+        return false;
+    };
+    cam.focus = focus;
+    cam.radius = Some(radius);
+    true
 }

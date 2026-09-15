@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use hyper_viz::{NodeRole, scaled_radius};
 
+use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::{HullWireCache, HyperedgeHullEntity, HyperedgeHullSettings};
 use crate::pick::{
@@ -108,10 +109,50 @@ fn clear_selection_on_reload(
     }
 }
 
-fn keyboard_controls(keys: Res<ButtonInput<KeyCode>>, mut layout: ResMut<GraphLayout>) {
+fn keyboard_wants_text(contexts: &mut bevy_egui::EguiContexts) -> bool {
+    contexts
+        .ctx_mut()
+        .map(|ctx| ctx.wants_keyboard_input())
+        .unwrap_or(false)
+}
+
+fn keyboard_controls(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut layout: ResMut<GraphLayout>,
+    mut attention: ResMut<AttentionMode>,
+    mut focus: ResMut<FocusScope>,
+    mut frame: ResMut<FrameRequest>,
+    sel_state: Res<SelectionState>,
+    mut contexts: bevy_egui::EguiContexts,
+) {
+    if keyboard_wants_text(&mut contexts) {
+        return;
+    }
     if keys.just_pressed(KeyCode::Space) {
         layout.running = !layout.running;
         tracing::info!(running = layout.running, "Layout toggled");
+    }
+    if keys.just_pressed(KeyCode::KeyA) {
+        attention.on = !attention.on;
+        tracing::info!(on = attention.on, "Attention mode");
+    }
+    if keys.just_pressed(KeyCode::KeyF) {
+        let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+        if shift {
+            toggle_focus(
+                &mut focus,
+                &layout,
+                &sel_state.base_selection,
+                &sel_state.hyperedges,
+            );
+            tracing::info!(active = focus.is_active(), "Focus neighborhood");
+        } else {
+            frame.pending = true;
+        }
+    }
+    if keys.just_pressed(KeyCode::Escape) && focus.is_active() {
+        focus.clear();
+        tracing::info!("Focus cleared");
     }
 }
 
@@ -136,6 +177,7 @@ fn pointer_hover(
     mut contexts: bevy_egui::EguiContexts,
     lasso: Res<LassoState>,
     mut target: ResMut<PointerTarget>,
+    focus: Res<FocusScope>,
 ) {
     if lasso.enabled || pointer_over_ui(&mut contexts) {
         *target = PointerTarget::None;
@@ -173,7 +215,7 @@ fn pointer_hover(
         if node.index < entity_by_index.len() {
             entity_by_index[node.index] = Some(entity);
         }
-        if *visibility == Visibility::Hidden {
+        if *visibility == Visibility::Hidden || !focus.contains(node.index) {
             continue;
         }
         let Some(scene_node) = layout.scene.nodes.get(node.index) else {
@@ -210,7 +252,14 @@ fn pointer_hover(
                 }
             }
             if let Some(t) = best_t {
-                hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
+                if layout
+                    .scene
+                    .hyperedges
+                    .get(entity.hyperedge_index)
+                    .is_some_and(|he| focus.contains(he.hub_index))
+                {
+                    hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
+                }
             }
         }
     }
@@ -224,6 +273,11 @@ fn pointer_hover(
         ) else {
             continue;
         };
+        if !focus.contains(he.hub_index)
+            && !he.member_indices.iter().all(|idx| focus.contains(*idx))
+        {
+            continue;
+        }
         if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
             hull_hits.push((he_index, 2, t));
         }

@@ -9,6 +9,7 @@ use hyper_viz::{
 };
 
 use crate::animation::{StatusBursts, motion_for};
+use crate::focus::{AttentionMode, FocusScope, apply_attention_rgba};
 use crate::graph::{GraphLayout, GraphSceneEpoch};
 use crate::interaction::{PointerTarget, SelectionState};
 use crate::render::SceneNodeEntity;
@@ -87,6 +88,8 @@ fn sync_hyperedge_hulls(
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
     bursts: Option<Res<StatusBursts>>,
+    attention: Res<AttentionMode>,
+    focus: Res<FocusScope>,
     time: Res<Time>,
     mut frame: Local<u32>,
     mut last_epoch: Local<u64>,
@@ -130,6 +133,9 @@ fn sync_hyperedge_hulls(
     }
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
+        if !focus.contains(hyperedge.hub_index) {
+            continue;
+        }
         let mut all_scene_indices = Vec::new();
         let mut all_positions = Vec::new();
         for idx in &hyperedge.member_indices {
@@ -161,9 +167,17 @@ fn sync_hyperedge_hulls(
                 &hyper_viz::hyperedge_status_key(&hyperedge.id),
             )
         });
-        let tinted = apply_motion_rgba(style.fill, motion);
+        let tinted = apply_attention_rgba(
+            apply_motion_rgba(style.fill, motion),
+            &hyperedge.status,
+            attention.on,
+        );
         let fill = Color::srgba(tinted.r, tinted.g, tinted.b, tinted.a);
-        let wire_tinted = apply_motion_rgba(style.wire, motion);
+        let wire_tinted = apply_attention_rgba(
+            apply_motion_rgba(style.wire, motion),
+            &hyperedge.status,
+            attention.on,
+        );
         let wire = Color::srgba(wire_tinted.r, wire_tinted.g, wire_tinted.b, wire_tinted.a);
 
         if let Some((entity, mesh_handle, mat_handle)) = live.remove(&he_index) {
@@ -268,6 +282,8 @@ fn draw_hull_wireframes(
     hulls: Query<(&HyperedgeHullEntity, &HullWireCache)>,
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
+    layout: Res<GraphLayout>,
+    focus: Res<FocusScope>,
     mut gizmos: Gizmos,
 ) {
     let hull_count = hulls.iter().len();
@@ -276,6 +292,14 @@ fn draw_hull_wireframes(
         _ => None,
     });
     for (entity, cache) in hulls.iter() {
+        if layout
+            .scene
+            .hyperedges
+            .get(entity.hyperedge_index)
+            .is_some_and(|he| !focus.contains(he.hub_index))
+        {
+            continue;
+        }
         let emphasized = hovered == Some(entity.hyperedge_index)
             || sel_state.hyperedges.contains(&entity.hyperedge_index);
         if hull_count > WIREFRAME_ALL_LIMIT && !emphasized {
@@ -300,17 +324,21 @@ fn draw_hull_wireframes(
 fn update_hub_visibility(
     settings: Res<HyperedgeHullSettings>,
     layout: Res<GraphLayout>,
+    focus: Res<FocusScope>,
     mut nodes: Query<(&SceneNodeEntity, &mut Visibility)>,
 ) {
     let hide = settings.hide_hubs;
     for (node, mut visibility) in nodes.iter_mut() {
-        if layout.scene.nodes[node.index].role == NodeRole::HyperedgeHub {
-            *visibility = if hide {
-                Visibility::Hidden
-            } else {
-                Visibility::Inherited
-            };
-        }
+        let Some(scene_node) = layout.scene.nodes.get(node.index) else {
+            continue;
+        };
+        let hidden_hub = hide && scene_node.role == NodeRole::HyperedgeHub;
+        let out_of_focus = !focus.contains(node.index);
+        *visibility = if hidden_hub || out_of_focus {
+            Visibility::Hidden
+        } else {
+            Visibility::Inherited
+        };
     }
 }
 

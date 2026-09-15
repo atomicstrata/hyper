@@ -6,6 +6,7 @@ use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use bevy_panorbit_camera::PanOrbitCamera;
 use hyper_viz::{NodeRole, hyperedge_color, kind_color, scaled_radius};
 
+use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
 use crate::graph::{GraphLayout, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{LassoState, PointerTarget, SelectionState};
@@ -40,6 +41,9 @@ fn ui_panels(
     mut sel_state: ResMut<SelectionState>,
     mut render_settings: ResMut<NodeRenderSettings>,
     mut hull_settings: ResMut<HyperedgeHullSettings>,
+    mut attention: ResMut<AttentionMode>,
+    mut focus: ResMut<FocusScope>,
+    mut frame: ResMut<FrameRequest>,
     pointer: Res<PointerTarget>,
     _selected_q: Query<&SceneNodeEntity, With<Selected>>,
     label_q: Query<(
@@ -76,6 +80,7 @@ fn ui_panels(
         vertex_font_pt,
         &camera_q,
         &label_q,
+        &focus,
     );
     draw_hyperedge_labels(
         ctx,
@@ -85,6 +90,7 @@ fn ui_panels(
         hyperedge_font_pt,
         &camera_q,
         &label_q,
+        &focus,
     );
 
     if lasso.is_drawing && lasso.points.len() > 1 {
@@ -142,13 +148,34 @@ fn ui_panels(
                     ui.label(format!("Links: {}", layout.link_count));
                     ui.label(format!("Iterations: {}", layout.iterations()));
                     ui.label(format!("FPS: {:.0}", fps));
+                    ui.checkbox(&mut attention.on, "Attention (A)");
                 });
 
             egui::CollapsingHeader::new("Navigation")
                 .default_open(true)
                 .show(ui, |ui| {
                     ui.checkbox(&mut lasso.enabled, "Lasso select (disables orbit)");
+                    let mut focused = focus.is_active();
+                    if ui
+                        .checkbox(&mut focused, "Focus neighborhood (Shift+F)")
+                        .changed()
+                    {
+                        if focused && !focus.is_active() {
+                            toggle_focus(
+                                &mut focus,
+                                &layout,
+                                &sel_state.base_selection,
+                                &sel_state.hyperedges,
+                            );
+                        } else if !focused {
+                            focus.clear();
+                        }
+                    }
+                    if ui.button("Frame (F)").clicked() {
+                        frame.pending = true;
+                    }
                     ui.label("Left drag: orbit (keeps selection) · Click: select · Scroll: zoom");
+                    ui.label("A: attention · F: frame · Shift+F: focus · Esc: clear focus");
                 });
 
             egui::CollapsingHeader::new("Layout")
@@ -302,6 +329,7 @@ fn draw_labels(
         Option<&Selected>,
         Option<&Hovered>,
     )>,
+    focus: &FocusScope,
 ) {
     let Ok((camera, cam_transform, _)) = camera_q.single() else {
         return;
@@ -313,6 +341,9 @@ fn draw_labels(
     ));
 
     for (node, transform, selected, hovered) in label_q.iter() {
+        if !focus.contains(node.index) {
+            continue;
+        }
         if !label_visible_for(
             render_settings,
             layout.node_count,
@@ -351,6 +382,7 @@ fn draw_labels(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_hyperedge_labels(
     ctx: &egui::Context,
     layout: &GraphLayout,
@@ -364,6 +396,7 @@ fn draw_hyperedge_labels(
         Option<&Selected>,
         Option<&Hovered>,
     )>,
+    focus: &FocusScope,
 ) {
     if !render_settings.hyperedge_labels {
         return;
@@ -392,6 +425,9 @@ fn draw_hyperedge_labels(
     ));
 
     for he in &layout.scene.hyperedges {
+        if !focus.contains(he.hub_index) {
+            continue;
+        }
         if he.member_indices.is_empty() {
             continue;
         }

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use hyper_viz::{Emphasis, NodeRole, Rgba, emphasize, node_style, scaled_radius};
 
+use crate::focus::{apply_attention_rgba, scene_status};
 use crate::graph::GraphLayout;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,7 +154,7 @@ pub fn material_for_node_emphasized(
     index: usize,
     emphasis: Emphasis,
 ) -> Handle<StandardMaterial> {
-    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis);
+    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis, false);
     materials.add(rgba_to_material(base, emissive))
 }
 
@@ -165,7 +166,7 @@ pub fn apply_node_emphasis(
     index: usize,
     emphasis: Emphasis,
 ) {
-    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis);
+    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis, false);
     if let Some(mat) = materials.get_mut(handle) {
         mat.base_color = Color::srgba(base.r, base.g, base.b, base.a);
         mat.emissive = LinearRgba::new(emissive.r, emissive.g, emissive.b, emissive.a);
@@ -176,11 +177,16 @@ pub(crate) fn node_emphasized_rgba(
     layout: &GraphLayout,
     index: usize,
     emphasis: Emphasis,
+    attention_on: bool,
 ) -> (Rgba, Rgba) {
     let node = &layout.scene.nodes[index];
     let status = layout.hub_status.get(index).and_then(|s| s.as_deref());
     let style = node_style(node, status);
-    let base = emphasize(style.base, emphasis);
+    let base = apply_attention_rgba(
+        emphasize(style.base, emphasis),
+        scene_status(&layout.scene, index),
+        attention_on,
+    );
     let glow = match emphasis {
         Emphasis::Rest => 0.22,
         Emphasis::Hover => 0.34,
