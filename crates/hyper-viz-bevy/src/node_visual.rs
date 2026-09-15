@@ -127,12 +127,14 @@ pub fn label_visible_for(
     settings: &NodeRenderSettings,
     node_count: usize,
     is_selected_or_hovered: bool,
+    force_show: bool,
 ) -> bool {
     if !settings.labels_enabled {
         return false;
     }
 
-    is_selected_or_hovered
+    force_show
+        || is_selected_or_hovered
         || match settings.label_mode {
             NodeLabelMode::All => true,
             NodeLabelMode::Capped => node_count <= settings.max_labels,
@@ -314,5 +316,17 @@ mod tests {
         let b = label_font_size(14.0, 1.52, 1.98, 400.0);
         assert_eq!(a, b);
         assert!(a <= 24.0);
+    }
+
+    #[test]
+    fn attention_force_shows_label_when_over_cap() {
+        let settings = NodeRenderSettings {
+            labels_enabled: true,
+            label_mode: NodeLabelMode::Capped,
+            max_labels: 10,
+            ..NodeRenderSettings::default()
+        };
+        assert!(!label_visible_for(&settings, 100, false, false));
+        assert!(label_visible_for(&settings, 100, false, true));
     }
 }

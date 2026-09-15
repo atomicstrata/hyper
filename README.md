@@ -179,7 +179,7 @@ almost no movement) selects. Orbiting does not change selection.
 | Scroll | Zoom |
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
-| A | Toggle attention highlight (dims non-`attention` status) |
+| A | Isolate `attention` status: hide other hulls, boost remaining fills, label those nodes |
 | F | Frame camera on the current scope (focus, attention, or live-work) |
 | Shift+F | Isolate the selected incident neighborhood (toggle) |
 | Clear selection | Button in the Selection panel |

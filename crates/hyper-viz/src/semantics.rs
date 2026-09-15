@@ -42,8 +42,8 @@ pub fn attention_dim(status: EdgeStatus, attention_mode: bool) -> f32 {
     }
     match status {
         EdgeStatus::Attention => 1.0,
-        EdgeStatus::Active => 0.35,
-        EdgeStatus::Shadowed | EdgeStatus::Rejected => 0.12,
+        EdgeStatus::Active => 0.08,
+        EdgeStatus::Shadowed | EdgeStatus::Rejected => 0.03,
     }
 }
 
@@ -430,9 +430,9 @@ mod tests {
         assert_eq!(attention_dim(EdgeStatus::Active, false), 1.0);
         assert_eq!(attention_dim(EdgeStatus::Shadowed, false), 1.0);
         assert_eq!(attention_dim(EdgeStatus::Attention, true), 1.0);
-        assert!((attention_dim(EdgeStatus::Active, true) - 0.35).abs() < f32::EPSILON);
-        assert!((attention_dim(EdgeStatus::Shadowed, true) - 0.12).abs() < f32::EPSILON);
-        assert!((attention_dim(EdgeStatus::Rejected, true) - 0.12).abs() < f32::EPSILON);
+        assert!((attention_dim(EdgeStatus::Active, true) - 0.08).abs() < f32::EPSILON);
+        assert!((attention_dim(EdgeStatus::Shadowed, true) - 0.03).abs() < f32::EPSILON);
+        assert!((attention_dim(EdgeStatus::Rejected, true) - 0.03).abs() < f32::EPSILON);
     }
 
     #[test]

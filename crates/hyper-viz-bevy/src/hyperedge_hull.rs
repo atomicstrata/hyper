@@ -6,10 +6,11 @@ use bevy::prelude::*;
 use bevy::render::render_resource::PrimitiveTopology;
 use hyper_viz::{
     Emphasis, NodeRole, StatusMotion, apply_motion_rgba, hull_from_points, hull_style_emphasized,
+    parse_status,
 };
 
 use crate::animation::{StatusBursts, motion_for};
-use crate::focus::{AttentionMode, FocusScope, apply_attention_rgba};
+use crate::focus::{AttentionMode, FocusScope, apply_attention_rgba, attention_keeps};
 use crate::graph::{GraphLayout, GraphSceneEpoch};
 use crate::interaction::{PointerTarget, SelectionState};
 use crate::render::SceneNodeEntity;
@@ -134,6 +135,9 @@ fn sync_hyperedge_hulls(
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
         if !focus.contains(hyperedge.hub_index) {
+            continue;
+        }
+        if !attention_keeps(parse_status(&hyperedge.status), attention.on) {
             continue;
         }
         let mut all_scene_indices = Vec::new();

@@ -4,7 +4,7 @@ use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use bevy_panorbit_camera::PanOrbitCamera;
-use hyper_viz::{NodeRole, hyperedge_color, kind_color, scaled_radius};
+use hyper_viz::{EdgeStatus, NodeRole, hyperedge_color, kind_color, parse_status, scaled_radius};
 
 use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
 use crate::graph::{GraphLayout, LayoutSettings};
@@ -81,6 +81,7 @@ fn ui_panels(
         &camera_q,
         &label_q,
         &focus,
+        &attention,
     );
     draw_hyperedge_labels(
         ctx,
@@ -91,6 +92,7 @@ fn ui_panels(
         &camera_q,
         &label_q,
         &focus,
+        &attention,
     );
 
     if lasso.is_drawing && lasso.points.len() > 1 {
@@ -330,6 +332,7 @@ fn draw_labels(
         Option<&Hovered>,
     )>,
     focus: &FocusScope,
+    attention: &AttentionMode,
 ) {
     let Ok((camera, cam_transform, _)) = camera_q.single() else {
         return;
@@ -344,10 +347,12 @@ fn draw_labels(
         if !focus.contains(node.index) {
             continue;
         }
+        let scene_node = &layout.scene.nodes[node.index];
         if !label_visible_for(
             render_settings,
             layout.node_count,
             selected.is_some() || hovered.is_some(),
+            attention.on && parse_status(&scene_node.status) == EdgeStatus::Attention,
         ) {
             continue;
         }
@@ -356,7 +361,6 @@ fn draw_labels(
             continue;
         };
 
-        let scene_node = &layout.scene.nodes[node.index];
         if hide_hubs && scene_node.role == NodeRole::HyperedgeHub {
             continue;
         }
@@ -397,6 +401,7 @@ fn draw_hyperedge_labels(
         Option<&Hovered>,
     )>,
     focus: &FocusScope,
+    attention: &AttentionMode,
 ) {
     if !render_settings.hyperedge_labels {
         return;
@@ -435,7 +440,8 @@ fn draw_hyperedge_labels(
             .member_indices
             .iter()
             .any(|idx| selected.contains(idx) || hovered.contains(idx));
-        if !show_all && !member_hot {
+        let attention_hot = attention.on && parse_status(&he.status) == EdgeStatus::Attention;
+        if !show_all && !member_hot && !attention_hot {
             continue;
         }
 

@@ -36,9 +36,28 @@ pub struct FrameRequest {
     pub pending: bool,
 }
 
+/// Floor so 5% hull fills still read when everything else recedes.
+const ATTENTION_FILL_FLOOR: f32 = 0.22;
+
 pub fn apply_attention_rgba(color: Rgba, status: &str, attention_on: bool) -> Rgba {
-    let dim = attention_dim(parse_status(status), attention_on);
-    Rgba::new(color.r, color.g, color.b, (color.a * dim).clamp(0.02, 1.0))
+    if !attention_on {
+        return color;
+    }
+    let parsed = parse_status(status);
+    if parsed == EdgeStatus::Attention {
+        return Rgba::new(
+            color.r,
+            color.g,
+            color.b,
+            color.a.clamp(ATTENTION_FILL_FLOOR, 1.0),
+        );
+    }
+    let dim = attention_dim(parsed, true);
+    Rgba::new(color.r, color.g, color.b, (color.a * dim).clamp(0.0, 1.0))
+}
+
+pub fn attention_keeps(status: EdgeStatus, attention_on: bool) -> bool {
+    !attention_on || status == EdgeStatus::Attention
 }
 
 pub fn scene_status(scene: &HypergraphScene, index: usize) -> &str {
@@ -209,7 +228,38 @@ mod tests {
     fn attention_dim_passthrough_when_off() {
         let base = Rgba::new(1.0, 0.0, 0.0, 0.8);
         assert_eq!(apply_attention_rgba(base, "active", false).a, 0.8);
-        assert!((apply_attention_rgba(base, "active", true).a - 0.8 * 0.35).abs() < 1e-5);
+        assert!((apply_attention_rgba(base, "active", true).a - 0.8 * 0.08).abs() < 1e-5);
         assert_eq!(apply_attention_rgba(base, "attention", true).a, 0.8);
+    }
+
+    #[test]
+    fn attention_mode_hides_thin_active_hulls() {
+        let thin = Rgba::new(0.2, 0.6, 0.9, 0.05);
+        let out = apply_attention_rgba(thin, "active", true);
+        assert!(
+            out.a < 0.01,
+            "5% active hulls must not sit on a 0.02 alpha floor, got {}",
+            out.a
+        );
+    }
+
+    #[test]
+    fn attention_mode_boosts_thin_attention_hulls() {
+        let thin = Rgba::new(0.2, 0.6, 0.9, 0.05);
+        let out = apply_attention_rgba(thin, "attention", true);
+        assert!(
+            out.a >= 0.18,
+            "attention hulls must stay readable, got {}",
+            out.a
+        );
+    }
+
+    #[test]
+    fn attention_keeps_only_attention_status_when_on() {
+        assert!(attention_keeps(EdgeStatus::Attention, true));
+        assert!(!attention_keeps(EdgeStatus::Active, true));
+        assert!(!attention_keeps(EdgeStatus::Shadowed, true));
+        assert!(attention_keeps(EdgeStatus::Active, false));
+        assert!(attention_keeps(EdgeStatus::Shadowed, false));
     }
 }
