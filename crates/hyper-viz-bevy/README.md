@@ -57,5 +57,9 @@ insert extra plugins first.
 - **Click empty:** clear selection
 - **Hover:** size / brighter wire, same hue
 - **Selected:** higher saturation and glow, same hue
+- **/**: focus the bottom find bar (BM25 + Jaro–Winkler)
+- **Enter** (in find): isolate match neighborhood and frame
+- While focus is on, each new query re-isolates and reframes
+- **Esc**: clear find query, or clear focus
 
 Hubs are hidden by default. Hulls are on for arity ≥ 3.

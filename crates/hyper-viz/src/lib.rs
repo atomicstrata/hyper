@@ -32,6 +32,7 @@ pub mod io;
 pub mod layout;
 pub mod motion;
 pub mod project;
+pub mod query;
 pub mod scene;
 pub mod schema;
 pub mod semantics;
@@ -46,6 +47,7 @@ pub use motion::{
     status_motion_for, vertex_status_key,
 };
 pub use project::{Projection, project};
+pub use query::{SceneHits, ScoredHit, scene_hits};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,
     SceneNode, neighborhood, scenes_equivalent,

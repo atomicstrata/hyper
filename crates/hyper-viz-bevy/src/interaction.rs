@@ -97,6 +97,12 @@ impl SelectionState {
         self.generation += 1;
     }
 
+    pub fn set_hits(&mut self, nodes: Vec<usize>, hyperedges: Vec<usize>) {
+        self.base_selection = nodes;
+        self.hyperedges = hyperedges;
+        self.generation += 1;
+    }
+
     pub fn bump(&mut self) {
         self.generation += 1;
     }
@@ -110,12 +116,30 @@ impl SelectionState {
     }
 }
 
+/// Navigation-box query. `search_owned` is true while the current selection
+/// came from typing, so clearing the box does not wipe a prior click.
+#[derive(Resource, Debug, Clone, Default)]
+pub struct LocalizeQuery {
+    pub query: String,
+    pub focus_box: bool,
+    pub search_owned: bool,
+    pub isolated: bool,
+}
+
+impl LocalizeQuery {
+    pub fn release_ownership(&mut self) {
+        self.search_owned = false;
+        self.isolated = false;
+    }
+}
+
 pub struct InteractionPlugin;
 
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LassoState>()
             .init_resource::<SelectionState>()
+            .init_resource::<LocalizeQuery>()
             .init_resource::<PointerTarget>()
             .add_systems(
                 Update,
@@ -185,6 +209,7 @@ fn keyboard_wants_text(contexts: &mut bevy_egui::EguiContexts) -> bool {
         .unwrap_or(false)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn keyboard_controls(
     keys: Res<ButtonInput<KeyCode>>,
     mut layout: ResMut<GraphLayout>,
@@ -192,9 +217,17 @@ fn keyboard_controls(
     mut focus: ResMut<FocusScope>,
     mut frame: ResMut<FrameRequest>,
     sel_state: Res<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
     mut contexts: bevy_egui::EguiContexts,
 ) {
     if keyboard_wants_text(&mut contexts) {
+        return;
+    }
+    if keys.just_pressed(KeyCode::Slash)
+        && !keys.pressed(KeyCode::ShiftLeft)
+        && !keys.pressed(KeyCode::ShiftRight)
+    {
+        localize.focus_box = true;
         return;
     }
     if keys.just_pressed(KeyCode::Space) {
@@ -429,6 +462,7 @@ fn click_selection(
     keys: Res<ButtonInput<KeyCode>>,
     lasso: Res<LassoState>,
     mut sel_state: ResMut<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
     layout: Res<GraphLayout>,
     target: Res<PointerTarget>,
     mut pending: Local<Option<PendingPointerClick>>,
@@ -513,6 +547,7 @@ fn click_selection(
         }
         PointerTarget::None => {}
     }
+    localize.release_ownership();
 
     let effective: HashSet<usize> = sel_state.base_selection.iter().copied().collect();
     for (entity, node) in selected_q.iter() {
@@ -540,6 +575,7 @@ fn lasso_interaction(
     cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     mut lasso: ResMut<LassoState>,
     mut sel_state: ResMut<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
     layout: Res<GraphLayout>,
     node_q: Query<(&SceneNodeEntity, &Transform, &Visibility)>,
     mut contexts: bevy_egui::EguiContexts,
@@ -608,6 +644,7 @@ fn lasso_interaction(
         selected.sort_unstable();
         selected.dedup();
         sel_state.set_selection(selected);
+        localize.release_ownership();
         lasso.points.clear();
     }
 }
@@ -665,6 +702,15 @@ mod tests {
         state.set_hyperedge(0, he.member_indices.clone());
         assert_eq!(state.hyperedges, vec![0]);
         assert_eq!(state.base_selection.len(), 3);
+    }
+
+    #[test]
+    fn set_hits_keeps_nodes_and_hyperedges() {
+        let mut state = SelectionState::default();
+        state.set_hits(vec![1, 2], vec![0]);
+        assert_eq!(state.base_selection, vec![1, 2]);
+        assert_eq!(state.hyperedges, vec![0]);
+        assert!(state.has_selection());
     }
 
     #[test]

@@ -134,6 +134,35 @@ pub fn frame_indices(
     (0..layout.node_count).collect()
 }
 
+fn focus_seeds(
+    layout: &GraphLayout,
+    selection: &[usize],
+    selected_hyperedges: &[usize],
+) -> Vec<usize> {
+    let mut seeds = selection.to_vec();
+    for he_idx in selected_hyperedges {
+        if let Some(he) = layout.scene.hyperedges.get(*he_idx) {
+            seeds.push(he.hub_index);
+            seeds.extend(he.member_indices.iter().copied());
+        }
+    }
+    seeds
+}
+
+/// Isolate the incident neighborhood of the current selection (no toggle).
+pub fn isolate_selection(
+    scope: &mut FocusScope,
+    layout: &GraphLayout,
+    selection: &[usize],
+    selected_hyperedges: &[usize],
+) {
+    let seeds = focus_seeds(layout, selection, selected_hyperedges);
+    if seeds.is_empty() {
+        return;
+    }
+    scope.nodes = Some(neighborhood(&layout.scene, seeds));
+}
+
 pub fn toggle_focus(
     scope: &mut FocusScope,
     layout: &GraphLayout,
@@ -144,13 +173,7 @@ pub fn toggle_focus(
         scope.clear();
         return;
     }
-    let mut seeds = selection.to_vec();
-    for he_idx in selected_hyperedges {
-        if let Some(he) = layout.scene.hyperedges.get(*he_idx) {
-            seeds.push(he.hub_index);
-            seeds.extend(he.member_indices.iter().copied());
-        }
-    }
+    let mut seeds = focus_seeds(layout, selection, selected_hyperedges);
     if seeds.is_empty() {
         seeds = attention_indices(&layout.scene);
     }

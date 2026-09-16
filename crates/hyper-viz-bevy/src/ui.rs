@@ -4,19 +4,26 @@ use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use bevy_panorbit_camera::PanOrbitCamera;
-use hyper_viz::{EdgeStatus, NodeRole, hyperedge_color, kind_color, parse_status, scaled_radius};
+use hyper_viz::{
+    EdgeStatus, HypergraphScene, NodeRole, SceneHits, hyperedge_color, kind_color, parse_status,
+    scaled_radius, scene_hits,
+};
 
-use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
+use crate::focus::{AttentionMode, FocusScope, FrameRequest, isolate_selection, toggle_focus};
 use crate::graph::{GraphLayout, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::inspect::{InspectNode, inspect_selection};
-use crate::interaction::{LassoState, PointerTarget, SelectionState};
+use crate::interaction::{LassoState, LocalizeQuery, PointerTarget, SelectionState};
 use crate::node_visual::{
     HYPEREDGE_LABEL_BASE_PT, LABEL_REFERENCE_PX, NodeLabelMode, NodeRenderSettings,
     VERTEX_LABEL_BASE_PT, label_font_size, label_visible_for, projected_radius_px, truncate_label,
     visual_spec_for,
 };
 use crate::render::{Hovered, SceneNodeEntity, Selected};
+
+const LOCALIZE_APPLY: usize = 32;
+const LOCALIZE_EDIT_ID: &str = "localize_query";
+const LOCALIZE_BAR_WIDTH: f32 = 420.0;
 
 pub struct UiPlugin;
 
@@ -45,8 +52,8 @@ fn ui_panels(
     mut attention: ResMut<AttentionMode>,
     mut focus: ResMut<FocusScope>,
     mut frame: ResMut<FrameRequest>,
+    mut localize: ResMut<LocalizeQuery>,
     pointer: Res<PointerTarget>,
-    _selected_q: Query<&SceneNodeEntity, With<Selected>>,
     label_q: Query<(
         &SceneNodeEntity,
         &Transform,
@@ -174,8 +181,12 @@ fn ui_panels(
                                         &sel_state.base_selection,
                                         &sel_state.hyperedges,
                                     );
+                                    if focus.is_active() {
+                                        frame.pending = true;
+                                    }
                                 } else if !focused {
                                     focus.clear();
+                                    localize.isolated = false;
                                 }
                             }
                             if ui.button("Frame (F)").clicked() {
@@ -184,7 +195,7 @@ fn ui_panels(
                             ui.label(
                                 "Left drag: orbit (keeps selection) · Click: select · Scroll: zoom",
                             );
-                            ui.label("A: attention · F: frame · Shift+F: focus · Esc: clear focus");
+                            ui.label("A: attention · F: frame · Shift+F: focus · /: find");
                         });
 
                     egui::CollapsingHeader::new("Layout")
@@ -241,6 +252,7 @@ fn ui_panels(
                             ui.label("Names and locations are in the Selection window.");
                             if ui.button("Clear selection").clicked() {
                                 sel_state.clear();
+                                localize.release_ownership();
                             }
                         });
 
@@ -300,13 +312,202 @@ fn ui_panels(
                 });
         });
 
-    draw_selection_window(ctx, &layout, &mut sel_state);
+    draw_selection_window(ctx, &layout, &mut sel_state, &mut localize);
+    draw_localize_window(
+        ctx,
+        &layout.scene,
+        &mut sel_state,
+        &mut localize,
+        &mut focus,
+        &mut frame,
+        &layout,
+    );
+}
+
+fn draw_localize_window(
+    ctx: &egui::Context,
+    scene: &HypergraphScene,
+    sel_state: &mut SelectionState,
+    localize: &mut LocalizeQuery,
+    focus: &mut FocusScope,
+    frame: &mut FrameRequest,
+    layout: &GraphLayout,
+) {
+    egui::Window::new("Find")
+        .id(egui::Id::new("localize_window"))
+        .anchor(egui::Align2::CENTER_BOTTOM, egui::vec2(0.0, -24.0))
+        .title_bar(false)
+        .resizable(false)
+        .collapsible(false)
+        .movable(false)
+        .default_width(LOCALIZE_BAR_WIDTH)
+        .show(ctx, |ui| {
+            ui.set_min_width(LOCALIZE_BAR_WIDTH);
+            ui.horizontal(|ui| {
+                let edit_id = ui.make_persistent_id(LOCALIZE_EDIT_ID);
+                let edit = ui.add(
+                    egui::TextEdit::singleline(&mut localize.query)
+                        .id(edit_id)
+                        .hint_text("Find")
+                        .desired_width(LOCALIZE_BAR_WIDTH - 88.0),
+                );
+                if localize.focus_box {
+                    edit.request_focus();
+                    localize.focus_box = false;
+                }
+
+                let hits = scene_hits(scene, &localize.query);
+                if edit.changed() {
+                    apply_localize_hits(scene, sel_state, localize, focus, &hits, LOCALIZE_APPLY);
+                    if focus.is_active() {
+                        refocus_matches(focus, frame, localize, layout, sel_state);
+                    }
+                }
+
+                if edit.has_focus()
+                    && ui.input(|input| input.key_pressed(egui::Key::Enter))
+                    && !hits.is_empty()
+                {
+                    apply_localize_hits(scene, sel_state, localize, focus, &hits, LOCALIZE_APPLY);
+                    refocus_matches(focus, frame, localize, layout, sel_state);
+                }
+
+                if edit.has_focus() && ui.input(|input| input.key_pressed(egui::Key::Escape)) {
+                    if !localize.query.trim().is_empty() {
+                        localize.query.clear();
+                        clear_search_selection(sel_state, localize, focus);
+                    } else {
+                        edit.surrender_focus();
+                        if localize.isolated {
+                            focus.clear();
+                            localize.isolated = false;
+                        }
+                    }
+                }
+
+                if !localize.query.trim().is_empty() {
+                    let total = hits.nodes.len() + hits.hyperedges.len();
+                    ui.weak(format!("{total}"));
+                }
+            });
+        });
+}
+
+fn refocus_matches(
+    focus: &mut FocusScope,
+    frame: &mut FrameRequest,
+    localize: &mut LocalizeQuery,
+    layout: &GraphLayout,
+    sel_state: &SelectionState,
+) {
+    if sel_state.base_selection.is_empty() && sel_state.hyperedges.is_empty() {
+        return;
+    }
+    isolate_selection(
+        focus,
+        layout,
+        &sel_state.base_selection,
+        &sel_state.hyperedges,
+    );
+    if focus.is_active() {
+        localize.isolated = true;
+        frame.pending = true;
+    }
+}
+
+fn apply_localize_hits(
+    scene: &HypergraphScene,
+    sel_state: &mut SelectionState,
+    localize: &mut LocalizeQuery,
+    focus: &mut FocusScope,
+    hits: &SceneHits,
+    cap: usize,
+) {
+    if localize.query.trim().is_empty() {
+        clear_search_selection(sel_state, localize, focus);
+        return;
+    }
+    if hits.is_empty() {
+        if localize.search_owned {
+            sel_state.clear();
+        }
+        localize.search_owned = true;
+        return;
+    }
+    let (nodes, hyperedges) = flatten_hits(scene, hits, cap);
+    sel_state.set_hits(nodes, hyperedges);
+    localize.search_owned = true;
+}
+
+fn clear_search_selection(
+    sel_state: &mut SelectionState,
+    localize: &mut LocalizeQuery,
+    focus: &mut FocusScope,
+) {
+    if localize.search_owned {
+        sel_state.clear();
+    }
+    if localize.isolated {
+        focus.clear();
+    }
+    localize.search_owned = false;
+    localize.isolated = false;
+}
+
+#[derive(Clone, Copy)]
+enum LocalizeRow {
+    Node(usize),
+    Hyperedge(usize),
+}
+
+fn ranked_rows(hits: &SceneHits, cap: usize) -> Vec<LocalizeRow> {
+    let mut ranked: Vec<(f32, LocalizeRow)> = hits
+        .nodes
+        .iter()
+        .map(|hit| (hit.score, LocalizeRow::Node(hit.index)))
+        .chain(
+            hits.hyperedges
+                .iter()
+                .map(|hit| (hit.score, LocalizeRow::Hyperedge(hit.index))),
+        )
+        .collect();
+    ranked.sort_by(|a, b| {
+        b.0.total_cmp(&a.0).then_with(|| match (&a.1, &b.1) {
+            (LocalizeRow::Node(i), LocalizeRow::Node(j)) => i.cmp(j),
+            (LocalizeRow::Hyperedge(i), LocalizeRow::Hyperedge(j)) => i.cmp(j),
+            (LocalizeRow::Node(_), LocalizeRow::Hyperedge(_)) => std::cmp::Ordering::Less,
+            (LocalizeRow::Hyperedge(_), LocalizeRow::Node(_)) => std::cmp::Ordering::Greater,
+        })
+    });
+    ranked.truncate(cap);
+    ranked.into_iter().map(|(_, row)| row).collect()
+}
+
+fn flatten_hits(scene: &HypergraphScene, hits: &SceneHits, cap: usize) -> (Vec<usize>, Vec<usize>) {
+    let mut nodes = Vec::new();
+    let mut hyperedges = Vec::new();
+    for row in ranked_rows(hits, cap) {
+        match row {
+            LocalizeRow::Node(index) => nodes.push(index),
+            LocalizeRow::Hyperedge(index) => {
+                hyperedges.push(index);
+                if let Some(he) = scene.hyperedges.get(index) {
+                    nodes.push(he.hub_index);
+                    nodes.extend(he.member_indices.iter().copied());
+                }
+            }
+        }
+    }
+    nodes.sort_unstable();
+    nodes.dedup();
+    (nodes, hyperedges)
 }
 
 fn draw_selection_window(
     ctx: &egui::Context,
     layout: &GraphLayout,
     sel_state: &mut SelectionState,
+    localize: &mut LocalizeQuery,
 ) {
     let report = inspect_selection(
         &layout.scene,
@@ -325,6 +526,7 @@ fn draw_selection_window(
             ));
             if ui.button("Clear").clicked() {
                 sel_state.clear();
+                localize.release_ownership();
             }
             ui.separator();
             egui::ScrollArea::vertical()
@@ -359,6 +561,7 @@ fn draw_selection_window(
                     }
                     if let Some(index) = pick {
                         sel_state.set_selection(vec![index]);
+                        localize.release_ownership();
                     }
                 });
         });

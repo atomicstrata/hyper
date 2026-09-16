@@ -1,6 +1,9 @@
+use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy_egui::{EguiGlobalSettings, PrimaryEguiContext};
-use bevy_panorbit_camera::{EguiFocusIncludesHover, PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_egui::{EguiContexts, EguiGlobalSettings, PrimaryEguiContext};
+use bevy_panorbit_camera::{
+    EguiFocusIncludesHover, EguiWantsFocus, PanOrbitCamera, PanOrbitCameraPlugin,
+};
 
 use hyper_viz::NodeRole;
 
@@ -22,11 +25,36 @@ impl Plugin for CameraPlugin {
             .add_systems(
                 Update,
                 (
+                    release_text_focus_for_orbit,
                     auto_fit_camera.run_if(resource_exists::<GraphLayout>),
                     apply_frame_request.run_if(resource_exists::<GraphLayout>),
                 ),
             );
     }
+}
+
+/// A focused TextEdit sets `wants_keyboard_input`, and panorbit only starts a
+/// drag when *both* this frame and last frame reported no egui focus. Without
+/// this, the first scene drag after find is a no-op (it only blurs the box).
+fn release_text_focus_for_orbit(
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut scroll: MessageReader<MouseWheel>,
+    mut contexts: EguiContexts,
+    mut wants: ResMut<EguiWantsFocus>,
+) {
+    let Ok(ctx) = contexts.ctx_mut() else {
+        return;
+    };
+    if ctx.is_pointer_over_area() || !ctx.wants_keyboard_input() {
+        return;
+    }
+    let scrolling = scroll.read().next().is_some();
+    if !mouse.just_pressed(MouseButton::Left) && !scrolling {
+        return;
+    }
+    ctx.memory_mut(|memory| memory.stop_text_input());
+    wants.prev = false;
+    wants.curr = false;
 }
 
 fn spawn_camera(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalSettings>) {

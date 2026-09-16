@@ -182,7 +182,15 @@ almost no movement) selects. Orbiting does not change selection.
 | A | Isolate `attention` status: hide other hulls, boost remaining fills, label those nodes |
 | F | Frame camera on the current scope (focus, attention, or live-work) |
 | Shift+F | Isolate the selected incident neighborhood (toggle) |
+| / | Focus the find bar (center bottom) |
+| Enter (in find) | Isolate the match neighborhood and frame the camera |
+| Esc | Clear the find query, or clear focus |
 | Clear selection | Button in the Selection window |
+
+The find bar at the bottom highlights matches as you type (BM25 + Jaro–Winkler
+on label, id, kind, and status). Hits use the existing selection glow and the
+**Selection** window. While focus is on, each new query also re-isolates the
+match neighborhood and reframes the camera.
 
 The **Selection** window lists selected hyperedges and vertices with kind,
 label, status, and a location taken from the id (`repo:…`, `wt:…`, `pr:…`).
