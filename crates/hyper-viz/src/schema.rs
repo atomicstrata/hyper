@@ -26,6 +26,9 @@ pub struct Vertex {
     /// Free-form type, e.g. `"person"`, `"paper"`, `"entity"`. Empty is allowed.
     #[serde(default)]
     pub kind: String,
+    /// Visual status: `"active"` (default), `"shadowed"`, `"rejected"`, `"attention"`.
+    #[serde(default)]
+    pub status: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub weight: Option<f32>,
     #[serde(default, skip_serializing_if = "Map::is_empty")]
@@ -38,6 +41,7 @@ impl Vertex {
             id: id.into(),
             label: label.into(),
             kind: String::new(),
+            status: String::new(),
             weight: None,
             attrs: Map::new(),
         }
@@ -45,6 +49,11 @@ impl Vertex {
 
     pub fn with_kind(mut self, kind: impl Into<String>) -> Self {
         self.kind = kind.into();
+        self
+    }
+
+    pub fn with_status(mut self, status: impl Into<String>) -> Self {
+        self.status = status.into();
         self
     }
 }
@@ -59,7 +68,7 @@ pub struct Hyperedge {
     pub label: String,
     #[serde(default)]
     pub kind: String,
-    /// Visual status: `"active"` (default), `"shadowed"`, `"rejected"`, or custom.
+    /// Visual status: `"active"` (default), `"shadowed"`, `"rejected"`, `"attention"`.
     #[serde(default)]
     pub status: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -209,5 +218,22 @@ mod tests {
         assert_eq!(g.vertices.len(), 5);
         assert_eq!(g.hyperedges.len(), 4);
         assert_eq!(g.hyperedges[0].vertices.len(), 3);
+    }
+
+    #[test]
+    fn vertex_status_round_trips_json() {
+        let mut graph = Hypergraph::new();
+        graph.add_vertex(
+            Vertex::new("issue", "#3")
+                .with_kind("issue")
+                .with_status("shadowed"),
+        );
+        let raw = serde_json::to_string(&graph).unwrap();
+        let loaded: Hypergraph = serde_json::from_str(&raw).unwrap();
+        assert_eq!(loaded.vertices[0].status, "shadowed");
+        let legacy =
+            r#"{"version":"hypergraph.v1","meta":{},"vertices":[{"id":"a"}],"hyperedges":[]}"#;
+        let old: Hypergraph = serde_json::from_str(legacy).unwrap();
+        assert_eq!(old.vertices[0].status, "");
     }
 }

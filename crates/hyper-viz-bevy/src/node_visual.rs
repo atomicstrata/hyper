@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use hyper_viz::{Emphasis, NodeRole, Rgba, emphasize, node_style, scaled_radius};
 
+use crate::focus::{apply_attention_rgba, scene_status};
 use crate::graph::GraphLayout;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,12 +127,14 @@ pub fn label_visible_for(
     settings: &NodeRenderSettings,
     node_count: usize,
     is_selected_or_hovered: bool,
+    force_show: bool,
 ) -> bool {
     if !settings.labels_enabled {
         return false;
     }
 
-    is_selected_or_hovered
+    force_show
+        || is_selected_or_hovered
         || match settings.label_mode {
             NodeLabelMode::All => true,
             NodeLabelMode::Capped => node_count <= settings.max_labels,
@@ -153,7 +156,7 @@ pub fn material_for_node_emphasized(
     index: usize,
     emphasis: Emphasis,
 ) -> Handle<StandardMaterial> {
-    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis);
+    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis, false);
     materials.add(rgba_to_material(base, emissive))
 }
 
@@ -165,7 +168,7 @@ pub fn apply_node_emphasis(
     index: usize,
     emphasis: Emphasis,
 ) {
-    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis);
+    let (base, emissive) = node_emphasized_rgba(layout, index, emphasis, false);
     if let Some(mat) = materials.get_mut(handle) {
         mat.base_color = Color::srgba(base.r, base.g, base.b, base.a);
         mat.emissive = LinearRgba::new(emissive.r, emissive.g, emissive.b, emissive.a);
@@ -176,11 +179,16 @@ pub(crate) fn node_emphasized_rgba(
     layout: &GraphLayout,
     index: usize,
     emphasis: Emphasis,
+    attention_on: bool,
 ) -> (Rgba, Rgba) {
     let node = &layout.scene.nodes[index];
     let status = layout.hub_status.get(index).and_then(|s| s.as_deref());
     let style = node_style(node, status);
-    let base = emphasize(style.base, emphasis);
+    let base = apply_attention_rgba(
+        emphasize(style.base, emphasis),
+        scene_status(&layout.scene, index),
+        attention_on,
+    );
     let glow = match emphasis {
         Emphasis::Rest => 0.22,
         Emphasis::Hover => 0.34,
@@ -308,5 +316,17 @@ mod tests {
         let b = label_font_size(14.0, 1.52, 1.98, 400.0);
         assert_eq!(a, b);
         assert!(a <= 24.0);
+    }
+
+    #[test]
+    fn attention_force_shows_label_when_over_cap() {
+        let settings = NodeRenderSettings {
+            labels_enabled: true,
+            label_mode: NodeLabelMode::Capped,
+            max_labels: 10,
+            ..NodeRenderSettings::default()
+        };
+        assert!(!label_visible_for(&settings, 100, false, false));
+        assert!(label_visible_for(&settings, 100, false, true));
     }
 }

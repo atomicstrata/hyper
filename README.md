@@ -141,8 +141,9 @@ only — this is not a web app.
 | `vertices[].id` | yes | Stable id referenced by hyperedges |
 | `vertices[].label` | no | Falls back to `id` |
 | `vertices[].kind` | no | Free-form; used only for color |
+| `vertices[].status` | no | `active` (default), `shadowed`, `rejected`, `attention` |
 | `hyperedges[].vertices` | yes | Member vertex ids |
-| `hyperedges[].status` | no | `active` (default), `shadowed`, `rejected` |
+| `hyperedges[].status` | no | `active` (default), `shadowed`, `rejected`, `attention` |
 | `*.attrs` | no | Opaque JSON map for the host app |
 
 ## How the graph is drawn
@@ -175,10 +176,26 @@ almost no movement) selects. Orbiting does not change selection.
 | Left click | Select the vertex or hyperedge under the cursor |
 | Click empty space | Clear selection |
 | Shift / Cmd + click | Add to selection |
-| Scroll | Zoom |
+| Scroll | Zoom (HUD windows steal scroll when the pointer is over them) |
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
-| Clear selection | Button in the Selection panel |
+| A | Isolate `attention` status: hide other hulls, boost remaining fills, label those nodes |
+| F | Frame camera on the current scope (focus, attention, or live-work) |
+| Shift+F | Isolate the selected incident neighborhood (toggle) |
+| / | Focus the find bar (center bottom) |
+| Enter (in find) | Isolate the match neighborhood and frame the camera |
+| Esc | Clear the find query, or clear focus |
+| Clear selection | Button in the Selection window |
+
+The find bar at the bottom highlights matches as you type (BM25 + Jaro–Winkler
+on label, id, kind, and status). Hits use the existing selection glow and the
+**Selection** window. While focus is on, each new query also re-isolates the
+match neighborhood and reframes the camera.
+
+The **Selection** window lists selected hyperedges and vertices with kind,
+label, status, and a location taken from the id (`repo:…`, `wt:…`, `pr:…`).
+Click a row to narrow the selection to that node. Pointer over any HUD window
+does not orbit or zoom the scene.
 
 Picking hits vertices, hull triangles, and arity-2 segments. Hidden hubs are
 not pickable.

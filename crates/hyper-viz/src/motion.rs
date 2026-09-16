@@ -57,6 +57,7 @@ pub fn looping_status(raw: &str) -> Option<EdgeStatus> {
 pub fn status_motion(status: EdgeStatus, elapsed_secs: f32, phase: f32) -> StatusMotion {
     let (period, scale_amp, glow_amp, opacity_mid, opacity_amp) = match status {
         EdgeStatus::Active => (2.4, 0.12, 0.28, 1.0, 0.14),
+        EdgeStatus::Attention => (2.0, 0.14, 0.36, 1.0, 0.16),
         EdgeStatus::Shadowed => (3.2, 0.0, 0.16, 0.58, 0.30),
         EdgeStatus::Rejected => (0.9, 0.16, 0.55, 0.72, 0.28),
     };
@@ -125,7 +126,7 @@ pub fn scene_status_snapshot(scene: &HypergraphScene) -> HashMap<String, String>
     let mut map = HashMap::new();
     for node in &scene.nodes {
         if node.role == NodeRole::Vertex {
-            map.insert(vertex_status_key(&node.id), String::new());
+            map.insert(vertex_status_key(&node.id), node.status.clone());
         }
     }
     for he in &scene.hyperedges {
@@ -225,7 +226,10 @@ mod tests {
         let graph = crate::schema::sample_coauthorship();
         let scene = crate::project::project(&graph, crate::project::Projection::Bipartite);
         let snap = scene_status_snapshot(&scene);
-        assert!(snap.contains_key(&vertex_status_key("alice")));
+        assert_eq!(
+            snap.get(&vertex_status_key("alice")).map(String::as_str),
+            Some("")
+        );
         assert_eq!(
             snap.get(&hyperedge_status_key("paper-a"))
                 .map(String::as_str),

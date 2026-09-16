@@ -37,8 +37,10 @@
 
 mod animation;
 mod camera;
+mod focus;
 mod graph;
 mod hyperedge_hull;
+mod inspect;
 mod interaction;
 mod node_visual;
 mod pick;
@@ -159,6 +161,7 @@ impl Plugin for HyperVisualizerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(self.settings.clone())
             .init_resource::<graph::GraphSceneEpoch>()
+            .add_plugins(focus::FocusPlugin)
             .add_plugins(camera::CameraPlugin)
             .add_plugins(render::RenderPlugin)
             .add_plugins(animation::StatusAnimationPlugin)

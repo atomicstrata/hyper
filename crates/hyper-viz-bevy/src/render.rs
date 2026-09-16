@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use hyper_viz::{Emphasis, apply_motion_rgba, emphasis_radius_scale, emphasize, link_style_for};
 
 use crate::animation::{StatusBursts, motion_for, node_motion};
+use crate::focus::{AttentionMode, FocusScope, apply_attention_rgba};
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{PointerTarget, SelectionState};
@@ -163,11 +164,14 @@ fn update_node_positions(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_links(
     layout: Res<GraphLayout>,
     hull_settings: Option<Res<HyperedgeHullSettings>>,
     pointer: Option<Res<PointerTarget>>,
     sel_state: Option<Res<SelectionState>>,
+    attention: Option<Res<AttentionMode>>,
+    focus: Option<Res<FocusScope>>,
     bursts: Res<StatusBursts>,
     time: Res<Time>,
     mut gizmos: Gizmos,
@@ -186,6 +190,8 @@ fn draw_links(
         .as_ref()
         .map(|s| s.hyperedges.iter().copied().collect())
         .unwrap_or_default();
+    let attention_on = attention.is_some_and(|mode| mode.on);
+    let in_scope = |index: usize| focus.as_ref().is_none_or(|scope| scope.contains(index));
 
     if hide_hubs {
         for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
@@ -198,6 +204,9 @@ fn draw_links(
             ) else {
                 continue;
             };
+            if !in_scope(he.member_indices[0]) || !in_scope(he.member_indices[1]) {
+                continue;
+            }
             let mut style = link_style_for(Some(&he.id), Some(&he.status));
             apply_link_emphasis(
                 &mut style,
@@ -207,6 +216,7 @@ fn draw_links(
                 ),
             );
             apply_link_status_motion(&mut style, Some(&he.status), Some(&he.id), elapsed, &bursts);
+            style.color = apply_attention_rgba(style.color, &he.status, attention_on);
             gizmos.line(
                 p1,
                 p2,
@@ -220,6 +230,9 @@ fn draw_links(
         let (Some(p1), Some(p2)) = (layout.position_at(src), layout.position_at(tgt)) else {
             continue;
         };
+        if !in_scope(src) || !in_scope(tgt) {
+            continue;
+        }
 
         let link = layout
             .scene
@@ -249,6 +262,9 @@ fn draw_links(
             elapsed,
             &bursts,
         );
+        if let Some(status) = link.and_then(|l| l.status.as_deref()) {
+            style.color = apply_attention_rgba(style.color, status, attention_on);
+        }
         let color = Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a);
         gizmos.line(p1, p2, color);
     }
@@ -295,6 +311,7 @@ fn highlight_selected(
         Option<&Hovered>,
     )>,
     layout: Option<Res<GraphLayout>>,
+    attention: Option<Res<AttentionMode>>,
     bursts: Option<Res<StatusBursts>>,
     time: Res<Time>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -304,10 +321,11 @@ fn highlight_selected(
     };
     let elapsed = time.elapsed_secs();
     let bursts = bursts.as_deref();
+    let attention_on = attention.is_some_and(|mode| mode.on);
 
     for (node, mat, selected, hovered) in query.iter() {
         let emphasis = Emphasis::from_flags(hovered.is_some(), selected.is_some());
-        let (base, emissive) = node_emphasized_rgba(&layout, node.index, emphasis);
+        let (base, emissive) = node_emphasized_rgba(&layout, node.index, emphasis, attention_on);
         let new_color = Color::srgba(base.r, base.g, base.b, base.a);
         let new_emissive = LinearRgba::new(emissive.r, emissive.g, emissive.b, emissive.a);
         let mut glow = LinearRgba::NONE;

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use bevy::prelude::*;
-use hyper_viz::{ForceLayout3D, HypergraphScene, LayoutConfig, Projection, load_json, project};
+use hyper_viz::{
+    ForceLayout3D, HypergraphScene, LayoutConfig, Projection, load_json, project, scenes_equivalent,
+};
 
 #[derive(Resource)]
 pub struct GraphLayout {
@@ -214,7 +216,7 @@ pub fn poll_graph_watch(
 
     if layout
         .as_ref()
-        .is_some_and(|current| current.scene == scene)
+        .is_some_and(|current| scenes_equivalent(&current.scene, &scene))
     {
         watch.last_mtime = Some(mtime);
         return;
@@ -263,7 +265,7 @@ pub fn poll_live_scene(
 
     if layout
         .as_ref()
-        .is_some_and(|current| current.scene == scene)
+        .is_some_and(|current| scenes_equivalent(&current.scene, &scene))
     {
         return;
     }

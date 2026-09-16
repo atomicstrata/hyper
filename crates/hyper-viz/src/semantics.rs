@@ -19,6 +19,7 @@ impl Rgba {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EdgeStatus {
     Active,
+    Attention,
     Shadowed,
     Rejected,
 }
@@ -26,10 +27,32 @@ pub enum EdgeStatus {
 pub fn parse_status(raw: &str) -> EdgeStatus {
     match raw.trim().to_ascii_lowercase().as_str() {
         "" | "active" | "ok" => EdgeStatus::Active,
+        "attention" | "focus" => EdgeStatus::Attention,
         "shadowed" | "inactive" | "hidden" | "stale" => EdgeStatus::Shadowed,
         "rejected" | "deleted" | "invalid" => EdgeStatus::Rejected,
         _ => EdgeStatus::Active,
     }
+}
+
+/// Extra opacity multiplier when attention highlight mode is on.
+/// Off: 1.0 (shadowed/rejected already use [`status_opacity`]).
+pub fn attention_dim(status: EdgeStatus, attention_mode: bool) -> f32 {
+    if !attention_mode {
+        return 1.0;
+    }
+    match status {
+        EdgeStatus::Attention => 1.0,
+        EdgeStatus::Active => 0.08,
+        EdgeStatus::Shadowed | EdgeStatus::Rejected => 0.03,
+    }
+}
+
+/// Live-work vertices: not shadowed or rejected.
+pub fn is_live_status(raw: &str) -> bool {
+    !matches!(
+        parse_status(raw),
+        EdgeStatus::Shadowed | EdgeStatus::Rejected
+    )
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -167,7 +190,7 @@ pub fn saturation(color: Rgba) -> f32 {
 
 pub fn hub_color(status: EdgeStatus) -> Rgba {
     match status {
-        EdgeStatus::Active => Rgba::new(1.0, 0.35, 0.55, 1.0),
+        EdgeStatus::Active | EdgeStatus::Attention => Rgba::new(1.0, 0.35, 0.55, 1.0),
         EdgeStatus::Shadowed => Rgba::new(0.45, 0.45, 0.5, 0.85),
         EdgeStatus::Rejected => Rgba::new(0.9, 0.2, 0.2, 0.7),
     }
@@ -175,7 +198,7 @@ pub fn hub_color(status: EdgeStatus) -> Rgba {
 
 pub fn status_opacity(status: EdgeStatus) -> f32 {
     match status {
-        EdgeStatus::Active => 1.0,
+        EdgeStatus::Active | EdgeStatus::Attention => 1.0,
         EdgeStatus::Shadowed => 0.45,
         EdgeStatus::Rejected => 0.35,
     }
@@ -192,7 +215,7 @@ pub fn link_color_for(hyperedge_id: Option<&str>, status: Option<&str>) -> Rgba 
     let alpha = match status.map(parse_status) {
         Some(EdgeStatus::Shadowed) => 0.18,
         Some(EdgeStatus::Rejected) => 0.12,
-        Some(EdgeStatus::Active) | None => 0.4,
+        Some(EdgeStatus::Active) | Some(EdgeStatus::Attention) | None => 0.4,
     };
     Rgba::new(base.r, base.g, base.b, alpha)
 }
@@ -209,10 +232,13 @@ fn tint_by_status(color: Rgba, status: EdgeStatus) -> Rgba {
 
 pub fn node_style(node: &SceneNode, hyperedge_status: Option<&str>) -> NodeVisualStyle {
     let (base, radius_scale) = match node.role {
-        NodeRole::Vertex => (kind_color(&node.kind), 1.0),
+        NodeRole::Vertex => {
+            let status = parse_status(&node.status);
+            (tint_by_status(kind_color(&node.kind), status), 1.0)
+        }
         NodeRole::HyperedgeHub => {
             let id = node.hyperedge_id.as_deref().unwrap_or(&node.id);
-            let status = parse_status(hyperedge_status.unwrap_or(""));
+            let status = parse_status(hyperedge_status.unwrap_or(node.status.as_str()));
             (tint_by_status(hyperedge_color(id), status), 1.35)
         }
     };
@@ -374,6 +400,7 @@ mod tests {
             kind: "person".into(),
             label: "Alice".into(),
             hyperedge_id: None,
+            status: String::new(),
         };
         let hub = SceneNode {
             id: "e:1".into(),
@@ -382,10 +409,58 @@ mod tests {
             kind: "hyperedge".into(),
             label: "Paper A".into(),
             hyperedge_id: Some("e:1".into()),
+            status: String::new(),
         };
         assert_ne!(
             node_style(&vertex, None).base,
             node_style(&hub, Some("active")).base
         );
+    }
+
+    #[test]
+    fn parse_attention_aliases() {
+        assert_eq!(parse_status("attention"), EdgeStatus::Attention);
+        assert_eq!(parse_status("focus"), EdgeStatus::Attention);
+        assert_eq!(parse_status("ATTENTION"), EdgeStatus::Attention);
+    }
+
+    #[test]
+    fn attention_dim_table() {
+        assert_eq!(attention_dim(EdgeStatus::Attention, false), 1.0);
+        assert_eq!(attention_dim(EdgeStatus::Active, false), 1.0);
+        assert_eq!(attention_dim(EdgeStatus::Shadowed, false), 1.0);
+        assert_eq!(attention_dim(EdgeStatus::Attention, true), 1.0);
+        assert!((attention_dim(EdgeStatus::Active, true) - 0.08).abs() < f32::EPSILON);
+        assert!((attention_dim(EdgeStatus::Shadowed, true) - 0.03).abs() < f32::EPSILON);
+        assert!((attention_dim(EdgeStatus::Rejected, true) - 0.03).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn shadowed_vertex_is_tinted() {
+        let live = SceneNode {
+            id: "wt".into(),
+            index: 0,
+            role: NodeRole::Vertex,
+            kind: "worktree".into(),
+            label: "main".into(),
+            hyperedge_id: None,
+            status: String::new(),
+        };
+        let backlog = SceneNode {
+            status: "shadowed".into(),
+            ..live.clone()
+        };
+        assert_ne!(
+            node_style(&live, None).base,
+            node_style(&backlog, None).base
+        );
+    }
+
+    #[test]
+    fn live_status_excludes_shadowed() {
+        assert!(is_live_status(""));
+        assert!(is_live_status("attention"));
+        assert!(!is_live_status("shadowed"));
+        assert!(!is_live_status("rejected"));
     }
 }

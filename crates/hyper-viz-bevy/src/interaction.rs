@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use hyper_viz::{NodeRole, scaled_radius};
 
+use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::{HullWireCache, HyperedgeHullEntity, HyperedgeHullSettings};
 use crate::pick::{
@@ -33,6 +34,8 @@ pub struct SelectionState {
     pub hyperedges: Vec<usize>,
     pub generation: u64,
     last_applied_generation: u64,
+    node_ids: Vec<String>,
+    hyperedge_ids: Vec<String>,
 }
 
 impl SelectionState {
@@ -44,6 +47,41 @@ impl SelectionState {
     pub fn clear(&mut self) {
         self.base_selection.clear();
         self.hyperedges.clear();
+        self.node_ids.clear();
+        self.hyperedge_ids.clear();
+        self.generation += 1;
+    }
+
+    pub fn remember_ids(&mut self, scene: &hyper_viz::HypergraphScene) {
+        self.node_ids = self
+            .base_selection
+            .iter()
+            .filter_map(|index| scene.nodes.get(*index).map(|node| node.id.clone()))
+            .collect();
+        self.hyperedge_ids = self
+            .hyperedges
+            .iter()
+            .filter_map(|index| scene.hyperedges.get(*index).map(|he| he.id.clone()))
+            .collect();
+    }
+
+    pub fn remap_ids(&mut self, scene: &hyper_viz::HypergraphScene) {
+        self.base_selection = self
+            .node_ids
+            .iter()
+            .filter_map(|id| {
+                scene
+                    .nodes
+                    .iter()
+                    .find(|node| node.id == *id)
+                    .map(|node| node.index)
+            })
+            .collect();
+        self.hyperedges = self
+            .hyperedge_ids
+            .iter()
+            .filter_map(|id| scene.hyperedges.iter().position(|he| he.id == *id))
+            .collect();
         self.generation += 1;
     }
 
@@ -56,6 +94,12 @@ impl SelectionState {
     pub fn set_hyperedge(&mut self, he_index: usize, members: Vec<usize>) {
         self.hyperedges = vec![he_index];
         self.base_selection = members;
+        self.generation += 1;
+    }
+
+    pub fn set_hits(&mut self, nodes: Vec<usize>, hyperedges: Vec<usize>) {
+        self.base_selection = nodes;
+        self.hyperedges = hyperedges;
         self.generation += 1;
     }
 
@@ -72,17 +116,35 @@ impl SelectionState {
     }
 }
 
+/// Navigation-box query. `search_owned` is true while the current selection
+/// came from typing, so clearing the box does not wipe a prior click.
+#[derive(Resource, Debug, Clone, Default)]
+pub struct LocalizeQuery {
+    pub query: String,
+    pub focus_box: bool,
+    pub search_owned: bool,
+    pub isolated: bool,
+}
+
+impl LocalizeQuery {
+    pub fn release_ownership(&mut self) {
+        self.search_owned = false;
+        self.isolated = false;
+    }
+}
+
 pub struct InteractionPlugin;
 
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LassoState>()
             .init_resource::<SelectionState>()
+            .init_resource::<LocalizeQuery>()
             .init_resource::<PointerTarget>()
             .add_systems(
                 Update,
                 (
-                    clear_selection_on_reload,
+                    remap_selection_on_reload,
                     keyboard_controls.run_if(resource_exists::<GraphLayout>),
                     pointer_hover.run_if(resource_exists::<GraphLayout>),
                     click_selection.run_if(resource_exists::<GraphLayout>),
@@ -94,31 +156,112 @@ impl Plugin for InteractionPlugin {
     }
 }
 
-fn clear_selection_on_reload(
+fn remap_selection_on_reload(
     epoch: Res<GraphSceneEpoch>,
+    layout: Option<Res<GraphLayout>>,
     mut last_epoch: Local<Option<u64>>,
     mut sel_state: ResMut<SelectionState>,
+    mut focus: ResMut<FocusScope>,
+    mut focus_ids: Local<Option<HashSet<String>>>,
 ) {
+    let Some(layout) = layout else {
+        return;
+    };
     if *last_epoch == Some(epoch.0) {
+        sel_state.remember_ids(&layout.scene);
+        *focus_ids = focus.nodes.as_ref().map(|nodes| {
+            nodes
+                .iter()
+                .filter_map(|index| layout.scene.nodes.get(*index).map(|node| node.id.clone()))
+                .collect()
+        });
         return;
     }
     *last_epoch = Some(epoch.0);
-    if epoch.0 > 0 {
-        sel_state.clear();
+    if epoch.0 == 0 {
+        return;
+    }
+    sel_state.remap_ids(&layout.scene);
+    if let Some(ids) = focus_ids.as_ref() {
+        let remapped: HashSet<usize> = ids
+            .iter()
+            .filter_map(|id| {
+                layout
+                    .scene
+                    .nodes
+                    .iter()
+                    .find(|node| node.id == *id)
+                    .map(|node| node.index)
+            })
+            .collect();
+        if remapped.is_empty() {
+            focus.clear();
+        } else {
+            focus.nodes = Some(remapped);
+        }
     }
 }
 
-fn keyboard_controls(keys: Res<ButtonInput<KeyCode>>, mut layout: ResMut<GraphLayout>) {
+fn keyboard_wants_text(contexts: &mut bevy_egui::EguiContexts) -> bool {
+    contexts
+        .ctx_mut()
+        .map(|ctx| ctx.wants_keyboard_input())
+        .unwrap_or(false)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn keyboard_controls(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut layout: ResMut<GraphLayout>,
+    mut attention: ResMut<AttentionMode>,
+    mut focus: ResMut<FocusScope>,
+    mut frame: ResMut<FrameRequest>,
+    sel_state: Res<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
+    mut contexts: bevy_egui::EguiContexts,
+) {
+    if keyboard_wants_text(&mut contexts) {
+        return;
+    }
+    if keys.just_pressed(KeyCode::Slash)
+        && !keys.pressed(KeyCode::ShiftLeft)
+        && !keys.pressed(KeyCode::ShiftRight)
+    {
+        localize.focus_box = true;
+        return;
+    }
     if keys.just_pressed(KeyCode::Space) {
         layout.running = !layout.running;
         tracing::info!(running = layout.running, "Layout toggled");
+    }
+    if keys.just_pressed(KeyCode::KeyA) {
+        attention.on = !attention.on;
+        tracing::info!(on = attention.on, "Attention mode");
+    }
+    if keys.just_pressed(KeyCode::KeyF) {
+        let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+        if shift {
+            toggle_focus(
+                &mut focus,
+                &layout,
+                &sel_state.base_selection,
+                &sel_state.hyperedges,
+            );
+            tracing::info!(active = focus.is_active(), "Focus neighborhood");
+        } else {
+            frame.pending = true;
+        }
+    }
+    if keys.just_pressed(KeyCode::Escape) && focus.is_active() {
+        focus.clear();
+        tracing::info!("Focus cleared");
     }
 }
 
 fn pointer_over_ui(contexts: &mut bevy_egui::EguiContexts) -> bool {
     contexts
         .ctx_mut()
-        .map(|ctx| ctx.wants_pointer_input())
+        .map(|ctx| ctx.is_pointer_over_area() || ctx.wants_pointer_input())
         .unwrap_or(false)
 }
 
@@ -136,6 +279,7 @@ fn pointer_hover(
     mut contexts: bevy_egui::EguiContexts,
     lasso: Res<LassoState>,
     mut target: ResMut<PointerTarget>,
+    focus: Res<FocusScope>,
 ) {
     if lasso.enabled || pointer_over_ui(&mut contexts) {
         *target = PointerTarget::None;
@@ -173,7 +317,7 @@ fn pointer_hover(
         if node.index < entity_by_index.len() {
             entity_by_index[node.index] = Some(entity);
         }
-        if *visibility == Visibility::Hidden {
+        if *visibility == Visibility::Hidden || !focus.contains(node.index) {
             continue;
         }
         let Some(scene_node) = layout.scene.nodes.get(node.index) else {
@@ -210,7 +354,14 @@ fn pointer_hover(
                 }
             }
             if let Some(t) = best_t {
-                hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
+                if layout
+                    .scene
+                    .hyperedges
+                    .get(entity.hyperedge_index)
+                    .is_some_and(|he| focus.contains(he.hub_index))
+                {
+                    hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
+                }
             }
         }
     }
@@ -224,6 +375,11 @@ fn pointer_hover(
         ) else {
             continue;
         };
+        if !focus.contains(he.hub_index)
+            && !he.member_indices.iter().all(|idx| focus.contains(*idx))
+        {
+            continue;
+        }
         if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
             hull_hits.push((he_index, 2, t));
         }
@@ -306,6 +462,7 @@ fn click_selection(
     keys: Res<ButtonInput<KeyCode>>,
     lasso: Res<LassoState>,
     mut sel_state: ResMut<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
     layout: Res<GraphLayout>,
     target: Res<PointerTarget>,
     mut pending: Local<Option<PendingPointerClick>>,
@@ -390,6 +547,7 @@ fn click_selection(
         }
         PointerTarget::None => {}
     }
+    localize.release_ownership();
 
     let effective: HashSet<usize> = sel_state.base_selection.iter().copied().collect();
     for (entity, node) in selected_q.iter() {
@@ -417,6 +575,7 @@ fn lasso_interaction(
     cameras: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
     mut lasso: ResMut<LassoState>,
     mut sel_state: ResMut<SelectionState>,
+    mut localize: ResMut<LocalizeQuery>,
     layout: Res<GraphLayout>,
     node_q: Query<(&SceneNodeEntity, &Transform, &Visibility)>,
     mut contexts: bevy_egui::EguiContexts,
@@ -485,12 +644,14 @@ fn lasso_interaction(
         selected.sort_unstable();
         selected.dedup();
         sel_state.set_selection(selected);
+        localize.release_ownership();
         lasso.points.clear();
     }
 }
 
 fn apply_selection_state(
     mut sel_state: ResMut<SelectionState>,
+    layout: Res<GraphLayout>,
     mut node_q: Query<(Entity, &SceneNodeEntity), With<Selected>>,
     all_nodes: Query<(Entity, &SceneNodeEntity)>,
     mut commands: Commands,
@@ -513,6 +674,7 @@ fn apply_selection_state(
         }
     }
 
+    sel_state.remember_ids(&layout.scene);
     sel_state.mark_applied();
 }
 
@@ -540,6 +702,40 @@ mod tests {
         state.set_hyperedge(0, he.member_indices.clone());
         assert_eq!(state.hyperedges, vec![0]);
         assert_eq!(state.base_selection.len(), 3);
+    }
+
+    #[test]
+    fn set_hits_keeps_nodes_and_hyperedges() {
+        let mut state = SelectionState::default();
+        state.set_hits(vec![1, 2], vec![0]);
+        assert_eq!(state.base_selection, vec![1, 2]);
+        assert_eq!(state.hyperedges, vec![0]);
+        assert!(state.has_selection());
+    }
+
+    #[test]
+    fn remap_keeps_selection_when_indices_shift() {
+        let mut first = Hypergraph::new();
+        first.add_vertex(hyper_viz::Vertex::new("keep", "Keep"));
+        first.add_vertex(hyper_viz::Vertex::new("other", "Other"));
+        let left = project(&first, Projection::Bipartite);
+        let keep = left
+            .nodes
+            .iter()
+            .find(|n| n.id == "keep")
+            .expect("keep")
+            .index;
+        let mut state = SelectionState::default();
+        state.set_selection(vec![keep]);
+        state.remember_ids(&left);
+
+        let mut second = Hypergraph::new();
+        second.add_vertex(hyper_viz::Vertex::new("other", "Other"));
+        second.add_vertex(hyper_viz::Vertex::new("keep", "Keep"));
+        let right = project(&second, Projection::Bipartite);
+        state.remap_ids(&right);
+        assert_eq!(state.base_selection.len(), 1);
+        assert_eq!(right.nodes[state.base_selection[0]].id, "keep");
     }
 
     fn sample() -> Hypergraph {
