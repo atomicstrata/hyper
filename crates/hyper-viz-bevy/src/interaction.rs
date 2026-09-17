@@ -122,6 +122,7 @@ impl SelectionState {
 pub struct LocalizeQuery {
     pub query: String,
     pub focus_box: bool,
+    pub input_focused: bool,
     pub search_owned: bool,
     pub isolated: bool,
 }
@@ -209,6 +210,10 @@ fn keyboard_wants_text(contexts: &mut bevy_egui::EguiContexts) -> bool {
         .unwrap_or(false)
 }
 
+fn modifier_down(keys: &ButtonInput<KeyCode>, left: KeyCode, right: KeyCode) -> bool {
+    keys.pressed(left) || keys.pressed(right)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn keyboard_controls(
     keys: Res<ButtonInput<KeyCode>>,
@@ -220,13 +225,34 @@ fn keyboard_controls(
     mut localize: ResMut<LocalizeQuery>,
     mut contexts: bevy_egui::EguiContexts,
 ) {
-    if keyboard_wants_text(&mut contexts) {
+    let cmd = modifier_down(&keys, KeyCode::SuperLeft, KeyCode::SuperRight);
+    let ctrl = modifier_down(&keys, KeyCode::ControlLeft, KeyCode::ControlRight);
+    let shift = modifier_down(&keys, KeyCode::ShiftLeft, KeyCode::ShiftRight);
+    let in_find = localize.input_focused || keyboard_wants_text(&mut contexts);
+
+    if keys.just_pressed(KeyCode::KeyF) && cmd && ctrl {
+        toggle_focus(
+            &mut focus,
+            &layout,
+            &sel_state.base_selection,
+            &sel_state.hyperedges,
+        );
+        tracing::info!(active = focus.is_active(), "Focus neighborhood");
         return;
     }
-    if keys.just_pressed(KeyCode::Slash)
-        && !keys.pressed(KeyCode::ShiftLeft)
-        && !keys.pressed(KeyCode::ShiftRight)
-    {
+    if keys.just_pressed(KeyCode::KeyF) && cmd && !ctrl && !shift {
+        localize.focus_box = true;
+        return;
+    }
+    if keys.just_pressed(KeyCode::KeyF) && ctrl && !cmd && !shift && !in_find {
+        localize.focus_box = true;
+        return;
+    }
+
+    if in_find {
+        return;
+    }
+    if keys.just_pressed(KeyCode::Slash) && !shift {
         localize.focus_box = true;
         return;
     }
@@ -238,19 +264,8 @@ fn keyboard_controls(
         attention.on = !attention.on;
         tracing::info!(on = attention.on, "Attention mode");
     }
-    if keys.just_pressed(KeyCode::KeyF) {
-        let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
-        if shift {
-            toggle_focus(
-                &mut focus,
-                &layout,
-                &sel_state.base_selection,
-                &sel_state.hyperedges,
-            );
-            tracing::info!(active = focus.is_active(), "Focus neighborhood");
-        } else {
-            frame.pending = true;
-        }
+    if keys.just_pressed(KeyCode::KeyF) && !cmd && !ctrl && !shift {
+        frame.pending = true;
     }
     if keys.just_pressed(KeyCode::Escape) && focus.is_active() {
         focus.clear();

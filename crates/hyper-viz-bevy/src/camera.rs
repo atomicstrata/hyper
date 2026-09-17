@@ -76,6 +76,7 @@ fn spawn_camera(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalSett
     ));
 }
 
+#[allow(clippy::too_many_arguments)]
 fn auto_fit_camera(
     layout: Res<GraphLayout>,
     epoch: Res<GraphSceneEpoch>,
@@ -84,7 +85,12 @@ fn auto_fit_camera(
     hull_settings: Res<HyperedgeHullSettings>,
     mut cam_q: Query<&mut PanOrbitCamera>,
     mut fitted_epoch: Local<Option<u64>>,
+    skip_fit: Option<Res<crate::session::SkipAutoFit>>,
 ) {
+    if skip_fit.is_some_and(|skip| skip.0) {
+        *fitted_epoch = Some(epoch.0);
+        return;
+    }
     if layout.iterations() < 20 {
         return;
     }

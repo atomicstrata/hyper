@@ -45,8 +45,10 @@ mod interaction;
 mod node_visual;
 mod pick;
 mod render;
+mod session;
 mod ui;
 
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::app::TerminalCtrlCHandlerPlugin;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
@@ -168,6 +170,7 @@ impl Plugin for HyperVisualizerPlugin {
             .add_plugins(hyperedge_hull::HyperedgeHullPlugin)
             .add_plugins(ui::UiPlugin)
             .add_plugins(interaction::InteractionPlugin)
+            .add_plugins(session::SessionPlugin)
             .add_systems(Startup, graph::init_graph)
             .add_systems(
                 Update,
@@ -272,11 +275,18 @@ fn visualizer_app_with(
     config: VisualizerConfig,
     quiet_bevy: bool,
 ) -> App {
+    let (width, height) = session::saved_window_size().unwrap_or((config.width, config.height));
     let window = WindowPlugin {
         primary_window: Some(Window {
             title: config.title,
-            resolution: (config.width, config.height).into(),
+            resolution: (width, height).into(),
             present_mode: bevy::window::PresentMode::AutoVsync,
+            #[cfg(target_arch = "wasm32")]
+            canvas: Some("#mind-canvas".into()),
+            #[cfg(target_arch = "wasm32")]
+            fit_canvas_to_parent: true,
+            #[cfg(target_arch = "wasm32")]
+            prevent_default_event_handling: true,
             ..default()
         }),
         ..default()
@@ -284,9 +294,11 @@ fn visualizer_app_with(
 
     let mut plugins = DefaultPlugins.set(window);
     if quiet_bevy {
-        plugins = plugins
-            .disable::<LogPlugin>()
-            .disable::<TerminalCtrlCHandlerPlugin>();
+        plugins = plugins.disable::<LogPlugin>();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            plugins = plugins.disable::<TerminalCtrlCHandlerPlugin>();
+        }
     }
 
     let mut app = App::new();

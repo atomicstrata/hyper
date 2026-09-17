@@ -171,7 +171,7 @@ fn ui_panels(
                             ui.checkbox(&mut lasso.enabled, "Lasso select (disables orbit)");
                             let mut focused = focus.is_active();
                             if ui
-                                .checkbox(&mut focused, "Focus neighborhood (Shift+F)")
+                                .checkbox(&mut focused, "Focus neighborhood (⌃⌘F)")
                                 .changed()
                             {
                                 if focused && !focus.is_active() {
@@ -195,7 +195,7 @@ fn ui_panels(
                             ui.label(
                                 "Left drag: orbit (keeps selection) · Click: select · Scroll: zoom",
                             );
-                            ui.label("A: attention · F: frame · Shift+F: focus · /: find");
+                            ui.label("A: attention · F: frame · ⌘F: find · ⌃⌘F: focus");
                         });
 
                     egui::CollapsingHeader::new("Layout")
@@ -351,14 +351,16 @@ fn draw_localize_window(
                         .hint_text("Find")
                         .desired_width(LOCALIZE_BAR_WIDTH - 88.0),
                 );
+                localize.input_focused = edit.has_focus();
                 if localize.focus_box {
                     edit.request_focus();
                     localize.focus_box = false;
+                    localize.input_focused = true;
                 }
 
                 let hits = scene_hits(scene, &localize.query);
                 if edit.changed() {
-                    apply_localize_hits(scene, sel_state, localize, focus, &hits, LOCALIZE_APPLY);
+                    apply_localize_hits(scene, sel_state, localize, &hits, LOCALIZE_APPLY);
                     if focus.is_active() {
                         refocus_matches(focus, frame, localize, layout, sel_state);
                     }
@@ -368,7 +370,7 @@ fn draw_localize_window(
                     && ui.input(|input| input.key_pressed(egui::Key::Enter))
                     && !hits.is_empty()
                 {
-                    apply_localize_hits(scene, sel_state, localize, focus, &hits, LOCALIZE_APPLY);
+                    apply_localize_hits(scene, sel_state, localize, &hits, LOCALIZE_APPLY);
                     refocus_matches(focus, frame, localize, layout, sel_state);
                 }
 
@@ -419,12 +421,14 @@ fn apply_localize_hits(
     scene: &HypergraphScene,
     sel_state: &mut SelectionState,
     localize: &mut LocalizeQuery,
-    focus: &mut FocusScope,
     hits: &SceneHits,
     cap: usize,
 ) {
     if localize.query.trim().is_empty() {
-        clear_search_selection(sel_state, localize, focus);
+        if localize.search_owned {
+            sel_state.clear();
+        }
+        localize.search_owned = false;
         return;
     }
     if hits.is_empty() {
