@@ -57,9 +57,19 @@ insert extra plugins first.
 - **Click empty:** clear selection
 - **Hover:** size / brighter wire, same hue
 - **Selected:** higher saturation and glow, same hue
-- **/**: focus the bottom find bar (BM25 + Jaro–Winkler)
+- **⌘F / Ctrl+F**: focus the bottom find bar (BM25 + Jaro–Winkler)
+- **⌃⌘F**: isolate the selected neighborhood (toggle)
 - **Enter** (in find): isolate match neighborhood and frame
 - While focus is on, each new query re-isolates and reframes
 - **Esc**: clear find query, or clear focus
 
 Hubs are hidden by default. Hulls are on for arity ≥ 3.
+
+## Session
+
+On quit (and ~450ms after the last change) the viewer writes
+`hyperviz.session.v1` JSON: layout sliders, labels, hulls, attention, navigation
+(lasso), window size, plus per-graph camera pose (orbit + world position),
+selection, focus neighborhood, and find. Desktop path is
+the OS config dir (`hyper-viz/session.json`); wasm uses `localStorage`.
+`HYPER_VIZ_SESSION` overrides the file or `off` disables it.

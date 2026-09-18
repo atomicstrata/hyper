@@ -36,6 +36,7 @@ pub mod query;
 pub mod scene;
 pub mod schema;
 pub mod semantics;
+pub mod session;
 
 pub use error::VizError;
 pub use hull::{HullMesh, MAX_HULL_VERTICES, hull_from_points, select_hull_vertices};
@@ -58,6 +59,10 @@ pub use semantics::{
     emphasis_radius_scale, emphasize, hub_color, hull_style, hull_style_emphasized, hull_style_for,
     hyperedge_color, is_live_status, kind_color, link_color, link_color_for, link_style,
     link_style_for, node_style, parse_status, scaled_radius, status_opacity,
+};
+pub use session::{
+    NavigationPrefs, SESSION_VERSION, ViewerPrefs, ViewerSession, ViewerView, parse_session,
+    session_to_json, view_key,
 };
 
 /// Common types for host applications that build, project, and lay out a hypergraph.

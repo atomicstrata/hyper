@@ -180,9 +180,10 @@ almost no movement) selects. Orbiting does not change selection.
 | Lasso (UI panel) | Polygon select (disables orbit while on) |
 | Space | Toggle force layout |
 | A | Isolate `attention` status: hide other hulls, boost remaining fills, label those nodes |
-| F | Frame camera on the current scope (focus, attention, or live-work) |
-| Shift+F | Isolate the selected incident neighborhood (toggle) |
-| / | Focus the find bar (center bottom) |
+| F | Frame camera (ignored while the find bar is focused) |
+| ⌘F / Ctrl+F | Focus the find bar |
+| ⌃⌘F | Isolate the selected incident neighborhood (toggle) |
+| / | Focus the find bar (when not typing) |
 | Enter (in find) | Isolate the match neighborhood and frame the camera |
 | Esc | Clear the find query, or clear focus |
 | Clear selection | Button in the Selection window |
@@ -231,7 +232,19 @@ JSON-friendly `tracing` logs on scene init, file-watch reload, and live-channel
 reload (`nodes`, `hyperedges`, `graph_id`). Set `RUST_LOG=hyper_viz_bevy=info`
 (see [`.env.example`](.env.example)).
 
-No environment variables are required. No secrets.
+No secrets. The viewer restores HUD, navigation (lasso), camera pose,
+selection, focus neighborhood, and find query from a `hyperviz.session.v1`
+JSON blob:
+
+| Host | Where |
+|---|---|
+| Desktop | `~/Library/Application Support/hyper-viz/session.json` (macOS), `%APPDATA%/hyper-viz/session.json` (Windows), `$XDG_CONFIG_HOME/hyper-viz/session.json` (Linux) |
+| Browser (wasm) | `localStorage["hyperviz.session.v1"]` |
+
+Override the file with `HYPER_VIZ_SESSION=/path/to/session.json`. Set
+`HYPER_VIZ_SESSION=off` to disable. Prefs (including navigation) are global;
+camera / selection / isolate are keyed by graph id. Layout positions are not
+stored.
 
 ## Directory layout
 
@@ -245,5 +258,5 @@ src/main.rs               # CLI
 ## Non-goals
 
 - PAOH timeline view
-- WASM / browser serve
+- WASM / browser serve (session JSON is ready for `localStorage`)
 - Euler-style set diagrams (convex-hull member shells only)

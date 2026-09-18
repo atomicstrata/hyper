@@ -3165,6 +3165,7 @@ dependencies = [
  "tempfile",
  "tracing",
  "tracing-subscriber",
+ "web-sys",
  "winit",
 ]
 
