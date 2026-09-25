@@ -113,7 +113,7 @@ pub struct HyperVisualizerPlugin {
     watch: bool,
     live_rx: Arc<std::sync::Mutex<Option<Receiver<HypergraphScene>>>>,
     shutdown: Option<Arc<AtomicBool>>,
-    search: Option<SearchProvider>,
+    search: Option<Vec<(String, SearchProvider)>>,
 }
 
 impl HyperVisualizerPlugin {
@@ -157,7 +157,7 @@ impl HyperVisualizerPlugin {
         self
     }
 
-    fn with_search(mut self, provider: SearchProvider) -> Self {
+    fn with_search(mut self, provider: Vec<(String, SearchProvider)>) -> Self {
         self.search = Some(provider);
         self
     }
@@ -266,9 +266,19 @@ pub fn run_visualizer_live_with_search(
     shutdown: Option<Arc<AtomicBool>>,
     provider: SearchProvider,
 ) {
+    run_visualizer_live_with_search_modes(initial, rx, shutdown, vec![("Search".into(), provider)]);
+}
+
+/// Native viewer with selectable host retrieval modes, executed off the render thread.
+pub fn run_visualizer_live_with_search_modes(
+    initial: HypergraphScene,
+    rx: Receiver<HypergraphScene>,
+    shutdown: Option<Arc<AtomicBool>>,
+    providers: Vec<(String, SearchProvider)>,
+) {
     let mut plugin = HyperVisualizerPlugin::from_scene(initial)
         .with_live(rx)
-        .with_search(provider);
+        .with_search(providers);
     if let Some(flag) = shutdown {
         plugin = plugin.with_shutdown(flag);
     }

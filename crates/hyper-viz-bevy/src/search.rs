@@ -25,8 +25,12 @@ pub type SearchProvider = Arc<dyn Fn(&str, usize) -> Result<SearchPage, String> 
 
 #[derive(Resource)]
 pub(crate) struct SearchState {
-    requests: mpsc::SyncSender<(String, usize)>,
+    requests: mpsc::SyncSender<(usize, String, usize)>,
     results: Mutex<mpsc::Receiver<Result<SearchPage, String>>>,
+    modes: Vec<String>,
+    mode: usize,
+    submitted_mode: usize,
+    displayed_mode: usize,
     query: String,
     submitted: String,
     displayed: String,
@@ -39,17 +43,30 @@ pub(crate) struct SearchState {
     pub live_scene: Option<HypergraphScene>,
 }
 impl SearchState {
-    pub fn new(provider: SearchProvider, initial: Option<HypergraphScene>) -> Self {
-        let (requests, rx) = mpsc::sync_channel::<(String, usize)>(1);
+    pub fn new(providers: Vec<(String, SearchProvider)>, initial: Option<HypergraphScene>) -> Self {
+        let (requests, rx) = mpsc::sync_channel::<(usize, String, usize)>(1);
         let (tx, results) = mpsc::sync_channel(1);
+        let modes = providers.iter().map(|(name, _)| name.clone()).collect();
         std::thread::spawn(move || {
-            while let Ok((query, offset)) = rx.recv() {
-                if tx.send(provider(&query, offset)).is_err() {
+            while let Ok((mode, query, offset)) = rx.recv() {
+                if tx
+                    .send(
+                        providers
+                            .get(mode)
+                            .ok_or_else(|| "No search mode configured".to_string())
+                            .and_then(|(_, provider)| provider(&query, offset)),
+                    )
+                    .is_err()
+                {
                     break;
                 }
             }
         });
         Self {
+            modes,
+            mode: 0,
+            submitted_mode: 0,
+            displayed_mode: 0,
             requests,
             results: Mutex::new(results),
             query: String::new(),
@@ -64,12 +81,13 @@ impl SearchState {
             live_scene: initial,
         }
     }
-    fn submit(&mut self, query: String, offset: usize) {
+    fn submit(&mut self, mode: usize, query: String, offset: usize) {
         if self.busy || query.trim().is_empty() {
             return;
         }
-        match self.requests.try_send((query.clone(), offset)) {
+        match self.requests.try_send((mode, query.clone(), offset)) {
             Ok(()) => {
+                self.submitted_mode = mode;
                 self.submitted = query;
                 self.busy = true;
                 self.error = None;
@@ -111,6 +129,7 @@ pub(crate) fn search_panel(
                 state.active = true;
                 state.page = Some(page);
                 state.displayed = state.submitted.clone();
+                state.displayed_mode = state.submitted_mode;
                 focus.clear();
                 selection.clear();
                 localize.query.clear();
@@ -130,6 +149,21 @@ pub(crate) fn search_panel(
         .default_height(350.0)
         .show(ctx, |ui| {
             ui.label("Search all stored source lines · text, symbols, questions, or path:line");
+            ui.add_enabled_ui(!state.busy, |ui| {
+                egui::ComboBox::from_label("Retrieval")
+                    .selected_text(
+                        state
+                            .modes
+                            .get(state.mode)
+                            .map(String::as_str)
+                            .unwrap_or("None"),
+                    )
+                    .show_ui(ui, |ui| {
+                        for (index, label) in state.modes.clone().iter().enumerate() {
+                            ui.selectable_value(&mut state.mode, index, label);
+                        }
+                    });
+            });
             ui.horizontal(|ui| {
                 let edit = ui.add(
                     egui::TextEdit::singleline(&mut state.query)
@@ -145,7 +179,7 @@ pub(crate) fn search_panel(
                     .clicked()
                     || enter
                 {
-                    submit = Some((state.query.clone(), 0));
+                    submit = Some((state.mode, state.query.clone(), 0));
                 }
             });
             if state.busy {
@@ -168,7 +202,15 @@ pub(crate) fn search_panel(
                 frame.pending = true;
             }
             if let Some(page) = &state.page {
-                ui.label(format!("Query: {}", state.displayed));
+                ui.label(format!(
+                    "{} · Query: {}",
+                    state
+                        .modes
+                        .get(state.displayed_mode)
+                        .map(String::as_str)
+                        .unwrap_or("Search"),
+                    state.displayed
+                ));
                 ui.label(&page.summary);
                 ui.horizontal(|ui| {
                     if ui
@@ -178,7 +220,11 @@ pub(crate) fn search_panel(
                         )
                         .clicked()
                     {
-                        submit = Some((state.displayed.clone(), page.offset.saturating_sub(40)));
+                        submit = Some((
+                            state.displayed_mode,
+                            state.displayed.clone(),
+                            page.offset.saturating_sub(40),
+                        ));
                     }
                     if ui
                         .add_enabled(
@@ -187,7 +233,11 @@ pub(crate) fn search_panel(
                         )
                         .clicked()
                     {
-                        submit = Some((state.displayed.clone(), page.offset + page.rows.len()));
+                        submit = Some((
+                            state.displayed_mode,
+                            state.displayed.clone(),
+                            page.offset + page.rows.len(),
+                        ));
                     }
                 });
                 egui::ScrollArea::vertical()
@@ -198,7 +248,7 @@ pub(crate) fn search_panel(
                                 .add_enabled(!state.busy, egui::Button::new(&row.label))
                                 .clicked()
                             {
-                                submit = Some((row.query.clone(), 0));
+                                submit = Some((state.displayed_mode, row.query.clone(), 0));
                             }
                             ui.add(
                                 egui::Label::new(egui::RichText::new(&row.text).monospace())
@@ -210,8 +260,8 @@ pub(crate) fn search_panel(
                     });
             }
         });
-    if let Some((query, offset)) = submit {
-        state.submit(query, offset);
+    if let Some((mode, query, offset)) = submit {
+        state.submit(mode, query, offset);
     }
 }
 
@@ -219,8 +269,35 @@ pub(crate) fn search_panel(
 mod tests {
     use super::*;
     #[test]
+    fn worker_dispatches_selected_mode_and_keeps_errors_explicit() {
+        let mut state = SearchState::new(
+            vec![
+                ("Lexical".into(), Arc::new(|_, _| Err("baseline".into()))),
+                (
+                    "LAYA".into(),
+                    Arc::new(|_, _| Err("model unavailable".into())),
+                ),
+            ],
+            None,
+        );
+        state.submit(1, "query".into(), 0);
+        state.mode = 0;
+        let result = state
+            .results
+            .lock()
+            .unwrap()
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap();
+        assert!(matches!(result, Err(error) if error == "model unavailable"));
+        assert_eq!(state.submitted_mode, 1);
+    }
+
+    #[test]
     fn search_scene_stays_pinned_while_live_updates_arrive() {
-        let mut state = SearchState::new(Arc::new(|_, _| Err("unused".into())), None);
+        let mut state = SearchState::new(
+            vec![("Test".into(), Arc::new(|_, _| Err("unused".into())))],
+            None,
+        );
         let scene = |id| {
             hyper_viz::Hypergraph::new()
                 .with_id(id)
@@ -245,7 +322,7 @@ mod tests {
                 .project(hyper_viz::Projection::Bipartite)
         };
         let mut state = SearchState::new(
-            Arc::new(|_, _| Err("unused".into())),
+            vec![("Test".into(), Arc::new(|_, _| Err("unused".into())))],
             Some(scene("snapshot")),
         );
         assert!(state.scene_update(None).is_none());
