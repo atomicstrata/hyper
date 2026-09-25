@@ -348,7 +348,7 @@ fn draw_localize_window(
                 let edit = ui.add(
                     egui::TextEdit::singleline(&mut localize.query)
                         .id(edit_id)
-                        .hint_text("Find")
+                        .hint_text("Find in visible graph")
                         .desired_width(LOCALIZE_BAR_WIDTH - 88.0),
                 );
                 localize.input_focused = edit.has_focus();
@@ -633,7 +633,7 @@ fn draw_labels(
     };
 
     let painter = ctx.layer_painter(egui::LayerId::new(
-        egui::Order::Foreground,
+        egui::Order::Background,
         egui::Id::new("graph_labels"),
     ));
 
@@ -719,7 +719,7 @@ fn draw_hyperedge_labels(
     };
 
     let painter = ctx.layer_painter(egui::LayerId::new(
-        egui::Order::Foreground,
+        egui::Order::Background,
         egui::Id::new("hyperedge_labels"),
     ));
 
