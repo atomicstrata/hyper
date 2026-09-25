@@ -184,7 +184,7 @@ impl Plugin for HyperVisualizerPlugin {
                     last_mtime: None,
                 });
             }
-            app.add_systems(Update, graph::poll_graph_watch);
+            app.add_systems(PreUpdate, graph::poll_graph_watch);
         }
 
         if let Some(rx) = self
@@ -194,7 +194,7 @@ impl Plugin for HyperVisualizerPlugin {
             .take()
         {
             app.insert_resource(graph::LiveSceneReceiver(std::sync::Mutex::new(rx)));
-            app.add_systems(Update, graph::poll_live_scene);
+            app.add_systems(PreUpdate, graph::poll_live_scene);
         }
 
         if let Some(flag) = self.shutdown.clone() {
