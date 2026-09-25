@@ -45,7 +45,9 @@ mod interaction;
 mod node_visual;
 mod pick;
 mod render;
+mod search;
 mod session;
+pub use search::{SearchPage, SearchProvider, SearchRow};
 mod ui;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -111,6 +113,7 @@ pub struct HyperVisualizerPlugin {
     watch: bool,
     live_rx: Arc<std::sync::Mutex<Option<Receiver<HypergraphScene>>>>,
     shutdown: Option<Arc<AtomicBool>>,
+    search: Option<Vec<(String, SearchProvider)>>,
 }
 
 impl HyperVisualizerPlugin {
@@ -122,6 +125,7 @@ impl HyperVisualizerPlugin {
             watch: false,
             live_rx: Arc::new(std::sync::Mutex::new(None)),
             shutdown: None,
+            search: None,
         }
     }
 
@@ -138,6 +142,7 @@ impl HyperVisualizerPlugin {
             watch,
             live_rx: Arc::new(std::sync::Mutex::new(None)),
             shutdown: None,
+            search: None,
         }
     }
 
@@ -149,6 +154,11 @@ impl HyperVisualizerPlugin {
     /// Push replacement scenes from any host thread (`try_recv` each frame).
     pub fn with_live(self, rx: Receiver<HypergraphScene>) -> Self {
         *self.live_rx.lock().expect("live scene receiver lock") = Some(rx);
+        self
+    }
+
+    fn with_search(mut self, provider: Vec<(String, SearchProvider)>) -> Self {
+        self.search = Some(provider);
         self
     }
 
@@ -184,7 +194,7 @@ impl Plugin for HyperVisualizerPlugin {
                     last_mtime: None,
                 });
             }
-            app.add_systems(Update, graph::poll_graph_watch);
+            app.add_systems(PreUpdate, graph::poll_graph_watch);
         }
 
         if let Some(rx) = self
@@ -194,7 +204,15 @@ impl Plugin for HyperVisualizerPlugin {
             .take()
         {
             app.insert_resource(graph::LiveSceneReceiver(std::sync::Mutex::new(rx)));
-            app.add_systems(Update, graph::poll_live_scene);
+            app.add_systems(PreUpdate, graph::poll_live_scene);
+        }
+
+        if let Some(provider) = &self.search {
+            app.insert_resource(search::SearchState::new(
+                provider.clone(),
+                self.scene.clone(),
+            ));
+            app.add_systems(bevy_egui::EguiPrimaryContextPass, search::search_panel);
         }
 
         if let Some(flag) = self.shutdown.clone() {
@@ -239,6 +257,32 @@ pub fn run_visualizer_from_path_with(
         false,
     )
     .run();
+}
+
+/// Native viewer with optional host-backed search outside the rendered scene.
+pub fn run_visualizer_live_with_search(
+    initial: HypergraphScene,
+    rx: Receiver<HypergraphScene>,
+    shutdown: Option<Arc<AtomicBool>>,
+    provider: SearchProvider,
+) {
+    run_visualizer_live_with_search_modes(initial, rx, shutdown, vec![("Search".into(), provider)]);
+}
+
+/// Native viewer with selectable host retrieval modes, executed off the render thread.
+pub fn run_visualizer_live_with_search_modes(
+    initial: HypergraphScene,
+    rx: Receiver<HypergraphScene>,
+    shutdown: Option<Arc<AtomicBool>>,
+    providers: Vec<(String, SearchProvider)>,
+) {
+    let mut plugin = HyperVisualizerPlugin::from_scene(initial)
+        .with_live(rx)
+        .with_search(providers);
+    if let Some(flag) = shutdown {
+        plugin = plugin.with_shutdown(flag);
+    }
+    visualizer_app_with(plugin, VisualizerConfig::default(), true).run();
 }
 
 /// Run the viewer with in-process scene updates (any host can push scenes).

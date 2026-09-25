@@ -39,10 +39,18 @@ impl Plugin for RenderPlugin {
         app.init_resource::<NodeRenderSettings>()
             .init_resource::<crate::animation::StatusBursts>()
             .add_systems(Startup, setup_assets)
+            // Apply the scene replacement and remap entities before any consumer
+            // reads node indices, including the egui label pass later this frame.
+            .add_systems(
+                PreUpdate,
+                sync_graph_nodes
+                    .after(crate::graph::poll_live_scene)
+                    .after(crate::graph::poll_graph_watch)
+                    .run_if(resource_exists::<GraphLayout>),
+            )
             .add_systems(
                 Update,
                 (
-                    sync_graph_nodes.run_if(resource_exists::<GraphLayout>),
                     update_node_positions.run_if(resource_exists::<GraphLayout>),
                     draw_links.run_if(resource_exists::<GraphLayout>),
                     highlight_selected,
@@ -378,10 +386,7 @@ mod tests {
                 node_mesh: default(),
                 node_mesh_lod: default(),
             })
-            .add_systems(
-                Update,
-                (poll_live_scene, sync_graph_nodes).chain_ignore_deferred(),
-            );
+            .add_systems(PreUpdate, (poll_live_scene, sync_graph_nodes).chain());
         app.update();
 
         for names in [
@@ -391,7 +396,6 @@ mod tests {
             vec!["Dave"],
         ] {
             tx.send(scene(&names)).unwrap();
-            app.update();
             app.update();
             let world = app.world_mut();
             let mut query = world.query::<(&SceneNodeKey, &SceneNodeEntity, &Transform)>();

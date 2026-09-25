@@ -246,6 +246,7 @@ pub fn poll_live_scene(
     receiver: Option<Res<LiveSceneReceiver>>,
     layout: Option<Res<GraphLayout>>,
     epoch: Res<GraphSceneEpoch>,
+    search: Option<ResMut<crate::search::SearchState>>,
 ) {
     let Some(receiver) = receiver else {
         return;
@@ -259,6 +260,9 @@ pub fn poll_live_scene(
         }
     }
 
+    if let Some(mut search) = search {
+        latest = search.scene_update(latest);
+    }
     let Some(scene) = latest else {
         return;
     };
