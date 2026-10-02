@@ -146,11 +146,20 @@ impl Plugin for InteractionPlugin {
                 Update,
                 (
                     remap_selection_on_reload,
-                    keyboard_controls.run_if(resource_exists::<GraphLayout>),
-                    pointer_hover.run_if(resource_exists::<GraphLayout>),
-                    click_selection.run_if(resource_exists::<GraphLayout>),
-                    lasso_interaction.run_if(resource_exists::<GraphLayout>),
-                    disable_orbit_on_lasso,
+                    keyboard_controls
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
+                    pointer_hover
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
+                    click_selection
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
+                    lasso_interaction
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
+                    disable_orbit_on_lasso
+                        .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
                     apply_selection_state.run_if(resource_exists::<GraphLayout>),
                 ),
             );

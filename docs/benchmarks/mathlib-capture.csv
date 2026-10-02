@@ -1,0 +1,4 @@
+# mathlib-d13f23b723b8a846827a245b89c10fc7d3f11612
+# mode=capture (not a realtime benchmark), layout_running=false, vertices=9384, scene_nodes=9384, hyperedges=44906, all_import_lines=true, resolution=1920x1080, warmup=120, frames=720, output_fps=30, wall_seconds=170.290
+# layout_step_ms_p50=11.045, layout_step_ms_p95=11.460
+frame,hulls,frame_ms

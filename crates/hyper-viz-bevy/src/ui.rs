@@ -19,7 +19,7 @@ use crate::node_visual::{
     VERTEX_LABEL_BASE_PT, label_font_size, label_visible_for, projected_radius_px, truncate_label,
     visual_spec_for,
 };
-use crate::render::{Hovered, SceneNodeEntity, Selected};
+use crate::render::{Hovered, LinkRenderSettings, SceneNodeEntity, Selected};
 
 const LOCALIZE_APPLY: usize = 32;
 const LOCALIZE_EDIT_ID: &str = "localize_query";
@@ -33,7 +33,9 @@ impl Plugin for UiPlugin {
             .add_plugins(FrameTimeDiagnosticsPlugin::default())
             .add_systems(
                 EguiPrimaryContextPass,
-                ui_panels.run_if(resource_exists::<GraphLayout>),
+                ui_panels
+                    .run_if(resource_exists::<GraphLayout>)
+                    .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
             );
     }
 }
@@ -47,7 +49,7 @@ fn ui_panels(
     mut frame_count: Local<u32>,
     mut lasso: ResMut<LassoState>,
     mut sel_state: ResMut<SelectionState>,
-    mut render_settings: ResMut<NodeRenderSettings>,
+    render_options: (ResMut<NodeRenderSettings>, ResMut<LinkRenderSettings>),
     mut hull_settings: ResMut<HyperedgeHullSettings>,
     mut attention: ResMut<AttentionMode>,
     mut focus: ResMut<FocusScope>,
@@ -62,6 +64,7 @@ fn ui_panels(
     )>,
     camera_q: Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
 ) {
+    let (mut render_settings, mut lines) = render_options;
     *frame_count += 1;
     if *frame_count < 3 {
         return;
@@ -160,6 +163,16 @@ fn ui_panels(
                             ui.label(format!("Hover: {}", pointer_label(&layout, *pointer)));
                             ui.label(format!("Scene nodes: {}", layout.node_count));
                             ui.label(format!("Links: {}", layout.link_count));
+                            ui.horizontal(|ui| {
+                                ui.label("Line budget (0 = all)");
+                                ui.add(egui::DragValue::new(&mut lines.max_lines).speed(100));
+                            });
+                            if lines.max_lines != 0 {
+                                ui.label(format!(
+                                    "Draws at most {} visible lines",
+                                    lines.max_lines
+                                ));
+                            }
                             ui.label(format!("Iterations: {}", layout.iterations()));
                             ui.label(format!("FPS: {:.0}", fps));
                             ui.checkbox(&mut attention.on, "Attention (A)");

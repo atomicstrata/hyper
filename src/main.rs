@@ -22,6 +22,34 @@ struct Args {
     /// Projection: bipartite (default), clique, star.
     #[arg(short, long, default_value = "bipartite")]
     projection: String,
+
+    /// Run a finite, deterministic camera tour with all import lines enabled.
+    #[arg(long, conflicts_with = "watch")]
+    tour: bool,
+
+    /// Save a numbered PNG sequence to a NEW directory (requires --tour).
+    #[arg(long, requires = "tour")]
+    capture: Option<std::path::PathBuf>,
+
+    /// Number of tour frames. At 30 fps, 900 frames makes a 30-second video.
+    #[arg(long, default_value_t = 900, value_parser = clap::value_parser!(u32).range(1..))]
+    frames: u32,
+
+    /// Playback fps for the captured sequence; does not claim real-time speed.
+    #[arg(long, default_value_t = 30, value_parser = clap::value_parser!(u32).range(1..))]
+    fps: u32,
+
+    /// Deterministic force-layout steps before the tour.
+    #[arg(long, default_value_t = 120)]
+    warmup: u32,
+
+    /// Frame timings and capture metadata CSV.
+    #[arg(long, default_value = "target/mathlib/benchmark.csv")]
+    report: std::path::PathBuf,
+
+    /// Benchmark a moving force layout (one step/frame), rather than frozen geometry.
+    #[arg(long, requires = "tour", conflicts_with = "capture")]
+    live_layout: bool,
 }
 
 fn main() {
@@ -41,6 +69,26 @@ fn main() {
         );
         Projection::Bipartite
     });
+
+    if args.tour {
+        let graph = args
+            .file
+            .as_deref()
+            .map(|p| load_json(p).expect("load hypergraph JSON"))
+            .unwrap_or_else(sample_coauthorship);
+        hyper_viz_bevy::showcase::run_showcase(
+            project(&graph, projection),
+            hyper_viz_bevy::showcase::ShowcaseConfig {
+                frames: args.frames,
+                fps: args.fps,
+                warmup: args.warmup,
+                capture: args.capture,
+                report: args.report,
+                live_layout: args.live_layout,
+            },
+        );
+        return;
+    }
 
     match (args.file.as_deref(), args.watch) {
         (None, _) => {
