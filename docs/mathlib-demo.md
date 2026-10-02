@@ -61,10 +61,17 @@ HYPER_VIZ_SESSION=off target/release/hyper target/mathlib/graph.json \
 mkdir -p docs/media
 swift scripts/encode_video.swift target/mathlib/frames docs/media/mathlib.mp4 30
 
+# Looping README GIF, preserving the full 24-second tour at 640×360 / 10 fps.
+swift scripts/encode_gif.swift docs/media/mathlib.mp4 docs/media/mathlib.gif 640 10
+
 # Alternative with FFmpeg on any platform:
 ffmpeg -framerate 30 -i target/mathlib/frames/%06d.png \
   -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart docs/media/mathlib.mp4
 ```
+
+The README uses the looping GIF as its inline preview and links it to the 1080p
+MP4. The GIF encoder also uses only macOS system frameworks; its output path must
+not already exist.
 
 The tour uses star-centroid projection: all 9,384 real/stub vertices are rendered,
 without adding invisible bipartite hubs. The same dataset in bipartite projection

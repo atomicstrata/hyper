@@ -5,9 +5,9 @@ scene IR, force-directed 3D layout, and an optional native Bevy viewer.
 
 It is domain-agnostic — vertices and hyperedges only.
 
-[![Mathlib source dependency atlas: 9,384 nodes, 37,356 imports, and 7,550 dependency groups](docs/media/mathlib.png)](docs/media/mathlib.mp4)
+[![Animated Mathlib source dependency atlas: 9,384 nodes, 37,356 imports, and 7,550 dependency groups](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
 
-**[Watch the Mathlib demo](docs/media/mathlib.mp4)** — the complete source-file
+**[Watch the full-resolution Mathlib demo](docs/media/mathlib.mp4)** — the complete source-file
 import graph of mathlib v4.34.1, rendered at 1080p. Includes 9,112 source files
 and 272 external-module placeholders. The video uses a settled layout;
 [reproduction instructions and live benchmarks](docs/mathlib-demo.md) explain

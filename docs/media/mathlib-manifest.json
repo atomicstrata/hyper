@@ -39,5 +39,16 @@
     "file": "mathlib.mp4",
     "bytes": 18121555,
     "sha256": "ef981246eb79921dda0670c1fd677769e5a17d37e536d966ab92f5a42d0c7d0b"
+  },
+  "gif": {
+    "file": "mathlib.gif",
+    "width": 640,
+    "height": 360,
+    "frames": 240,
+    "fps": 10,
+    "duration_seconds": 24,
+    "loop": "infinite",
+    "bytes": 8952104,
+    "sha256": "60782dd65e21973aad851d26b0ed5a06f14092926c5d3792e40a3dc8e5198e2e"
   }
 }
