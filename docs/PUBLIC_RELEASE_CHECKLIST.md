@@ -25,8 +25,8 @@ publish crates.
 
 ## Verification
 
-- [ ] CI green on the release-prep PR (or gaps explicitly noted)
-- [ ] `cargo test -p hyper-viz` and `cargo test -p hyper-viz-bevy --lib` pass
+- [x] CI green on the release-prep PR
+- [x] `cargo test -p hyper-viz` and `cargo test -p hyper-viz-bevy --lib` pass
 - [ ] Human decision: make repo public / keep private / extract further
 
 ## Explicit non-actions (this ticket)
