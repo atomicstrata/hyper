@@ -362,21 +362,20 @@ fn pointer_hover(
                 let a = Vec3::from_array(cache.positions[tri[0] as usize]);
                 let b = Vec3::from_array(cache.positions[tri[1] as usize]);
                 let c = Vec3::from_array(cache.positions[tri[2] as usize]);
-                if let Some(t) = ray_hits_triangle(ray, a, b, c) {
-                    if best_t.is_none_or(|cur| t < cur) {
-                        best_t = Some(t);
-                    }
+                if let Some(t) = ray_hits_triangle(ray, a, b, c)
+                    && best_t.is_none_or(|cur| t < cur)
+                {
+                    best_t = Some(t);
                 }
             }
-            if let Some(t) = best_t {
-                if layout
+            if let Some(t) = best_t
+                && layout
                     .scene
                     .hyperedges
                     .get(entity.hyperedge_index)
                     .is_some_and(|he| focus.contains(he.hub_index))
-                {
-                    hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
-                }
+            {
+                hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
             }
         }
     }
@@ -425,10 +424,10 @@ fn pointer_hover(
                         keep.insert(entity);
                     }
                 }
-                if !hide_hubs {
-                    if let Some(entity) = entity_by_index.get(he.hub_index).copied().flatten() {
-                        keep.insert(entity);
-                    }
+                if !hide_hubs
+                    && let Some(entity) = entity_by_index.get(he.hub_index).copied().flatten()
+                {
+                    keep.insert(entity);
                 }
             }
         }
@@ -649,10 +648,10 @@ fn lasso_interaction(
             {
                 continue;
             }
-            if let Ok(screen) = camera.world_to_viewport(cam_transform, transform.translation) {
-                if crate::pick::point_in_polygon(screen, &lasso.points) {
-                    selected.push(node.index);
-                }
+            if let Ok(screen) = camera.world_to_viewport(cam_transform, transform.translation)
+                && crate::pick::point_in_polygon(screen, &lasso.points)
+            {
+                selected.push(node.index);
             }
         }
 

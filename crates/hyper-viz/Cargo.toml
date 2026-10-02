@@ -9,6 +9,7 @@ rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true
 readme = "README.md"
+publish = false
 keywords = ["hypergraph", "visualization", "graph", "layout", "force-directed"]
 categories = ["visualization", "science", "data-structures"]
 

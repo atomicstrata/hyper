@@ -12,7 +12,7 @@ use tracing_subscriber::EnvFilter;
     after_help = "Omit FILE to open the built-in coauthorship demo."
 )]
 struct Args {
-    /// Path to hypergraph JSON (`hypergraph.v1` or `am-hg-graph.v*`).
+    /// Path to hypergraph JSON (`hypergraph.v1`; legacy host exports also accepted).
     file: Option<String>,
 
     /// Reload when the file changes.

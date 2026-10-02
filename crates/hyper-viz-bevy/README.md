@@ -1,7 +1,7 @@
 # hyper-viz-bevy
 
 Native 3D interactive hypergraph viewer (Bevy 0.18 + egui). Depends on
-`hyper-viz` only.
+`hyper-viz` only — no memory-engine coupling.
 
 Optional: other Rust projects that only need schema / layout should depend on
 `hyper-viz` and skip this crate.
@@ -10,8 +10,11 @@ Optional: other Rust projects that only need schema / layout should depend on
 hyper-viz-bevy = { git = "https://github.com/atomicstrata/hyper.git" }
 ```
 
-Workspace overview, JSON schema, and interaction notes live in the
-[root README](../../README.md).
+Workspace overview and run guide:
+
+- [root README](../../README.md)
+- [docs/VIEWER.md](../../docs/VIEWER.md)
+- [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
 
 ## Run
 

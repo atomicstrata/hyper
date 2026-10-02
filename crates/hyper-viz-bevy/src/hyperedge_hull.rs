@@ -209,12 +209,11 @@ fn sync_hyperedge_hulls(
                         }
                     }
                 }
-                if let Some(current) = materials.get(&mat_handle) {
-                    if current.base_color != fill {
-                        if let Some(mat) = materials.get_mut(&mat_handle) {
-                            mat.base_color = fill;
-                        }
-                    }
+                if let Some(current) = materials.get(&mat_handle)
+                    && current.base_color != fill
+                    && let Some(mat) = materials.get_mut(&mat_handle)
+                {
+                    mat.base_color = fill;
                 }
                 continue;
             }

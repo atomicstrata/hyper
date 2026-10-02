@@ -3,7 +3,8 @@
 Domain-agnostic hypergraph visualization **library**: schema, scene IR, projections,
 Barnes-Hut layout, convex hulls, and visual semantics. **No Bevy.**
 
-This is the crate other Rust projects should depend on.
+This is the crate other Rust projects should depend on. It does **not** include
+Atomic Memory Core or claim pipelines — only vertices, hyperedges, and viz IR.
 
 ```toml
 hyper-viz = { git = "https://github.com/atomicstrata/hyper.git" }
@@ -11,8 +12,11 @@ hyper-viz = { git = "https://github.com/atomicstrata/hyper.git" }
 hyper-viz = { path = "../hyper/crates/hyper-viz" }
 ```
 
-Workspace overview, JSON schema, and embedding examples live in the
-[root README](../../README.md).
+Workspace overview, architecture boundary, and embedding examples:
+
+- [root README](../../README.md)
+- [docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
+- [docs/API.md](../../docs/API.md)
 
 ## Quick start
 
@@ -42,7 +46,7 @@ cargo run -p hyper-viz --example project_scene
 | Module | What it does |
 |---|---|
 | `schema` | `Hypergraph`, `Vertex`, `Hyperedge` (`hypergraph.v1`) |
-| `io` | JSON load/save; `am-hg-graph.v*` adapter |
+| `io` | JSON load/save (`hypergraph.v1`); quarantined legacy host-export import |
 | `project` | `Bipartite`, `CliqueExpansion`, `StarCentroid` → `HypergraphScene` |
 | `layout` | Headless 3D force layout (`ForceLayout3D`) |
 | `hull` | Convex hull from member positions (arity ≥ 3) |

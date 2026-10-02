@@ -191,7 +191,7 @@ mod tests {
             height: 900,
         });
         session.views.insert(
-            "atomicstrata".into(),
+            "demo-graph".into(),
             ViewerView {
                 camera: Some(CameraPrefs {
                     focus: [1.0, 2.0, 3.0],
@@ -200,7 +200,7 @@ mod tests {
                     pitch: -0.4,
                     position: Some([8.0, 4.0, 12.0]),
                 }),
-                selected_node_ids: vec!["repo:mind".into()],
+                selected_node_ids: vec!["repo:widgets".into()],
                 selected_hyperedge_ids: vec!["he:watch".into()],
                 find_query: "watch".into(),
                 find_isolated: true,

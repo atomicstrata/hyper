@@ -1,0 +1,8 @@
+hyper
+Copyright 2026 Bregy Malpartida / AtomicStrata
+
+This product includes software developed for the hypergraph visualization
+libraries (`hyper-viz`, `hyper-viz-bevy`) and the `hyper` CLI.
+
+Licensed under the Apache License, Version 2.0 and the MIT license; see
+LICENSE, LICENSE-APACHE, and LICENSE-MIT.
