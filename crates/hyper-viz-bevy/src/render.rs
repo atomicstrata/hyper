@@ -26,6 +26,32 @@ pub struct Hovered;
 #[derive(Component)]
 pub struct Selected;
 
+/// Maximum visible lines per frame. Zero draws every line.
+#[derive(Resource, Clone)]
+pub struct LinkRenderSettings {
+    pub max_lines: usize,
+    pub opacity: f32,
+}
+
+impl Default for LinkRenderSettings {
+    fn default() -> Self {
+        Self {
+            max_lines: 5000,
+            opacity: 1.0,
+        }
+    }
+}
+
+impl LinkRenderSettings {
+    pub fn budget(&self) -> usize {
+        if self.max_lines == 0 {
+            usize::MAX
+        } else {
+            self.max_lines
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct GraphAssets {
     pub node_mesh: Handle<Mesh>,
@@ -37,6 +63,7 @@ pub struct RenderPlugin;
 impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NodeRenderSettings>()
+            .init_resource::<LinkRenderSettings>()
             .init_resource::<crate::animation::StatusBursts>()
             .add_systems(Startup, setup_assets)
             // Apply the scene replacement and remap entities before any consumer
@@ -175,6 +202,7 @@ fn update_node_positions(
 #[allow(clippy::too_many_arguments)]
 fn draw_links(
     layout: Res<GraphLayout>,
+    line_settings: Res<LinkRenderSettings>,
     hull_settings: Option<Res<HyperedgeHullSettings>>,
     pointer: Option<Res<PointerTarget>>,
     sel_state: Option<Res<SelectionState>>,
@@ -184,10 +212,6 @@ fn draw_links(
     time: Res<Time>,
     mut gizmos: Gizmos,
 ) {
-    if layout.link_count > 5000 {
-        return;
-    }
-
     let elapsed = time.elapsed_secs();
     let hide_hubs = hull_settings.as_ref().is_some_and(|s| s.hide_hubs);
     let hovered_he = pointer.and_then(|p| match *p {
@@ -202,6 +226,7 @@ fn draw_links(
     let in_scope = |index: usize| focus.as_ref().is_none_or(|scope| scope.contains(index));
 
     if hide_hubs {
+        let mut drawn = 0;
         for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
             if he.member_indices.len() != 2 {
                 continue;
@@ -215,6 +240,10 @@ fn draw_links(
             if !in_scope(he.member_indices[0]) || !in_scope(he.member_indices[1]) {
                 continue;
             }
+            if drawn >= line_settings.budget() {
+                break;
+            }
+            drawn += 1;
             let mut style = link_style_for(Some(&he.id), Some(&he.status));
             apply_link_emphasis(
                 &mut style,
@@ -225,6 +254,7 @@ fn draw_links(
             );
             apply_link_status_motion(&mut style, Some(&he.status), Some(&he.id), elapsed, &bursts);
             style.color = apply_attention_rgba(style.color, &he.status, attention_on);
+            style.color.a *= line_settings.opacity;
             gizmos.line(
                 p1,
                 p2,
@@ -234,7 +264,16 @@ fn draw_links(
         return;
     }
 
-    for &(src, tgt) in layout.edges() {
+    let he_indices: HashMap<&str, usize> = layout
+        .scene
+        .hyperedges
+        .iter()
+        .enumerate()
+        .map(|(i, he)| (he.id.as_str(), i))
+        .collect();
+    let mut drawn = 0;
+    for link in &layout.scene.links {
+        let (src, tgt) = (link.source, link.target);
         let (Some(p1), Some(p2)) = (layout.position_at(src), layout.position_at(tgt)) else {
             continue;
         };
@@ -242,20 +281,16 @@ fn draw_links(
             continue;
         }
 
-        let link = layout
-            .scene
-            .links
-            .iter()
-            .find(|l| l.source == src && l.target == tgt);
-        let he_idx = link.and_then(|l| {
-            l.hyperedge_id
-                .as_ref()
-                .and_then(|id| layout.scene.hyperedges.iter().position(|he| he.id == *id))
-        });
-        let mut style = link_style_for(
-            link.and_then(|l| l.hyperedge_id.as_deref()),
-            link.and_then(|l| l.status.as_deref()),
-        );
+        if drawn >= line_settings.budget() {
+            break;
+        }
+        drawn += 1;
+        let he_idx = link
+            .hyperedge_id
+            .as_deref()
+            .and_then(|id| he_indices.get(id))
+            .copied();
+        let mut style = link_style_for(link.hyperedge_id.as_deref(), link.status.as_deref());
         apply_link_emphasis(
             &mut style,
             Emphasis::from_flags(
@@ -265,14 +300,15 @@ fn draw_links(
         );
         apply_link_status_motion(
             &mut style,
-            link.and_then(|l| l.status.as_deref()),
-            link.and_then(|l| l.hyperedge_id.as_deref()),
+            link.status.as_deref(),
+            link.hyperedge_id.as_deref(),
             elapsed,
             &bursts,
         );
-        if let Some(status) = link.and_then(|l| l.status.as_deref()) {
+        if let Some(status) = link.status.as_deref() {
             style.color = apply_attention_rgba(style.color, status, attention_on);
         }
+        style.color.a *= line_settings.opacity;
         let color = Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a);
         gizmos.line(p1, p2, color);
     }

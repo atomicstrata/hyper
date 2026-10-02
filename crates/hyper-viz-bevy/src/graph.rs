@@ -37,10 +37,6 @@ impl GraphLayout {
             .get(index)
             .map(|p| Vec3::new(p.x, p.y, p.z))
     }
-
-    pub fn edges(&self) -> &[(usize, usize)] {
-        &self.layout.edges
-    }
 }
 
 #[derive(Resource, Clone)]

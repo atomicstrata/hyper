@@ -46,7 +46,10 @@ mod render;
 mod search;
 mod session;
 pub use search::{SearchPage, SearchProvider, SearchRow};
+pub mod showcase;
 mod ui;
+
+pub use render::LinkRenderSettings;
 
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::TerminalCtrlCHandlerPlugin;

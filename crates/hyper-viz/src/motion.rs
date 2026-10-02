@@ -84,7 +84,7 @@ pub fn apply_motion_rgba(
         (base.r + motion.glow).min(1.0),
         (base.g + motion.glow).min(1.0),
         (base.b + motion.glow).min(1.0),
-        (base.a * motion.opacity).clamp(0.02, 1.0),
+        (base.a * motion.opacity).clamp(0.0, 1.0),
     )
 }
 
@@ -138,6 +138,14 @@ pub fn scene_status_snapshot(scene: &HypergraphScene) -> HashMap<String, String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resting_motion_preserves_low_opacity_for_dense_hulls() {
+        for alpha in [0.0, 0.001, 0.01] {
+            let base = crate::semantics::Rgba::new(0.5, 0.6, 0.7, alpha);
+            assert_eq!(apply_motion_rgba(base, StatusMotion::default()).a, alpha);
+        }
+    }
 
     #[test]
     fn omitted_status_does_not_loop() {

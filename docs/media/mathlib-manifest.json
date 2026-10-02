@@ -1,0 +1,43 @@
+{
+  "dataset": {
+    "repository": "https://github.com/leanprover-community/mathlib4",
+    "release": "v4.34.1",
+    "commit": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+    "source_sha256": "dde69137f0279fdb1ec0b40e16dd5252c0a13aa8550c9508e71ea811565347f3",
+    "source_files": 9112,
+    "external_modules": 272,
+    "imports": 37356,
+    "dependency_groups": 7550,
+    "max_group_arity": 8532,
+    "semantics": "Undirected import pairs; one source + direct imports set per file with >=2 imports. Direction is retained in attrs. External dependencies are stubs."
+  },
+  "nodes": 9384,
+  "hypergraph_edges_including_pairs": 44906,
+  "memberships": 118066,
+  "render": {
+    "projection": "star",
+    "width": 1920,
+    "height": 1080,
+    "frames": 720,
+    "fps": 30,
+    "warmup_steps": 120,
+    "layout_frozen": true,
+    "max_lines": 0,
+    "line_opacity": 0.1,
+    "hull_opacity": 0.001,
+    "max_hull_vertices": 24
+  },
+  "hardware": {
+    "chip": "Apple M5 Pro",
+    "memory_gb": 24
+  },
+  "benchmark_files": [
+    "../benchmarks/mathlib-frozen.csv",
+    "../benchmarks/mathlib-live.csv"
+  ],
+  "video": {
+    "file": "mathlib.mp4",
+    "bytes": 18121555,
+    "sha256": "ef981246eb79921dda0670c1fd677769e5a17d37e536d966ab92f5a42d0c7d0b"
+  }
+}
