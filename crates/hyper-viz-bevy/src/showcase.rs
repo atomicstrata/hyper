@@ -351,7 +351,7 @@ fn capture(
             tour.pending = false;
             tour.frame += 1;
             tour.settle = 0;
-            if tour.frame % 30 == 0 {
+            if tour.frame.is_multiple_of(30) {
                 tracing::info!(frame = tour.frame, "captured");
             }
         },

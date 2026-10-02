@@ -108,6 +108,11 @@ Apple M5 Pro, 24 GB RAM; release build, Metal, 1920×1080, star-centroid
 projection, 300 measured frames per run. These are single-run desktop
 measurements, not hardware-independent guarantees.
 
+These recordings were made with the demo changes on base commit `9ebe6d6`,
+before integrating the newer `main` changes for the PR. They have not been
+remeasured after that integration; the commands above let you measure the
+current checkout.
+
 | Layout | Drawing | Median frame | p95 frame | 1000 / median ms |
 |---|---|---:|---:|---:|
 | Frozen | Nodes + all imports | 28.99 ms | 33.78 ms | 34.50 FPS |
