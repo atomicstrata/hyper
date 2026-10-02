@@ -1,13 +1,35 @@
 # hyper
 
-General-purpose **hypergraph visualization** for Rust. Domain-agnostic: vertices
-and hyperedges only — no memory-engine, conversation, or fact types.
+**hyper** is a general-purpose **hypergraph visualization** stack for Rust:
+scene IR, force-directed 3D layout, and an optional native Bevy viewer.
 
-**Other Rust projects should depend on `hyper-viz`** (headless) and, optionally,
-`hyper-viz-bevy` (native 3D window). The root `hyper` package is the CLI.
+It is domain-agnostic — vertices and hyperedges only.
 
-Any app that already has a hypergraph can feed this crate. AtomicMemory
-`am-hg-graph.v1` / `v2` exports still load via an input adapter.
+## What this is
+
+- A reusable library (`hyper-viz`) any app can feed with a hypergraph
+- Optional native 3D window (`hyper-viz-bevy`)
+- A small CLI (`hyper`) for demos and JSON file viewing
+- Interchange format: **`hypergraph.v1`** JSON
+
+## What this is not
+
+- **Not** Atomic Memory Core or any proprietary memory engine
+- **Not** a claim / conversation / fact pipeline
+- **Not** a packaged browser/WASM product (session JSON is portable; no web serve here)
+- **Not** published to crates.io until an explicit public-release decision
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the hard boundary.
+
+## Docs for external readers
+
+| Doc | Contents |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package boundary, host coupling policy |
+| [docs/API.md](docs/API.md) | Library API overview |
+| [docs/VIEWER.md](docs/VIEWER.md) | How to run the viewer + example scene |
+| [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) | Maintainer release-decision checklist |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup and PR norms |
 
 ## Use as a library
 
@@ -45,14 +67,17 @@ let mut layout = ForceLayout3D::from_scene(&scene, LayoutConfig::default());
 layout.step();
 ```
 
-Load JSON (`hypergraph.v1` or `am-hg-graph.v*`):
+Load JSON (`hypergraph.v1`):
 
 ```rust
 use hyper_viz::{from_json_str, load_json};
 
-let graph = load_json("graph.json")?;
+let graph = load_json("fixtures/sample.json")?;
 let graph = from_json_str(r#"{"version":"hypergraph.v1","vertices":[],"hyperedges":[]}"#)?;
 ```
+
+A quarantined one-way importer can still load a legacy host export prefix; it is
+**not** part of the public domain model (see architecture docs).
 
 ### Native viewer
 
@@ -83,7 +108,7 @@ App::new()
 Pass `Some(shutdown_flag)` to `run_visualizer_live` so a host thread can exit
 the Bevy app.
 
-## Architecture
+## Crate map
 
 ```text
 Hypergraph JSON  (or builder API)
@@ -105,7 +130,7 @@ Hypergraph JSON  (or builder API)
 # Built-in coauthorship demo
 cargo run
 
-# Any hypergraph.v1 JSON
+# Example scene
 cargo run -- fixtures/sample.json
 
 # Hot-reload while you edit the file
@@ -119,7 +144,7 @@ cargo run -p hyper-viz --example project_scene
 ```
 
 First Bevy compile is slow (~40s cold). Subsequent runs are fast. Native window
-only — this is not a web app.
+only — this is not a web app. More detail: [docs/VIEWER.md](docs/VIEWER.md).
 
 ## JSON schema (`hypergraph.v1`)
 
@@ -246,13 +271,20 @@ Override the file with `HYPER_VIZ_SESSION=/path/to/session.json`. Set
 camera / selection / isolate are keyed by graph id. Layout positions are not
 stored.
 
+## License
+
+Dual-licensed under **MIT OR Apache-2.0**. See [LICENSE](LICENSE),
+[LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT), and
+[NOTICE](NOTICE).
+
 ## Directory layout
 
 ```text
 crates/hyper-viz/          # library other projects depend on
-crates/hyper-viz-bevy/    # optional Bevy renderer
-fixtures/sample.json      # coauthorship demo
-src/main.rs               # CLI
+crates/hyper-viz-bevy/     # optional Bevy renderer
+docs/                      # architecture, API, viewer, release checklist
+fixtures/sample.json       # coauthorship demo
+src/main.rs                # CLI
 ```
 
 ## Non-goals
@@ -260,3 +292,4 @@ src/main.rs               # CLI
 - PAOH timeline view
 - WASM / browser serve (session JSON is ready for `localStorage`)
 - Euler-style set diagrams (convex-hull member shells only)
+- Bundling any proprietary memory engine

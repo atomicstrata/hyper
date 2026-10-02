@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  test:
+    name: test / clippy / fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps (Bevy / winit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libudev-dev pkg-config \
+            libwayland-dev libxkbcommon-dev \
+            libx11-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev libxkbcommon-x11-dev
+
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt --all -- --check
+
+      - name: test hyper-viz
+        run: cargo test -p hyper-viz
+
+      - name: test hyper-viz-bevy (lib)
+        run: cargo test -p hyper-viz-bevy --lib
+
+      - name: clippy
+        run: cargo clippy -p hyper-viz -p hyper-viz-bevy --all-targets -- -D warnings
+
+      - name: headless example
+        run: cargo run -p hyper-viz --example project_scene

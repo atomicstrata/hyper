@@ -2,7 +2,8 @@
 //!
 //! Consumes a [`Hypergraph`] (vertices + hyperedges) and produces a render-agnostic
 //! [`HypergraphScene`] plus a headless 3D force layout. No application-specific
-//! types (facts, conversations, memory engines) leak into this crate.
+//! types (facts, conversations, memory engines, or claim pipelines) leak into
+//! this crate — hosts own those concerns.
 //!
 //! This is the crate other Rust projects should depend on. The native Bevy window
 //! lives in `hyper-viz-bevy` and is optional.

@@ -1,9 +1,14 @@
+//! JSON load/save for the public `hypergraph.v1` interchange format.
+//!
+//! A quarantined one-way importer for a legacy host export prefix lives in
+//! [`legacy_export`] and is not part of the public domain model.
+
+mod legacy_export;
+
 use std::path::Path;
 
-use serde::Deserialize;
-
 use crate::error::VizError;
-use crate::schema::{GRAPH_VERSION, GraphMeta, Hyperedge, Hypergraph, Vertex};
+use crate::schema::{GRAPH_VERSION, Hypergraph};
 
 pub fn load_json(path: impl AsRef<Path>) -> Result<Hypergraph, VizError> {
     let path = path.as_ref();
@@ -30,9 +35,8 @@ pub fn from_json_str(raw: &str) -> Result<Hypergraph, VizError> {
         .and_then(|v| v.as_str())
         .unwrap_or(GRAPH_VERSION);
 
-    if version.starts_with("am-hg-graph.") {
-        let am: AmGraphExport = serde_json::from_value(value)?;
-        return Ok(am.into_hypergraph());
+    if legacy_export::is_legacy_export_version(version) {
+        return Ok(legacy_export::from_legacy_export_value(value)?);
     }
 
     if version != GRAPH_VERSION && !version.is_empty() {
@@ -41,84 +45,6 @@ pub fn from_json_str(raw: &str) -> Result<Hypergraph, VizError> {
 
     let graph: Hypergraph = serde_json::from_value(value)?;
     Ok(graph)
-}
-
-/// AtomicMemory `am-hg-graph.v*` snapshot — accepted as an input adapter only.
-#[derive(Debug, Deserialize)]
-struct AmGraphExport {
-    conversation_id: String,
-    vertices: Vec<AmVertex>,
-    hyperedges: Vec<AmHyperedge>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AmVertex {
-    id: String,
-    #[serde(default)]
-    kind: String,
-    #[serde(default)]
-    label: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct AmHyperedge {
-    id: String,
-    #[serde(default)]
-    subject: String,
-    #[serde(default)]
-    relation: String,
-    #[serde(default)]
-    value: String,
-    #[serde(default)]
-    status: String,
-    vertices: Vec<String>,
-}
-
-impl AmGraphExport {
-    fn into_hypergraph(self) -> Hypergraph {
-        let title = self.conversation_id.clone();
-        Hypergraph {
-            version: GRAPH_VERSION.to_string(),
-            meta: GraphMeta {
-                id: self.conversation_id,
-                title,
-                attrs: serde_json::Map::new(),
-            },
-            vertices: self
-                .vertices
-                .into_iter()
-                .map(|v| Vertex {
-                    id: v.id,
-                    label: v.label,
-                    kind: v.kind,
-                    status: String::new(),
-                    weight: None,
-                    attrs: serde_json::Map::new(),
-                })
-                .collect(),
-            hyperedges: self
-                .hyperedges
-                .into_iter()
-                .map(|e| {
-                    let label = [e.subject.as_str(), e.relation.as_str(), e.value.as_str()]
-                        .iter()
-                        .filter(|s| !s.is_empty())
-                        .copied()
-                        .collect::<Vec<_>>()
-                        .join(" ");
-                    Hyperedge {
-                        id: e.id,
-                        vertices: e.vertices,
-                        label,
-                        kind: String::new(),
-                        status: e.status,
-                        weight: None,
-                        attrs: serde_json::Map::new(),
-                    }
-                })
-                .collect(),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -153,7 +79,8 @@ mod tests {
     }
 
     #[test]
-    fn loads_am_hg_export() {
+    fn loads_quarantined_legacy_host_export() {
+        // Synthetic fixture: proves the one-way importer only keeps viz fields.
         let raw = r#"{
             "version": "am-hg-graph.v2",
             "conversation_id": "conv-1",
@@ -180,5 +107,6 @@ mod tests {
         assert_eq!(graph.vertices[0].label, "Alice");
         assert_eq!(graph.hyperedges[0].label, "Alice likes Rust");
         assert_eq!(graph.hyperedges[0].status, "active");
+        assert_eq!(graph.version, GRAPH_VERSION);
     }
 }

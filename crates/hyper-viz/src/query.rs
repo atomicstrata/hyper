@@ -316,40 +316,43 @@ mod tests {
 
     fn sample_scene() -> HypergraphScene {
         let mut graph = Hypergraph::new();
+        // Domain-agnostic fixture ids (scheme prefixes exercise find ranking).
         graph.add_vertex(Vertex::new("folder:/ws", "ws").with_kind("folder"));
-        graph.add_vertex(Vertex::new("repo:atomicstrata/mind", "mind").with_kind("repo"));
-        graph.add_vertex(Vertex::new("wt:/ws/mind", "mind (feat/watch)").with_kind("worktree"));
+        graph.add_vertex(Vertex::new("repo:acme/widgets", "widgets").with_kind("repo"));
         graph.add_vertex(
-            Vertex::new("pr:atomicstrata/mind#12", "#12 Watch")
+            Vertex::new("wt:/ws/widgets", "widgets (feat/watch)").with_kind("worktree"),
+        );
+        graph.add_vertex(
+            Vertex::new("pr:acme/widgets#12", "#12 Watch")
                 .with_kind("pr")
                 .with_status("attention"),
         );
         graph.add_vertex(
-            Vertex::new("issue:atomicstrata/mind#3", "#3 Bug")
+            Vertex::new("issue:acme/widgets#3", "#3 Bug")
                 .with_kind("issue")
                 .with_status("shadowed"),
         );
         graph.add_hyperedge(
             Hyperedge::new(
-                "repo-mem:repo:atomicstrata/mind",
-                ["repo:atomicstrata/mind", "wt:/ws/mind"],
+                "repo-mem:repo:acme/widgets",
+                ["repo:acme/widgets", "wt:/ws/widgets"],
             )
-            .with_label("mind repo")
+            .with_label("widgets repo")
             .with_kind("repo-membership"),
         );
         graph.add_hyperedge(
             Hyperedge::new(
-                "github-backlog:repo:atomicstrata/mind",
-                ["repo:atomicstrata/mind", "issue:atomicstrata/mind#3"],
+                "github-backlog:repo:acme/widgets",
+                ["repo:acme/widgets", "issue:acme/widgets#3"],
             )
-            .with_label("mind GitHub")
+            .with_label("widgets GitHub")
             .with_kind("github-backlog")
             .with_status("shadowed"),
         );
         graph.add_hyperedge(
             Hyperedge::new(
-                "pr-cluster:pr:atomicstrata/mind#12",
-                ["pr:atomicstrata/mind#12", "wt:/ws/mind"],
+                "pr-cluster:pr:acme/widgets#12",
+                ["pr:acme/widgets#12", "wt:/ws/widgets"],
             )
             .with_label("#12 cluster")
             .with_kind("pr-cluster")
@@ -384,22 +387,22 @@ mod tests {
         let scene = sample_scene();
         let hits = scene_hits(&scene, "#3");
         let ids = node_ids(&scene, &hits);
-        assert_eq!(ids.first().copied(), Some("issue:atomicstrata/mind#3"));
+        assert_eq!(ids.first().copied(), Some("issue:acme/widgets#3"));
     }
 
     #[test]
-    fn mind_repo_ranks_membership_and_repo_above_issue() {
+    fn widgets_repo_ranks_membership_and_repo_above_issue() {
         let scene = sample_scene();
-        let hits = scene_hits(&scene, "mind repo");
+        let hits = scene_hits(&scene, "widgets repo");
         let he = he_ids(&scene, &hits);
-        assert_eq!(he.first().copied(), Some("repo-mem:repo:atomicstrata/mind"));
+        assert_eq!(he.first().copied(), Some("repo-mem:repo:acme/widgets"));
 
         let ids = node_ids(&scene, &hits);
-        let repo = ids.iter().position(|id| *id == "repo:atomicstrata/mind");
-        let issue = ids.iter().position(|id| *id == "issue:atomicstrata/mind#3");
+        let repo = ids.iter().position(|id| *id == "repo:acme/widgets");
+        let issue = ids.iter().position(|id| *id == "issue:acme/widgets#3");
         assert!(repo.is_some(), "repo vertex should hit");
         if let (Some(repo), Some(issue)) = (repo, issue) {
-            assert!(repo < issue, "repo should outrank issue for 'mind repo'");
+            assert!(repo < issue, "repo should outrank issue for 'widgets repo'");
         }
     }
 
@@ -408,12 +411,12 @@ mod tests {
         let scene = sample_scene();
         let exact = scene_hits(&scene, "feat/watch");
         assert!(
-            node_ids(&scene, &exact).contains(&"wt:/ws/mind"),
+            node_ids(&scene, &exact).contains(&"wt:/ws/widgets"),
             "feat/watch should hit the worktree"
         );
         let prefix = scene_hits(&scene, "wat");
         assert!(
-            node_ids(&scene, &prefix).contains(&"wt:/ws/mind"),
+            node_ids(&scene, &prefix).contains(&"wt:/ws/widgets"),
             "prefix wat should expand to watch"
         );
     }
@@ -424,19 +427,19 @@ mod tests {
         let hits = scene_hits(&scene, "feath/watch");
         let ids = node_ids(&scene, &hits);
         assert!(
-            ids.contains(&"wt:/ws/mind"),
+            ids.contains(&"wt:/ws/widgets"),
             "Jaro–Winkler should align feath → feat; got {ids:?}"
         );
-        assert_eq!(ids.first().copied(), Some("wt:/ws/mind"));
+        assert_eq!(ids.first().copied(), Some("wt:/ws/widgets"));
     }
 
     #[test]
     fn common_token_ranks_denser_label_higher() {
         let scene = sample_scene();
-        let hits = scene_hits(&scene, "mind");
+        let hits = scene_hits(&scene, "widgets");
         let ids = node_ids(&scene, &hits);
-        let repo = ids.iter().position(|id| *id == "repo:atomicstrata/mind");
-        let issue = ids.iter().position(|id| *id == "issue:atomicstrata/mind#3");
+        let repo = ids.iter().position(|id| *id == "repo:acme/widgets");
+        let issue = ids.iter().position(|id| *id == "issue:acme/widgets#3");
         assert!(repo.is_some() && issue.is_some());
         assert!(
             repo.unwrap() < issue.unwrap(),
@@ -447,8 +450,8 @@ mod tests {
     #[test]
     fn tokenize_splits_scheme_ids() {
         assert_eq!(
-            tokenize("pr:atomicstrata/mind#12"),
-            vec!["pr", "atomicstrata", "mind", "12"]
+            tokenize("pr:acme/widgets#12"),
+            vec!["pr", "acme", "widgets", "12"]
         );
         assert_eq!(tokenize("feat/watch"), vec!["feat", "watch"]);
         assert_eq!(tokenize("#3"), vec!["3"]);

@@ -113,15 +113,15 @@ mod tests {
 
     fn sample_scene() -> hyper_viz::HypergraphScene {
         let mut graph = Hypergraph::new();
-        graph.add_vertex(Vertex::new("repo:atomicstrata/mind", "mind").with_kind("repo"));
-        graph.add_vertex(Vertex::new("wt:/tmp/mind", "main").with_kind("worktree"));
-        graph.add_vertex(Vertex::new("issue:atomicstrata/mind#3", "#3").with_kind("issue"));
+        graph.add_vertex(Vertex::new("repo:acme/widgets", "widgets").with_kind("repo"));
+        graph.add_vertex(Vertex::new("wt:/tmp/widgets", "main").with_kind("worktree"));
+        graph.add_vertex(Vertex::new("issue:acme/widgets#3", "#3").with_kind("issue"));
         graph.add_hyperedge(
             Hyperedge::new(
-                "repo-mem:repo:atomicstrata/mind",
-                ["repo:atomicstrata/mind", "wt:/tmp/mind"],
+                "repo-mem:repo:acme/widgets",
+                ["repo:acme/widgets", "wt:/tmp/widgets"],
             )
-            .with_label("mind repo")
+            .with_label("widgets repo")
             .with_kind("repo-membership"),
         );
         graph.project(Projection::Bipartite)
@@ -129,11 +129,8 @@ mod tests {
 
     #[test]
     fn node_location_strips_scheme() {
-        assert_eq!(node_location("wt:/tmp/mind"), "/tmp/mind");
-        assert_eq!(
-            node_location("pr:atomicstrata/mind#3"),
-            "atomicstrata/mind#3"
-        );
+        assert_eq!(node_location("wt:/tmp/widgets"), "/tmp/widgets");
+        assert_eq!(node_location("pr:acme/widgets#3"), "acme/widgets#3");
         assert_eq!(node_location("plain"), "plain");
     }
 
@@ -148,17 +145,14 @@ mod tests {
         let members = scene.hyperedges[he_index].member_indices.clone();
         let report = inspect_selection(&scene, &members, &[he_index]);
         assert_eq!(report.hyperedges.len(), 1);
-        assert_eq!(report.hyperedges[0].title, "mind repo");
+        assert_eq!(report.hyperedges[0].title, "widgets repo");
         assert_eq!(report.hyperedges[0].members.len(), 2);
         assert!(
             report.vertices.is_empty(),
             "members already listed under the hyperedge"
         );
-        assert_eq!(
-            report.hyperedges[0].members[0].location,
-            "atomicstrata/mind"
-        );
-        assert_eq!(report.hyperedges[0].members[1].location, "/tmp/mind");
+        assert_eq!(report.hyperedges[0].members[0].location, "acme/widgets");
+        assert_eq!(report.hyperedges[0].members[1].location, "/tmp/widgets");
     }
 
     #[test]
@@ -173,6 +167,6 @@ mod tests {
         let report = inspect_selection(&scene, &[issue], &[]);
         assert!(report.hyperedges.is_empty());
         assert_eq!(report.vertices.len(), 1);
-        assert_eq!(report.vertices[0].location, "atomicstrata/mind#3");
+        assert_eq!(report.vertices[0].location, "acme/widgets#3");
     }
 }

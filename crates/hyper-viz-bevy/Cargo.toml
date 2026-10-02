@@ -9,6 +9,7 @@ rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true
 readme = "README.md"
+publish = false
 keywords = ["hypergraph", "visualization", "bevy", "3d", "egui"]
 categories = ["visualization", "game-development"]
 

@@ -26,13 +26,11 @@
 //! use hyper_viz::{Hypergraph, Projection};
 //! use hyper_viz_bevy::HyperVisualizerPlugin;
 //!
-//! fn main() {
-//!     let scene = Hypergraph::new().project(Projection::Bipartite);
-//!     App::new()
-//!         .add_plugins(DefaultPlugins)
-//!         .add_plugins(HyperVisualizerPlugin::from_scene(scene))
-//!         .run();
-//! }
+//! let scene = Hypergraph::new().project(Projection::Bipartite);
+//! App::new()
+//!     .add_plugins(DefaultPlugins)
+//!     .add_plugins(HyperVisualizerPlugin::from_scene(scene))
+//!     .run();
 //! ```
 
 mod animation;

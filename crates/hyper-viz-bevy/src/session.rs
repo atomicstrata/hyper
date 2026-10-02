@@ -120,7 +120,8 @@ pub fn saved_window_size() -> Option<(u32, u32)> {
 #[allow(clippy::too_many_arguments)]
 fn apply_saved_session(
     mut apply: ResMut<SessionApply>,
-    mut store: ResMut<SessionStore>,
+    // Mutated on wasm when hydrating an empty in-memory session from localStorage.
+    #[cfg_attr(not(target_arch = "wasm32"), allow(unused_mut))] mut store: ResMut<SessionStore>,
     mut settings: ResMut<LayoutSettings>,
     mut labels: ResMut<NodeRenderSettings>,
     mut hulls: ResMut<HyperedgeHullSettings>,
