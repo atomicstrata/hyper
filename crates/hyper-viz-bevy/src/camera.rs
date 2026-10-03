@@ -25,9 +25,13 @@ impl Plugin for CameraPlugin {
             .add_systems(
                 Update,
                 (
-                    release_text_focus_for_orbit,
-                    auto_fit_camera.run_if(resource_exists::<GraphLayout>),
-                    apply_frame_request.run_if(resource_exists::<GraphLayout>),
+                    release_text_focus_for_orbit.run_if(crate::explorer_state::spatial_mode),
+                    auto_fit_camera
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
+                    apply_frame_request
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
                 ),
             );
     }

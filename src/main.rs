@@ -1,7 +1,7 @@
 use clap::Parser;
 use hyper_viz::{InputFormat, Projection, load_json_with_format, project, sample_coauthorship};
 use hyper_viz_bevy::{
-    VisualizerConfig, run_from_graph, run_visualizer, run_visualizer_from_path_with_format,
+    ViewMode, VisualizerConfig, run_visualizer_from_path_with_format, run_visualizer_with,
 };
 use tracing_subscriber::EnvFilter;
 
@@ -27,6 +27,14 @@ struct Args {
     /// Projection: bipartite (default), clique, star.
     #[arg(short, long, default_value = "bipartite")]
     projection: String,
+
+    /// View mode: auto selects Dependencies for graphs with validated imports.
+    #[arg(long, default_value="auto", value_parser=["auto","spatial","dependencies"])]
+    view: String,
+
+    /// Exact initial module ID for the dependency explorer.
+    #[arg(long)]
+    module: Option<String>,
 
     /// Run a finite, deterministic camera tour with all import lines enabled.
     #[arg(long, conflicts_with = "watch")]
@@ -96,28 +104,18 @@ fn main() {
         return;
     }
 
-    match (args.file.as_deref(), args.watch) {
-        (None, _) => {
-            let scene = project(&sample_coauthorship(), projection);
-            run_visualizer(scene);
-        }
-        (Some(path), true) => {
-            run_visualizer_from_path_with_format(
-                path.to_string(),
-                true,
-                projection,
-                VisualizerConfig::default(),
-                format,
-            );
-        }
-        (Some(path), false) => {
-            let graph = load_json_with_format(path, format).expect("load hypergraph JSON");
-            if projection == Projection::Bipartite {
-                run_from_graph(graph);
-            } else {
-                let scene = project(&graph, projection);
-                run_visualizer(scene);
-            }
-        }
+    let mode = match args.view.as_str() {
+        "spatial" => ViewMode::Spatial,
+        "dependencies" => ViewMode::Dependencies,
+        _ => ViewMode::Auto,
+    };
+    let mut config = VisualizerConfig::default().with_view_mode(mode);
+    if let Some(id) = args.module {
+        config = config.with_module(id);
+    }
+    if let Some(path) = args.file {
+        run_visualizer_from_path_with_format(path, args.watch, projection, config, format);
+    } else {
+        run_visualizer_with(project(&sample_coauthorship(), projection), config);
     }
 }

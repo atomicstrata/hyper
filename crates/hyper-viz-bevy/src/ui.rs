@@ -35,6 +35,7 @@ impl Plugin for UiPlugin {
                 EguiPrimaryContextPass,
                 ui_panels
                     .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode)
                     .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
             );
     }
@@ -45,12 +46,15 @@ fn ui_panels(
     mut contexts: EguiContexts,
     mut layout: ResMut<GraphLayout>,
     mut settings: ResMut<LayoutSettings>,
-    diagnostics: Res<DiagnosticsStore>,
+    diagnostics: (
+        Res<DiagnosticsStore>,
+        Res<crate::spatial_visibility::LineCache>,
+    ),
     mut frame_count: Local<u32>,
     mut lasso: ResMut<LassoState>,
     mut sel_state: ResMut<SelectionState>,
     render_options: (ResMut<NodeRenderSettings>, ResMut<LinkRenderSettings>),
-    mut hull_settings: ResMut<HyperedgeHullSettings>,
+    mut hull_resource: ResMut<HyperedgeHullSettings>,
     mut attention: ResMut<AttentionMode>,
     mut focus: ResMut<FocusScope>,
     mut frame: ResMut<FrameRequest>,
@@ -65,6 +69,8 @@ fn ui_panels(
     camera_q: Query<(&Camera, &GlobalTransform, &PanOrbitCamera), With<Camera3d>>,
 ) {
     let (mut render_settings, mut lines) = render_options;
+    let (diagnostics, line_cache) = diagnostics;
+    let mut hull_settings = hull_resource.clone();
     *frame_count += 1;
     if *frame_count < 3 {
         return;
@@ -104,6 +110,8 @@ fn ui_panels(
         &label_q,
         &focus,
         &attention,
+        &line_cache,
+        &hull_settings,
     );
 
     if lasso.is_drawing && lasso.points.len() > 1 {
@@ -174,6 +182,16 @@ fn ui_panels(
                                 ));
                             }
                             ui.label(format!("Iterations: {}", layout.iterations()));
+                            ui.label(format!(
+                                "Last frame: {} steps · {:.2} ms (8 ms budget)",
+                                layout.last_steps, layout.last_step_ms
+                            ));
+                            ui.label(format!("{} lines omitted by budget", line_cache.omitted));
+                            ui.add(
+                                egui::Slider::new(&mut lines.opacity, 0.0..=1.0)
+                                    .text("Line opacity")
+                                    .clamping(egui::SliderClamping::Edits),
+                            );
                             ui.label(format!("FPS: {:.0}", fps));
                             ui.checkbox(&mut attention.on, "Attention (A)");
                         });
@@ -222,35 +240,64 @@ fn ui_panels(
                             layout.iterations_per_frame = settings.iterations_per_frame;
 
                             ui.add(
-                                egui::Slider::new(&mut settings.config.dt, 0.01..=1.0).text("dt"),
+                                egui::Slider::new(&mut settings.config.dt, 0.01..=1.0)
+                                    .clamping(egui::SliderClamping::Edits)
+                                    .text("dt"),
                             );
                             layout.layout.config.dt = settings.config.dt;
 
                             ui.add(
                                 egui::Slider::new(&mut settings.config.damping, 0.5..=0.99)
+                                    .clamping(egui::SliderClamping::Edits)
                                     .text("damping"),
                             );
                             layout.layout.config.damping = settings.config.damping;
 
                             ui.add(
-                                egui::Slider::new(&mut settings.config.repulsion, 10.0..=5000.0)
+                                egui::Slider::new(&mut settings.config.repulsion, 1.0..=100000.0)
                                     .logarithmic(true)
+                                    .clamping(egui::SliderClamping::Edits)
                                     .text("repulsion"),
                             );
                             layout.layout.config.repulsion = settings.config.repulsion;
 
-                            ui.add(
-                                egui::Slider::new(&mut settings.config.attraction, 0.0001..=0.1)
+                            if !layout.layout.edges.is_empty() {
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut settings.config.attraction,
+                                        0.000001..=0.1,
+                                    )
                                     .logarithmic(true)
-                                    .text("attraction"),
-                            );
-                            layout.layout.config.attraction = settings.config.attraction;
-
-                            ui.add(
-                                egui::Slider::new(&mut settings.config.ideal_length, 5.0..=200.0)
-                                    .text("ideal_length"),
-                            );
-                            layout.layout.config.ideal_length = settings.config.ideal_length;
+                                    .clamping(egui::SliderClamping::Edits)
+                                    .text("Spring attraction"),
+                                );
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut settings.config.ideal_length,
+                                        5.0..=200.0,
+                                    )
+                                    .clamping(egui::SliderClamping::Edits)
+                                    .text("Spring length"),
+                                );
+                            }
+                            force_control(ui, "Gravity", &mut settings.config.gravity, 0.00001);
+                            if !layout.layout.centroid_groups.is_empty() {
+                                force_control(
+                                    ui,
+                                    "Centroid attraction",
+                                    &mut settings.config.centroid_attraction,
+                                    0.000001,
+                                );
+                            }
+                            layout.layout.config = settings.config.clone();
+                            if ui.button("Large graph preset").clicked() {
+                                settings.config.gravity = 0.001;
+                                settings.config.centroid_attraction = 0.0005;
+                                layout.layout.config = settings.config.clone();
+                                crate::graph::seed_subjects(&mut layout);
+                                hull_settings.enabled = false;
+                                lines.opacity = 0.15;
+                            }
                         });
 
                     egui::CollapsingHeader::new("Selection")
@@ -281,7 +328,8 @@ fn ui_panels(
                             ui.label("Sets larger than 24 members use extreme-point sampling.");
                             if hull_settings.enabled {
                                 ui.add(
-                                    egui::Slider::new(&mut hull_settings.opacity, 0.05..=0.6)
+                                    egui::Slider::new(&mut hull_settings.opacity, 0.0..=0.6)
+                                        .clamping(egui::SliderClamping::Edits)
                                         .text("opacity"),
                                 );
                                 ui.checkbox(&mut hull_settings.wireframe, "Wireframe edges");
@@ -335,6 +383,9 @@ fn ui_panels(
         &mut frame,
         &layout,
     );
+    if *hull_resource != hull_settings {
+        *hull_resource = hull_settings;
+    }
 }
 
 fn draw_localize_window(
@@ -650,6 +701,13 @@ fn draw_labels(
         egui::Id::new("graph_labels"),
     ));
 
+    let visible_count = layout
+        .scene
+        .nodes
+        .iter()
+        .enumerate()
+        .filter(|(i, n)| focus.contains(*i) && (!hide_hubs || n.role != NodeRole::HyperedgeHub))
+        .count();
     for (node, transform, selected, hovered) in label_q.iter() {
         if !focus.contains(node.index) {
             continue;
@@ -657,7 +715,7 @@ fn draw_labels(
         let scene_node = &layout.scene.nodes[node.index];
         if !label_visible_for(
             render_settings,
-            layout.node_count,
+            visible_count,
             selected.is_some() || hovered.is_some(),
             attention.on && parse_status(&scene_node.status) == EdgeStatus::Attention,
         ) {
@@ -709,6 +767,8 @@ fn draw_hyperedge_labels(
     )>,
     focus: &FocusScope,
     attention: &AttentionMode,
+    line_cache: &crate::spatial_visibility::LineCache,
+    hulls: &HyperedgeHullSettings,
 ) {
     if !render_settings.hyperedge_labels {
         return;
@@ -725,9 +785,28 @@ fn draw_hyperedge_labels(
         .collect();
     let selected: HashSet<usize> = sel_state.base_selection.iter().copied().collect();
 
+    let line_edges: HashSet<_> = line_cache
+        .segments
+        .iter()
+        .filter_map(|(line, _, _)| line.hyperedge)
+        .collect();
+    let drawable = |i: usize| {
+        focus.contains_hyperedge(&layout.scene, i)
+            && (line_edges.contains(&i)
+                || (hulls.enabled
+                    && hulls.opacity > 0.
+                    && layout.scene.hyperedges[i].member_indices.len() >= 3))
+    };
+    let visible_count = layout
+        .scene
+        .hyperedges
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| drawable(*i))
+        .count();
     let show_all = match render_settings.label_mode {
         NodeLabelMode::All => true,
-        NodeLabelMode::Capped => layout.scene.hyperedge_count() <= render_settings.max_labels,
+        NodeLabelMode::Capped => visible_count <= render_settings.max_labels,
         NodeLabelMode::SelectionOnly => false,
     };
 
@@ -737,7 +816,7 @@ fn draw_hyperedge_labels(
     ));
 
     for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
-        if !focus.contains_hyperedge(&layout.scene, he_index) {
+        if !drawable(he_index) {
             continue;
         }
         if he.member_indices.is_empty() {
@@ -818,5 +897,21 @@ fn pointer_label(layout: &GraphLayout, target: PointerTarget) -> String {
                 }
             })
             .unwrap_or_else(|| format!("hyperedge {i}")),
+    }
+}
+
+fn force_control(ui: &mut egui::Ui, label: &str, value: &mut f32, min: f32) {
+    let mut enabled = *value > 0.;
+    if ui.checkbox(&mut enabled, label).changed() {
+        *value = if enabled { min } else { 0. };
+    }
+    if enabled {
+        ui.add(
+            egui::Slider::new(value, min..=0.1)
+                .logarithmic(true)
+                .clamping(egui::SliderClamping::Edits)
+                .show_value(false),
+        );
+        ui.add(egui::DragValue::new(value).speed(min).max_decimals(6));
     }
 }

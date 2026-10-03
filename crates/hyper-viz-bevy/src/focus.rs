@@ -12,7 +12,7 @@ pub struct AttentionMode {
     pub on: bool,
 }
 
-#[derive(Resource, Debug, Clone, Default)]
+#[derive(Resource, Debug, Clone, Default, PartialEq, Eq)]
 pub struct FocusScope {
     pub nodes: Option<HashSet<usize>>,
     pub hyperedges: Option<HashSet<usize>>,

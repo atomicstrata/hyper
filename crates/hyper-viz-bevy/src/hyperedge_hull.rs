@@ -18,7 +18,7 @@ use crate::render::SceneNodeEntity;
 const TOPOLOGY_INTERVAL: u32 = 8;
 const WIREFRAME_ALL_LIMIT: usize = 64;
 
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, PartialEq)]
 pub struct HyperedgeHullSettings {
     pub enabled: bool,
     pub opacity: f32,
@@ -60,13 +60,19 @@ impl Plugin for HyperedgeHullPlugin {
         app.init_resource::<HyperedgeHullSettings>().add_systems(
             Update,
             (
-                sync_hyperedge_hulls.run_if(resource_exists::<GraphLayout>),
+                sync_hyperedge_hulls
+                    .after(crate::graph::step_layout)
+                    .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode),
                 draw_hull_wireframes
                     .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode)
                     .run_if(|settings: Res<HyperedgeHullSettings>| {
                         settings.enabled && settings.wireframe
                     }),
-                update_hub_visibility.run_if(resource_exists::<GraphLayout>),
+                update_hub_visibility
+                    .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode),
             ),
         );
     }
@@ -94,8 +100,9 @@ fn sync_hyperedge_hulls(
     focus: Res<FocusScope>,
     time: Res<Time>,
     mut frame: Local<u32>,
-    mut last_epoch: Local<u64>,
+    revisions: (Local<u64>, Local<Option<(u64, u64)>>),
 ) {
+    let (mut last_epoch, mut last_iterations) = revisions;
     if !settings.enabled {
         for (entity, _, _, _) in existing.iter() {
             commands.entity(entity).despawn();
@@ -103,10 +110,14 @@ fn sync_hyperedge_hulls(
         return;
     }
 
-    *frame = frame.wrapping_add(1);
-    let rebuild_topo = (layout.running && (*frame % TOPOLOGY_INTERVAL == 1))
-        || epoch.0 != *last_epoch
-        || settings.is_changed();
+    let revision = (layout.iterations(), layout.positions_revision);
+    let positions_changed = *last_iterations != Some(revision);
+    *last_iterations = Some(revision);
+    if positions_changed {
+        *frame = frame.wrapping_add(1);
+    }
+    let rebuild_topo =
+        (positions_changed && (*frame % TOPOLOGY_INTERVAL == 1)) || epoch.0 != *last_epoch;
     *last_epoch = epoch.0;
 
     let selected_hubs: HashSet<usize> = sel_state
@@ -136,26 +147,14 @@ fn sync_hyperedge_hulls(
     }
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
-        if !focus.contains_hyperedge(&layout.scene, he_index) {
+        if hyperedge.member_indices.len() < 3 || !focus.contains_hyperedge(&layout.scene, he_index)
+        {
             continue;
         }
         if !attention_keeps(parse_status(&hyperedge.status), attention.on) {
             continue;
         }
-        let mut all_scene_indices = Vec::new();
-        let mut all_positions = Vec::new();
-        for idx in &hyperedge.member_indices {
-            let Some(pos) = layout.position_at(*idx) else {
-                continue;
-            };
-            all_scene_indices.push(*idx);
-            all_positions.push([pos.x, pos.y, pos.z]);
-        }
-
-        // Hull the real member positions, then pad the shell a little so nested
-        // sets do not z-fight. Do not scale by full arity: 0.02 * n on a 400-member
-        // folder explodes the hull into empty space.
-        let inflate = nest_inflate(all_positions.len());
+        let inflate = nest_inflate(hyperedge.member_indices.len());
 
         let emphasis = Emphasis::from_flags(
             hovered_he == Some(he_index),
@@ -200,7 +199,7 @@ fn sync_hyperedge_hulls(
             if can_skin {
                 if let Ok(mut cache) = caches.get_mut(entity) {
                     cache.wire_color = wire;
-                    if layout.running {
+                    if positions_changed {
                         cache.positions = skin_hull_positions(&cache.member_scene_indices, &layout);
                         inflate_from_centroid(&mut cache.positions, inflate);
                         if let Some(mesh) = meshes.get_mut(&mesh_handle) {
@@ -220,6 +219,7 @@ fn sync_hyperedge_hulls(
                 continue;
             }
 
+            let (all_scene_indices, all_positions) = member_positions(hyperedge, &layout);
             let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
                 commands.entity(entity).despawn();
                 continue;
@@ -236,6 +236,7 @@ fn sync_hyperedge_hulls(
             continue;
         }
 
+        let (all_scene_indices, all_positions) = member_positions(hyperedge, &layout);
         let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
             continue;
         };
@@ -257,6 +258,16 @@ fn sync_hyperedge_hulls(
     for (entity, _, _) in live.into_values() {
         commands.entity(entity).despawn();
     }
+}
+
+fn member_positions(
+    edge: &hyper_viz::SceneHyperedge,
+    layout: &GraphLayout,
+) -> (Vec<usize>, Vec<[f32; 3]>) {
+    edge.member_indices
+        .iter()
+        .filter_map(|i| layout.position_at(*i).map(|p| (*i, p.to_array())))
+        .unzip()
 }
 
 fn skin_hull_positions(scene_indices: &[usize], layout: &GraphLayout) -> Vec<[f32; 3]> {
@@ -333,7 +344,7 @@ fn draw_hull_wireframes(
     }
 }
 
-fn update_hub_visibility(
+pub(crate) fn update_hub_visibility(
     settings: Res<HyperedgeHullSettings>,
     layout: Res<GraphLayout>,
     focus: Res<FocusScope>,
@@ -412,6 +423,76 @@ fn inflate_from_centroid(points: &mut [[f32; 3]], scale: f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn paused_hulls_and_style_edits_emit_no_mesh_changes_and_skip_dyads() {
+        use bevy::asset::{AssetApp, AssetEvent, AssetPlugin};
+        use bevy::ecs::message::MessageCursor;
+        use hyper_viz::{Hypergraph, Projection};
+        let scene = Hypergraph::new()
+            .vertex("a", "a", "v")
+            .vertex("b", "b", "v")
+            .vertex("c", "c", "v")
+            .vertex("d", "d", "v")
+            .hyperedge("set", ["a", "b", "c", "d"], "set")
+            .hyperedge("pair", ["a", "b"], "pair")
+            .project(Projection::StarCentroid);
+        let mut layout = GraphLayout::from_scene(scene, &crate::graph::LayoutSettings::default());
+        layout.running = false;
+        layout.layout.positions = vec![
+            hyper_viz::Vec3::new(0., 0., 0.),
+            hyper_viz::Vec3::new(1., 0., 0.),
+            hyper_viz::Vec3::new(0., 1., 0.),
+            hyper_viz::Vec3::new(0., 0., 1.),
+        ];
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>()
+            .insert_resource(layout)
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<SelectionState>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<FocusScope>()
+            .add_systems(Update, sync_hyperedge_hulls);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query::<&HyperedgeHullEntity>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        let mut cursor = MessageCursor::<AssetEvent<Mesh>>::default();
+        cursor
+            .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+            .for_each(|_| ());
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+        app.world_mut()
+            .resource_mut::<HyperedgeHullSettings>()
+            .opacity = 0.001;
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+    }
 
     #[test]
     fn nest_inflate_matches_small_arity_and_caps_large_sets() {

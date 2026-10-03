@@ -57,8 +57,10 @@ pub fn run_showcase(scene: HypergraphScene, config: ShowcaseConfig) {
         std::fs::create_dir_all(parent).expect("create report directory");
     }
     let mut app = crate::visualizer_app_with(
-        crate::HyperVisualizerPlugin::from_scene(scene),
-        VisualizerConfig::new("hyper · source dependency atlas").with_size(1920, 1080),
+        crate::HyperVisualizerPlugin::from_scene(scene).with_view_mode(crate::ViewMode::Spatial),
+        VisualizerConfig::new("hyper · source dependency atlas")
+            .with_size(1920, 1080)
+            .with_view_mode(crate::ViewMode::Spatial),
         true,
     );
     app.world_mut().resource_mut::<SessionStore>().enabled = false;

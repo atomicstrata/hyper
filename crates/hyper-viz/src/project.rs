@@ -30,7 +30,9 @@ impl Projection {
 
 pub fn project(graph: &Hypergraph, projection: Projection) -> HypergraphScene {
     let mut scene = project_inner(graph, projection);
-    scene.warnings.extend(crate::dependency::import_warnings(&scene));
+    scene
+        .warnings
+        .extend(crate::dependency::import_warnings(&scene));
     scene
 }
 

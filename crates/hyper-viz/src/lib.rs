@@ -28,12 +28,12 @@
 //! ```
 
 pub mod dependency;
-pub mod module;
 pub mod error;
 pub mod hif;
 pub mod hull;
 pub mod io;
 pub mod layout;
+pub mod module;
 pub mod motion;
 pub mod project;
 pub mod query;
@@ -42,19 +42,21 @@ pub mod schema;
 pub mod semantics;
 pub mod session;
 
+pub use dependency::{
+    DependencyIndex, DependencyScope, DirectedImport, ScopeOptions, TraversalDepth,
+};
 pub use error::VizError;
 pub use hif::{
     HifDocument, HifEdge, HifError, HifErrorKind, HifId, HifIncidence, HifNode, load_hif,
     parse_hif, save_hif, serialize_hif,
 };
-pub use dependency::{DependencyIndex, DependencyScope, DirectedImport, ScopeOptions, TraversalDepth};
-pub use module::{ModuleCategory, ModuleFilters, module_categories};
 pub use hull::{HullMesh, MAX_HULL_VERTICES, hull_from_points, select_hull_vertices};
 pub use io::{
     InputFormat, from_json_str, from_json_str_with_format, load_json, load_json_with_format,
     save_json,
 };
 pub use layout::{ForceLayout3D, LayoutConfig, Vec3, layout_edges_from_scene};
+pub use module::{ModuleCategory, ModuleFilters, module_categories};
 pub use motion::{
     ONE_SHOT_CAP, ONE_SHOT_SECS, StatusMotion, apply_motion_rgba, hyperedge_status_key, id_phase,
     looping_status, one_shot_ids, one_shot_motion, scene_status_snapshot, status_motion,

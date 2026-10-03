@@ -36,6 +36,7 @@ pub struct SessionStore {
     pub session: ViewerSession,
     pub last_json: String,
     pub enabled: bool,
+    pub has_saved_session: bool,
 }
 
 #[derive(Resource, Debug, Default)]
@@ -58,16 +59,15 @@ pub struct SessionPlugin;
 impl Plugin for SessionPlugin {
     fn build(&self, app: &mut App) {
         let enabled = session_enabled();
-        let session = if enabled {
-            load_session().unwrap_or_default()
-        } else {
-            ViewerSession::default()
-        };
+        let loaded = if enabled { load_session() } else { None };
+        let has_saved_session = loaded.is_some();
+        let session = loaded.unwrap_or_default();
         let last_json = session_to_json(&session).unwrap_or_default();
         app.insert_resource(SessionStore {
             session,
             last_json,
             enabled,
+            has_saved_session,
         })
         .init_resource::<SessionDirty>()
         .init_resource::<SkipAutoFit>()
@@ -141,10 +141,16 @@ fn apply_saved_session(
     if store.session.views.is_empty() {
         if let Some(loaded) = load_session() {
             store.session = loaded;
+            store.has_saved_session = true;
             if let Ok(json) = session_to_json(&store.session) {
                 store.last_json = json;
             }
         }
+    }
+    if !store.has_saved_session {
+        apply.prefs_done = true;
+        apply.view_done = true;
+        return;
     }
     if !apply.prefs_done {
         apply_prefs(&store.session.prefs, &mut settings, &mut labels, &mut hulls);
@@ -246,6 +252,12 @@ fn restore_view(
         localize.isolated = focus.is_active();
     }
 
+    focus.hyperedges = view.focus_hyperedge_ids.as_ref().map(|ids| {
+        scene_hyperedge_indices(&layout.scene, ids)
+            .into_iter()
+            .collect()
+    });
+
     if let Some(camera) = &view.camera
         && let Ok((mut transform, mut cam)) = cameras.single_mut()
     {
@@ -336,11 +348,12 @@ fn capture_session(
     focus: Res<FocusScope>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&PanOrbitCamera, &Transform)>,
+    explorer: Option<Res<crate::explorer_state::ExplorerState>>,
 ) {
     if !store.enabled || !apply.view_done {
         return;
     }
-    let next = build_session(
+    let mut next = build_session(
         &store.session,
         &settings,
         &layout,
@@ -354,6 +367,16 @@ fn capture_session(
         windows.single().ok(),
         cameras.single().ok(),
     );
+    if let Some(explorer) = explorer
+        && let Some(view) = next.views.get_mut(&view_key(&layout.scene.meta.id))
+    {
+        view.explorer = Some(hyper_viz::session::ExplorerSession {
+            mode: explorer.mode,
+            snapshot: explorer.snapshot(),
+            history: explorer.history.clone(),
+            cursor: explorer.cursor,
+        });
+    }
     let Ok(json) = session_to_json(&next) else {
         return;
     };
@@ -455,11 +478,17 @@ fn capture_view(
         .and_then(|(cam, transform)| camera_prefs_from_live(cam, transform))
         .or_else(|| previous.and_then(|view| view.camera.clone()));
     ViewerView {
+        explorer: previous.and_then(|v| v.explorer.clone()),
         camera,
         focus_node_ids: focus.nodes.as_ref().map(|nodes| {
             let mut ids: Vec<usize> = nodes.iter().copied().collect();
             ids.sort_unstable();
             scene_node_ids(&layout.scene, &ids)
+        }),
+        focus_hyperedge_ids: focus.hyperedges.as_ref().map(|edges| {
+            let mut indices: Vec<_> = edges.iter().copied().collect();
+            indices.sort();
+            scene_hyperedge_ids(&layout.scene, &indices)
         }),
         selected_node_ids: scene_node_ids(&layout.scene, &sel_state.base_selection),
         selected_hyperedge_ids: scene_hyperedge_ids(&layout.scene, &sel_state.hyperedges),
@@ -651,6 +680,43 @@ fn wasm_set(key: &str, value: &str) -> bool {
 mod tests {
     use super::*;
     use hyper_viz::{Hypergraph, Projection, project};
+
+    #[test]
+    fn no_saved_session_preserves_live_first_launch_preferences() {
+        let mut settings = LayoutSettings::default();
+        settings.config.gravity = 0.001;
+        settings.config.centroid_attraction = 0.0005;
+        let scene = hyper_viz::Hypergraph::new()
+            .vertex("a", "a", "module")
+            .project(hyper_viz::Projection::StarCentroid);
+        let layout = GraphLayout::from_scene(scene, &settings);
+        let mut app = App::new();
+        app.insert_resource(settings)
+            .insert_resource(layout)
+            .insert_resource(SessionStore {
+                enabled: true,
+                ..Default::default()
+            })
+            .init_resource::<SessionApply>()
+            .init_resource::<NodeRenderSettings>()
+            .insert_resource(HyperedgeHullSettings {
+                enabled: false,
+                ..Default::default()
+            })
+            .init_resource::<AttentionMode>()
+            .init_resource::<LassoState>()
+            .init_resource::<LocalizeQuery>()
+            .init_resource::<SelectionState>()
+            .init_resource::<FocusScope>()
+            .init_resource::<SkipAutoFit>()
+            .add_systems(Update, apply_saved_session);
+        app.update();
+        assert_eq!(
+            app.world().resource::<LayoutSettings>().config.gravity,
+            0.001
+        );
+        assert!(!app.world().resource::<HyperedgeHullSettings>().enabled);
+    }
 
     #[test]
     fn env_off_disables_persistence() {

@@ -17,6 +17,9 @@ pub struct GraphLayout {
     pub scene: HypergraphScene,
     /// Hyperedge status keyed by hub scene index (avoids O(nodes×edges) scans).
     pub hub_status: Vec<Option<String>>,
+    pub last_steps: usize,
+    pub last_step_ms: f64,
+    pub positions_revision: u64,
 }
 
 impl GraphLayout {
@@ -49,6 +52,8 @@ pub struct LayoutSettings {
     pub watch: bool,
     pub projection: Projection,
     pub input_format: InputFormat,
+    pub view_mode: hyper_viz::session::ViewMode,
+    pub initial_module: Option<String>,
 }
 
 /// Published with each replacement scene so renderers cannot consume a stale layout.
@@ -75,6 +80,8 @@ impl Default for LayoutSettings {
             watch: false,
             projection: Projection::Bipartite,
             input_format: InputFormat::Auto,
+            view_mode: hyper_viz::session::ViewMode::Auto,
+            initial_module: None,
         }
     }
 }
@@ -90,12 +97,19 @@ fn layout_from_path(
 
 impl GraphLayout {
     pub fn from_scene(scene: HypergraphScene, settings: &LayoutSettings) -> Self {
-        let layout = ForceLayout3D::from_scene(&scene, settings.config.clone());
+        let large =
+            scene.vertices_count() >= 1000 && !hyper_viz::DependencyIndex::new(&scene).is_empty();
+        let mut config = settings.config.clone();
+        if large {
+            config.gravity = 0.001;
+            config.centroid_attraction = 0.0005;
+        }
+        let layout = ForceLayout3D::from_scene(&scene, config);
         let link_count = layout.edges.len();
         let node_count = scene.node_count();
         let hub_status = hub_status_from_scene(&scene);
 
-        Self {
+        let mut result = Self {
             layout,
             node_count,
             link_count,
@@ -103,7 +117,14 @@ impl GraphLayout {
             iterations_per_frame: settings.iterations_per_frame,
             scene,
             hub_status,
+            last_steps: 0,
+            last_step_ms: 0.,
+            positions_revision: 0,
+        };
+        if large {
+            seed_subjects(&mut result);
         }
+        result
     }
 
     /// Hot-reload: keep force-layout positions for nodes that still exist (matched by stable id).
@@ -129,6 +150,9 @@ impl GraphLayout {
             running: old.running,
             iterations_per_frame: old.iterations_per_frame,
             hub_status: hub_status_from_scene(&scene),
+            last_steps: 0,
+            last_step_ms: 0.,
+            positions_revision: 0,
             scene,
         }
     }
@@ -148,7 +172,10 @@ fn hub_status_from_scene(scene: &HypergraphScene) -> Vec<Option<String>> {
 
 pub fn init_graph(
     mut commands: Commands,
-    settings: Res<LayoutSettings>,
+    mut settings: ResMut<LayoutSettings>,
+    mut hulls: Option<ResMut<crate::hyperedge_hull::HyperedgeHullSettings>>,
+    mut lines: Option<ResMut<crate::render::LinkRenderSettings>>,
+    showcase: Option<Res<crate::showcase::ShowcaseConfig>>,
     initial: Option<Res<crate::InitialScene>>,
     mut watch: Option<ResMut<GraphWatchState>>,
 ) {
@@ -181,6 +208,15 @@ pub fn init_graph(
         watch = settings.watch,
         "Hypergraph scene initialized"
     );
+    settings.config = layout.layout.config.clone();
+    if showcase.is_none() && layout.node_count >= 1000 && layout.layout.config.gravity == 0.001 {
+        if let Some(ref mut hulls) = hulls {
+            hulls.enabled = false;
+        }
+        if let Some(ref mut lines) = lines {
+            lines.opacity = 0.15;
+        }
+    }
     commands.insert_resource(layout);
 }
 
@@ -298,20 +334,39 @@ pub fn poll_live_scene(
 
 pub fn step_layout(mut layout: ResMut<GraphLayout>) {
     if !layout.running {
+        layout.last_steps = 0;
+        layout.last_step_ms = 0.;
         return;
     }
 
-    let iters = if layout.node_count >= 800 {
-        layout.iterations_per_frame.min(2)
-    } else if layout.node_count >= 400 {
-        layout.iterations_per_frame.min(3)
-    } else {
-        layout.iterations_per_frame
-    };
-
-    for _ in 0..iters {
+    let start = std::time::Instant::now();
+    let mut steps = 0;
+    for _ in 0..layout.iterations_per_frame.max(1) {
         layout.layout.step();
+        steps += 1;
+        if start.elapsed().as_secs_f64() >= 0.008 {
+            break;
+        }
     }
+    layout.last_steps = steps;
+    layout.last_step_ms = start.elapsed().as_secs_f64() * 1000.;
+}
+
+/// Stable subject clusters, shared with the interactive large-graph preset.
+pub fn seed_subjects(layout: &mut GraphLayout) {
+    let seed = |s: &str| {
+        let h = s.bytes().fold(0xcbf29ce484222325_u64, |h, b| {
+            (h ^ b as u64).wrapping_mul(0x100000001b3)
+        });
+        let c = |shift| (((h >> shift) & 0xffff_u64) as f32 / 32767.5) - 1.;
+        hyper_viz::Vec3::new(c(0), c(16), c(32))
+    };
+    for (i, node) in layout.scene.nodes.iter().enumerate() {
+        layout.layout.positions[i] = seed(&node.kind) * 650. + seed(&node.id) * 90.;
+        layout.layout.velocities[i] = hyper_viz::Vec3::default();
+    }
+    // Mark a position revision for hulls even when the simulation is paused.
+    layout.positions_revision += 1;
 }
 
 #[cfg(test)]
@@ -368,6 +423,61 @@ mod watch_tests {
             app.world().resource::<GraphLayout>().scene.vertices_count(),
             1
         );
+    }
+
+    #[test]
+    fn tour_initialization_keeps_explicit_line_opacity() {
+        let mut graph = Hypergraph::new();
+        for n in 0..1000 {
+            let id = n.to_string();
+            graph = graph.vertex(&id, &id, "module");
+        }
+        let mut edge = hyper_viz::Hyperedge::new("import", ["0", "1"]).with_kind("import");
+        edge.attrs.insert("source".into(), "0".into());
+        edge.attrs.insert("target".into(), "1".into());
+        graph.add_hyperedge(edge);
+        let mut app = App::new();
+        app.init_resource::<LayoutSettings>()
+            .insert_resource(crate::InitialScene(graph.project(Projection::StarCentroid)))
+            .insert_resource(crate::render::LinkRenderSettings {
+                max_lines: 0,
+                opacity: 0.10,
+            })
+            .insert_resource(crate::showcase::ShowcaseConfig {
+                frames: 1,
+                fps: 30,
+                warmup: 0,
+                capture: None,
+                report: Default::default(),
+                live_layout: false,
+            })
+            .add_systems(Startup, init_graph);
+        app.update();
+        assert_eq!(
+            app.world()
+                .resource::<crate::render::LinkRenderSettings>()
+                .opacity,
+            0.10
+        );
+    }
+
+    #[test]
+    fn running_layout_steps_at_least_once_and_reports_actual_work() {
+        let scene = Hypergraph::new()
+            .vertex("a", "a", "vertex")
+            .project(Projection::StarCentroid);
+        let mut layout = GraphLayout::from_scene(scene, &LayoutSettings::default());
+        layout.iterations_per_frame = 0;
+        let mut app = App::new();
+        app.insert_resource(layout).add_systems(Update, step_layout);
+        app.update();
+        let layout = app.world().resource::<GraphLayout>();
+        assert_eq!(layout.iterations(), 1);
+        assert_eq!(layout.last_steps, 1);
+        assert!(layout.last_step_ms >= 0.);
+        app.world_mut().resource_mut::<GraphLayout>().running = false;
+        app.update();
+        assert_eq!(app.world().resource::<GraphLayout>().last_steps, 0);
     }
 
     #[test]

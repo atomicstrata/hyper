@@ -20,7 +20,9 @@ impl Plugin for StatusAnimationPlugin {
         app.init_resource::<StatusBursts>().add_systems(
             Update,
             (
-                detect_status_changes.run_if(resource_exists::<GraphLayout>),
+                detect_status_changes
+                    .run_if(crate::explorer_state::spatial_mode)
+                    .run_if(resource_exists::<GraphLayout>),
                 tick_status_bursts,
             )
                 .chain(),
