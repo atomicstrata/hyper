@@ -21,29 +21,29 @@
 
 Files: new `crates/hyper-viz/src/topology.rs`; `layout.rs`, `lib.rs`.
 
-- [ ] Add failing regression tests using two internally connected blocks, one bridge, and a universal umbrella. Assert structural initialization brings within-block vertices substantially closer than across-block vertices; require all nodes retained.
-- [ ] Add tests that changing node kinds does not change initialized positions; zero-degree / disconnected / empty inputs produce finite, reproducible positions; reordered stable IDs preserve positions within numeric tolerance.
-- [ ] Pin normalized pair dynamics on a literal two-node case (repulsion/gravity zero, dt=1, damping=1), equal-and-opposite movement and bounded fan-out hub influence. Pin group influence and weight changes while retaining legacy behavior.
-- [ ] Run `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 cargo +1.96.0 test -p hyper-viz --offline` and observe RED.
-- [ ] Implement `LayoutModel`, `TopologySettings`, sparse weighted relations, normalized/LinLog attraction, and connectivity-only structural initialization. Keep the Legacy branch intact.
-- [ ] Compare actual Mathlib layouts from identical neutral seeds / structural initialization with a headless example that writes positions and numeric neighbor/separation diagnostics. Tune bounded defaults based on this evidence.
-- [ ] Run the core suite and commit the verified core deliverable.
+- [x] Add failing regression tests using two internally connected blocks, one bridge, and a universal umbrella. Assert structural initialization brings within-block vertices substantially closer than across-block vertices; require all nodes retained.
+- [x] Add tests that changing node kinds does not change initialized positions; zero-degree / disconnected / empty inputs produce finite, reproducible positions; reordered stable IDs preserve positions within numeric tolerance.
+- [x] Pin normalized pair dynamics on a literal two-node case (repulsion/gravity zero, dt=1, damping=1), equal-and-opposite movement and bounded fan-out hub influence. Pin group influence and weight changes while retaining legacy behavior.
+- [x] Run `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 cargo +1.96.0 test -p hyper-viz --offline` and observe RED.
+- [x] Implement `LayoutModel`, `TopologySettings`, sparse weighted relations, normalized/LinLog attraction, and connectivity-only structural initialization. Keep the Legacy branch intact.
+- [x] Compare actual Mathlib layouts from identical neutral seeds / structural initialization with a headless example that writes positions and numeric neighbor/separation diagnostics. Tune bounded defaults based on this evidence.
+- [x] Run the core suite and commit the verified core deliverable.
 
 ## Task 2 — Native controls, persistence, and rendering
 
 Files: native `graph.rs`, `ui.rs`, `session.rs`, `render.rs`, `hyperedge_hull.rs`; core session defaults.
 
-- [ ] Add session roundtrip and legacy-default regressions for topology parameters, and reload regression retaining positions/model.
-- [ ] Enable the validated structural model and initializer in the large star-import overview. Preserve tours and generic defaults; expose Legacy/Normalized/LinLog, pair/set attraction, hub/arity normalization, derived-set influence, and a Rebuild structural layout action.
-- [ ] Add optional hub/large-set visual fading to existing line/hull styles; selected/hovered relationships retain emphasis. Keep all geometry and scope memberships.
-- [ ] Preserve actual iteration counts when rebuilding positions, pause/frame the result, and expose initialization duration.
-- [ ] Run full Rust suites, clippy all-targets with warnings denied, fmt, and release build.
+- [x] Add session roundtrip and legacy-default regressions for topology parameters, and reload regression retaining positions/model.
+- [x] Enable the validated structural model and initializer in the large star-import overview. Preserve tours and generic defaults; expose Legacy/Normalized/LinLog, pair/set attraction, hub/arity normalization, derived-set influence, and a Rebuild structural layout action.
+- [x] Add optional hub/large-set visual fading to existing line/hull styles; selected/hovered relationships retain emphasis. Keep all geometry and scope memberships.
+- [x] Preserve actual iteration counts when rebuilding positions, pause/frame the result, and expose initialization duration.
+- [x] Run full Rust suites, clippy all-targets with warnings denied, fmt, and release build.
 
 ## Task 3 — Native evidence and PR update
 
 Files: `docs/mathlib-demo.md`, validation report, API migration notes, headless/native examples.
 
-- [ ] Inspect the full Mathlib native structural view, including all nodes/edges, useful marker size, controls, and optional explorer. Record median/p95 full-graph frame times and a screenshot.
-- [ ] Compare real neighbor-distance/separation metrics and the planted fixture; document initializer approximation, remaining occlusion, and performance limits.
+- [x] Inspect the full Mathlib native structural view, including all nodes/edges, useful marker size, controls, and optional explorer. Record median/p95 full-graph frame times and a screenshot.
+- [x] Compare real neighbor-distance/separation metrics and the planted fixture; document initializer approximation, remaining occlusion, and performance limits.
 - [ ] Have the independent reviewer examine the final diff; reproduce/fix important findings with regressions.
 - [ ] Commit, push, update PR #9 around the final Spatial implementation, and attach it. Keep the managed worktree.

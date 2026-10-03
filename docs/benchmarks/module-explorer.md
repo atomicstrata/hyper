@@ -6,7 +6,91 @@ were changed. Commands below use the installed Rust 1.96 toolchain compatible
 with the existing lockfile. The Rust 1.89 CI configuration was not exercised
 locally; CI remains responsible for that configuration.
 
-## Full Spatial follow-up
+## Structural Spatial follow-up
+
+The prior complete view still collapsed into a radial ball: pair imports and
+larger derived dependency sets shared one unnormalized centroid force, while
+subject-based seeds added apparent structure unrelated to connectivity. The
+umbrella `Mathlib` imports 8,531 modules (22.84% of import lines); its dependency
+group contains 8,532 members. Simply weakening gravity did not address this.
+
+Large star-import scenes now use Normalized attraction, independent pair/set
+weights and degree/arity normalization. Connectivity-only spectral initialization
+uses a sparse normalized incidence operator, removes component stationary modes,
+and iterates three vectors 256 times. Robust median-axis scaling, radial
+compression and neutral fine jitter address localized branch modes. Startup
+performs 64 actual bounded force steps and pauses; the UI provides Legacy,
+Normalized and LinLog models plus Rebuild. All original vertices, imports and
+sets remain. Extra hub/arity opacity fading can be disabled and is bypassed for
+hovered/selected relationships. [Controls](../mathlib-demo.md#full-spatial-overview).
+
+Verification passes **82 core + 75 native + 3 doctests = 160 Rust tests**, all
+4 exporter tests, workspace/all-target clippy with warnings denied, formatting,
+and both CLI and example release builds. Regressions observed RED before fixes
+include topology/persistence APIs, sparse-tail core compression (median radius
+25.6), displacement limiting (mutation test), and empty AABB-corner camera
+padding (501.8 instead of the intended 280–310). Planted communities with a
+universal hub separate; changing all vertex labels/kinds leaves structural
+positions identical. Reordered IDs, disconnected/isolated nodes, empty input,
+weight edits, normalized/LinLog literal pair dynamics and scene reloads are covered.
+
+### Mathlib comparison
+
+```sh
+target/release/examples/compare_layouts target/mathlib/graph.json \
+  target/structural-comparison-scaled 800
+```
+
+Each candidate uses all 9,384 vertices and 44,906 hyperedges, the same stable-ID
+neutral seeds where applicable, and 800 force steps. Configurations use repulsion
+500, legacy gravity `0.001`/centroid `0.0005`, or structural gravity `0.00001` and the
+published normalized weights. Internal-import mean distance is divided by mean
+distance for 10,000 deterministic sampled pairs of distinct `Mathlib.*` modules.
+The subject ratio compares mean distance for equal versus different node kinds
+in that sample. Lower values indicate local/group coherence, not proof of
+communities. Category metadata enters evaluation only, never the initializer.
+
+| Candidate | Internal import / sampled pair | Same / different subject |
+|---|---:|---:|
+| Legacy, neutral seeds | 0.7101 | 0.9714 |
+| Normalized, neutral seeds | 0.3301 | 0.7817 |
+| LinLog, neutral seeds | 0.4424 | 0.9212 |
+| LinLog, structural seeds | 0.2260 | 0.5714 |
+| Normalized, structural seeds | **0.2213** | **0.5598** |
+
+The Normalized structural candidate initializes in 109.4 ms and takes 10.62 s
+including 800 steps in this headless run. These 800-step metrics are distinct
+from the 64-step native startup image and depend on this graph/settings.
+
+### Native full graph
+
+```sh
+HYPER_VIZ_SESSION=off target/release/examples/module_benchmark \
+  target/mathlib/graph.json Mathlib.Init \
+  target/module-validation/structural-spatial-markers spatial
+```
+
+The final native run retains all 9,384 vertices and 44,906 hyperedges, enables all
+37,356 import lines (budget 0) and 7,550 group hulls, and pauses after 64 refinement
+steps. At 1920 × 1080 / scale 1, after 60 startup frames, 180 measured wall-frame intervals
+give **33.593 ms median, 43.380 ms p95** (about 30 FPS by the median). Rebuild took
+approximately 973 ms. The PNG was inspected: subject-colored concentrations and
+branches appear without label-based seeding; the new controls are exposed, all
+geometry is framed and the optional explorer is unused. Native validation exited
+successfully. The headless comparison had finished before this measurement.
+
+![Complete native structural Mathlib view](../media/mathlib-structural.png)
+
+Remaining limits: this is a three-coordinate approximate connectivity embedding,
+with robust scaling and compression that distort literal distances. It does not
+recover every community or encode directed dependency depth. Dense overlap remains;
+orbit/zoom and the opacity controls help inspect it. Hulls keep the existing
+24-member surface approximation. The benchmark measures paused rendering,
+not force simulation, pointer interaction or a guaranteed frame rate. Native
+Bevy logs retain the existing auxiliary-camera warning and Metal bindless warning;
+rendering and capture succeeded.
+
+## Earlier Full Spatial controls follow-up
 
 The user's clarified goal is the complete spatial graph with useful controls.
 Auto now stays Spatial for every graph; a saved dependency mode does not activate
