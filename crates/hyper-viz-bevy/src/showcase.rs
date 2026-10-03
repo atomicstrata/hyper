@@ -125,6 +125,7 @@ fn prepare(
     let mut layout_ms = Vec::new();
     // Preserve readable subject clusters while letting dependency forces settle
     // local structure. These settings are part of the reproducible tour.
+    layout.layout.config.topology.model = hyper_viz::LayoutModel::Legacy;
     layout.layout.config.gravity = 0.001;
     layout.layout.config.centroid_attraction = 0.0005;
     for step in 0..config.warmup {

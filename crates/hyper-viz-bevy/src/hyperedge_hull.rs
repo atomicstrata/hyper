@@ -163,8 +163,12 @@ fn sync_hyperedge_hulls(
                 .is_some_and(|hub| selected_hubs.contains(&hub))
                 || sel_state.hyperedges.contains(&he_index),
         );
-        let style =
-            hull_style_emphasized(&hyperedge.id, &hyperedge.status, settings.opacity, emphasis);
+        let opacity = if emphasis == Emphasis::Rest {
+            settings.opacity * layout.layout.set_opacity(hyperedge.member_indices.len())
+        } else {
+            settings.opacity
+        };
+        let style = hull_style_emphasized(&hyperedge.id, &hyperedge.status, opacity, emphasis);
         let motion = bursts.as_deref().map_or(StatusMotion::default(), |bursts| {
             motion_for(
                 &hyperedge.status,

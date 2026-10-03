@@ -238,9 +238,14 @@ fn ui_panels(
                         .show(ui, |ui| {
                             ui.checkbox(&mut layout.running, "Running (Space)");
                             ui.small("Run to apply forces. Pause to inspect stable geometry.");
-                            if layout.layout.edges.is_empty() {
-                                ui.small("Star projection: centroid attraction pulls sets together; gravity pulls toward the origin.");
-                            }
+                            egui::ComboBox::from_label("Attraction model")
+                                .selected_text(format!("{:?}", settings.config.topology.model))
+                                .show_ui(ui, |ui| {
+                                    for model in [hyper_viz::LayoutModel::Legacy, hyper_viz::LayoutModel::Normalized, hyper_viz::LayoutModel::LinLog] {
+                                        ui.selectable_value(&mut settings.config.topology.model, model, format!("{model:?}"));
+                                    }
+                                });
+                            ui.small("Normalized balances hubs and sets. Rebuild uses connectivity, then pauses.");
                             ui.add(
                                 egui::Slider::new(&mut settings.iterations_per_frame, 1..=100)
                                     .text("iters/frame"),
@@ -266,7 +271,7 @@ fn ui_panels(
                             force_control(ui, "Repulsion", &mut settings.config.repulsion, 0.01, 100000000.);
                             layout.layout.config.repulsion = settings.config.repulsion;
 
-                            if !layout.layout.edges.is_empty() {
+                            if settings.config.topology.model == hyper_viz::LayoutModel::Legacy && !layout.layout.edges.is_empty() {
                                 force_control(ui, "Spring attraction", &mut settings.config.attraction, 0.00000001, 1.);
                                 ui.add(
                                     egui::Slider::new(&mut settings.config.ideal_length, 0.01..=10000.)
@@ -276,11 +281,26 @@ fn ui_panels(
                                 );
                             }
                             force_control(ui, "Gravity", &mut settings.config.gravity, 0.00000001, 1.);
-                            if !layout.layout.centroid_groups.is_empty() {
-                                force_control(ui, "Centroid attraction", &mut settings.config.centroid_attraction, 0.00000001, 1.);
+                            if settings.config.topology.model == hyper_viz::LayoutModel::Legacy {
+                                if !layout.layout.centroid_groups.is_empty() {
+                                    force_control(ui, "Centroid attraction", &mut settings.config.centroid_attraction, 0.00000001, 1.);
+                                }
+                            } else {
+                                let topology = &mut settings.config.topology;
+                                force_control(ui, "Pair attraction", &mut topology.pair_attraction, 0.000001, 10.);
+                                force_control(ui, "Set attraction", &mut topology.set_attraction, 0.000001, 10.);
+                                ui.add(egui::Slider::new(&mut topology.hub_normalization, 0.0..=1.).text("Hub normalization"));
+                                ui.add(egui::Slider::new(&mut topology.size_normalization, 0.0..=1.).text("Large-set normalization"));
+                                ui.add(egui::Slider::new(&mut topology.derived_set_influence, 0.0..=1.).text("Derived-set influence"));
+                                if topology.model == hyper_viz::LayoutModel::LinLog {
+                                    ui.add(egui::Slider::new(&mut topology.linlog_scale, 0.01..=100000.).logarithmic(true).text("LinLog scale"));
+                                }
+                                ui.add(egui::Slider::new(&mut topology.max_displacement, 0.01..=1000.).logarithmic(true).text("Max movement / step"));
+                                ui.add(egui::Slider::new(&mut topology.hub_fading, 0.0..=1.).text("Hub line fading"));
+                                ui.add(egui::Slider::new(&mut topology.size_fading, 0.0..=1.).text("Large-set hull fading"));
+                                topology.normalize();
                             }
-                            ui.small("More repulsion / less gravity spreads the graph. Less centroid attraction reduces set collapse.");
-                            ui.add(egui::Slider::new(&mut settings.node_size, 0.05..=10.)
+                            ui.add(egui::Slider::new(&mut settings.node_size, 0.05..=100.)
                                 .logarithmic(true).text("Vertex size"));
                             layout.layout.config = settings.config.clone();
                             if ui.button("Full graph overview").clicked() {
@@ -291,8 +311,15 @@ fn ui_panels(
                                 frame.pending = true;
                             }
                             ui.small("Overview shows all lines and hulls at low opacity and pauses layout.");
-                            if ui.button("Reinitialize positions").clicked() {
-                                crate::graph::seed_subjects(&mut layout);
+                            if ui.button("Rebuild structural layout").clicked() {
+                                layout.rebuild_structural();
+                                frame.pending = true;
+                            }
+                            if layout.initialization_ms > 0. {
+                                ui.small(format!("Last rebuild: {:.0} ms (64 refinement steps)", layout.initialization_ms));
+                            }
+                            if ui.button("Reinitialize neutral positions").clicked() {
+                                crate::graph::seed_neutral(&mut layout);
                                 frame.pending = true;
                             }
                         });

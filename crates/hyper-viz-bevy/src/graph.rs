@@ -20,6 +20,7 @@ pub struct GraphLayout {
     pub last_steps: usize,
     pub last_step_ms: f64,
     pub positions_revision: u64,
+    pub initialization_ms: f64,
 }
 
 impl GraphLayout {
@@ -120,9 +121,10 @@ impl GraphLayout {
             last_steps: 0,
             last_step_ms: 0.,
             positions_revision: 0,
+            initialization_ms: 0.,
         };
         if large {
-            seed_subjects(&mut result);
+            seed_neutral(&mut result);
         }
         result
     }
@@ -134,7 +136,12 @@ impl GraphLayout {
         hulls: &mut crate::hyperedge_hull::HyperedgeHullSettings,
         lines: &mut crate::render::LinkRenderSettings,
     ) {
-        settings.config.gravity = 0.001;
+        settings.config.gravity = 0.00001;
+        settings.config.topology = hyper_viz::TopologySettings {
+            model: hyper_viz::LayoutModel::Normalized,
+            ..Default::default()
+        };
+        settings.node_size = 8.;
         settings.config.centroid_attraction = 0.0005;
         settings.config.repulsion = 500.;
         settings.config.dt = 0.3;
@@ -146,7 +153,19 @@ impl GraphLayout {
         hulls.wireframe = false;
         hulls.hide_hubs = true;
         lines.max_lines = 0;
-        lines.opacity = 0.03;
+        lines.opacity = 0.06;
+    }
+
+    /// Connectivity initialization plus bounded refinement, independent of labels.
+    pub fn rebuild_structural(&mut self) {
+        let start = std::time::Instant::now();
+        self.layout.seed_from_topology(&self.scene, 256);
+        for _ in 0..64 {
+            self.layout.step();
+        }
+        self.initialization_ms = start.elapsed().as_secs_f64() * 1000.;
+        self.positions_revision += 1;
+        self.running = false;
     }
 
     /// Hot-reload: keep force-layout positions for nodes that still exist (matched by stable id).
@@ -175,6 +194,7 @@ impl GraphLayout {
             last_steps: 0,
             last_step_ms: 0.,
             positions_revision: 0,
+            initialization_ms: old.initialization_ms,
             scene,
         }
     }
@@ -233,10 +253,12 @@ pub fn init_graph(
     settings.config = layout.layout.config.clone();
     if showcase.is_none()
         && layout.node_count >= 1000
-        && layout.layout.config.gravity == 0.001
+        && layout.scene.links.is_empty()
+        && !hyper_viz::DependencyIndex::new(&layout.scene).is_empty()
         && let (Some(hulls), Some(lines)) = (hulls.as_deref_mut(), lines.as_deref_mut())
     {
         layout.full_graph_overview(&mut settings, hulls, lines);
+        layout.rebuild_structural();
     }
     commands.insert_resource(layout);
 }
@@ -373,8 +395,8 @@ pub fn step_layout(mut layout: ResMut<GraphLayout>) {
     layout.last_step_ms = start.elapsed().as_secs_f64() * 1000.;
 }
 
-/// Stable subject clusters, shared with the interactive large-graph preset.
-pub fn seed_subjects(layout: &mut GraphLayout) {
+/// Neutral stable-ID positions for force-model comparisons.
+pub fn seed_neutral(layout: &mut GraphLayout) {
     let seed = |s: &str| {
         let h = s.bytes().fold(0xcbf29ce484222325_u64, |h, b| {
             (h ^ b as u64).wrapping_mul(0x100000001b3)
@@ -383,7 +405,7 @@ pub fn seed_subjects(layout: &mut GraphLayout) {
         hyper_viz::Vec3::new(c(0), c(16), c(32))
     };
     for (i, node) in layout.scene.nodes.iter().enumerate() {
-        layout.layout.positions[i] = seed(&node.kind) * 650. + seed(&node.id) * 90.;
+        layout.layout.positions[i] = seed(&node.id) * 500.;
         layout.layout.velocities[i] = hyper_viz::Vec3::default();
     }
     // Mark a position revision for hulls even when the simulation is paused.
@@ -480,7 +502,7 @@ mod watch_tests {
         );
         assert!(hulls.enabled, "No higher-arity hyperedges hidden");
         assert!(!hulls.wireframe);
-        assert!(hulls.opacity > 0. && hulls.opacity <= 0.001);
+        assert!(hulls.opacity > 0. && hulls.opacity <= 0.01);
         let (visible, omitted) = crate::spatial_visibility::visible_lines(
             &layout.scene,
             &crate::focus::FocusScope::default(),
@@ -490,7 +512,23 @@ mod watch_tests {
         assert_eq!(visible.len(), 999);
         assert_eq!(omitted, 0);
         assert_eq!(layout.node_count, 1000);
-        assert_eq!(layout.iterations(), 0);
+        assert_eq!(
+            layout.layout.config.topology.model,
+            hyper_viz::LayoutModel::Normalized
+        );
+        assert_eq!(
+            layout.iterations(),
+            64,
+            "Only actual refinement steps count"
+        );
+        assert!(layout.initialization_ms > 0.);
+        assert!(
+            layout
+                .layout
+                .positions
+                .iter()
+                .all(|p| p.x.is_finite() && p.y.is_finite() && p.z.is_finite())
+        );
     }
 
     #[test]
@@ -527,6 +565,38 @@ mod watch_tests {
                 .opacity,
             0.10
         );
+    }
+
+    #[test]
+    fn structural_rebuild_and_reload_preserve_complete_connectivity() {
+        let graph = Hypergraph::new()
+            .vertex("a", "a", "subject-one")
+            .vertex("b", "b", "subject-two")
+            .vertex("c", "c", "subject-three")
+            .hyperedge("e", ["a", "b", "c"], "e");
+        let mut settings = LayoutSettings::default();
+        settings.config.topology.model = hyper_viz::LayoutModel::Normalized;
+        let scene = graph.project(Projection::StarCentroid);
+        let mut layout = GraphLayout::from_scene(scene.clone(), &settings);
+        layout.rebuild_structural();
+        let positions = layout.layout.positions.clone();
+        let mut renamed = scene.clone();
+        for node in &mut renamed.nodes {
+            node.kind = "unrelated".into();
+            node.label = "renamed".into();
+        }
+        let mut other = GraphLayout::from_scene(renamed.clone(), &settings);
+        other.rebuild_structural();
+        assert_eq!(
+            other.layout.positions, positions,
+            "Subject metadata does not create structure"
+        );
+        let reloaded = GraphLayout::from_scene_preserve(&layout, renamed, &settings);
+        assert_eq!(reloaded.layout.positions, positions);
+        assert_eq!(reloaded.layout.config.topology, settings.config.topology);
+        assert_eq!(reloaded.scene.hyperedges.len(), 1);
+        assert_eq!(reloaded.node_count, 3);
+        assert!(!reloaded.running);
     }
 
     #[test]

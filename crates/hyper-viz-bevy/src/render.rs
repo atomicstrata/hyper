@@ -234,13 +234,14 @@ fn draw_links(
         let edge = line.hyperedge.and_then(|i| layout.scene.hyperedges.get(i));
         let mut style =
             link_style_for(edge.map(|e| e.id.as_str()), edge.map(|e| e.status.as_str()));
-        apply_link_emphasis(
-            &mut style,
-            Emphasis::from_flags(
-                line.hyperedge.is_some_and(|i| hovered_he == Some(i)),
-                line.hyperedge.is_some_and(|i| selected_hes.contains(&i)),
-            ),
+        let emphasis = Emphasis::from_flags(
+            line.hyperedge.is_some_and(|i| hovered_he == Some(i)),
+            line.hyperedge.is_some_and(|i| selected_hes.contains(&i)),
         );
+        apply_link_emphasis(&mut style, emphasis);
+        if emphasis == Emphasis::Rest {
+            style.color.a *= layout.layout.pair_opacity(line.source, line.target);
+        }
         apply_link_status_motion(
             &mut style,
             edge.map(|e| e.status.as_str()),

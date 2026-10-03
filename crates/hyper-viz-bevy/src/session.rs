@@ -205,6 +205,8 @@ fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
     settings.config.ideal_length = prefs.ideal_length;
     settings.config.max_tree_depth = prefs.max_tree_depth;
     settings.config.centroid_attraction = prefs.centroid_attraction;
+    settings.config.topology = prefs.topology.clone();
+    settings.config.topology.normalize();
 }
 
 fn apply_label_prefs(prefs: &LabelPrefs, labels: &mut NodeRenderSettings) {
@@ -411,6 +413,11 @@ fn build_session(
     let fallback = &previous.prefs;
     session.prefs = ViewerPrefs {
         layout: LayoutPrefs {
+            topology: {
+                let mut topology = settings.config.topology.clone();
+                topology.normalize();
+                topology
+            },
             iterations_per_frame: settings.iterations_per_frame,
             running: layout.running,
             dt: finite_or(settings.config.dt, fallback.layout.dt),
@@ -718,6 +725,24 @@ mod tests {
         assert!(!app.world().resource::<HyperedgeHullSettings>().enabled);
     }
 
+    #[test]
+    fn applying_topology_preferences_keeps_model_and_sanitizes_invalid_weights() {
+        let mut prefs = LayoutPrefs::default();
+        prefs.topology.model = hyper_viz::LayoutModel::LinLog;
+        prefs.topology.derived_set_influence = 0.037;
+        prefs.topology.max_displacement = f32::NAN;
+        let mut settings = LayoutSettings::default();
+        apply_layout_prefs(&prefs, &mut settings);
+        assert_eq!(
+            settings.config.topology.model,
+            hyper_viz::LayoutModel::LinLog
+        );
+        assert_eq!(settings.config.topology.derived_set_influence, 0.037);
+        assert_eq!(
+            settings.config.topology.max_displacement,
+            hyper_viz::TopologySettings::default().max_displacement
+        );
+    }
     #[test]
     fn env_off_disables_persistence() {
         assert!(session_env_enabled(None));

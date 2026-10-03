@@ -92,7 +92,7 @@ pub fn live_work_indices(scene: &HypergraphScene) -> Vec<usize> {
         .collect()
 }
 
-/// AABB center plus a perspective distance that keeps the box in view.
+/// AABB center plus a perspective distance that keeps all supplied points in view.
 /// Uses Bevy's default 45° vertical FOV (`tan(fov/2) ≈ 0.414`).
 pub fn camera_fit(positions: &[Vec3]) -> Option<(Vec3, f32)> {
     if positions.is_empty() {
@@ -105,8 +105,10 @@ pub fn camera_fit(positions: &[Vec3]) -> Option<(Vec3, f32)> {
         max = max.max(*p);
     }
     let center = (min + max) * 0.5;
-    let half_extents = (max - min) * 0.5;
-    let radius = half_extents.length().max(1.0);
+    let radius = positions
+        .iter()
+        .map(|p| (*p - center).length())
+        .fold(1.0_f32, f32::max);
     let tan_half_fov = 0.414_213_56; // tan(22.5°)
     let distance = (radius / tan_half_fov * 1.2).max(8.0);
     Some((center, distance))
@@ -213,6 +215,23 @@ mod tests {
         assert!((radius - 8.0).abs() < 1e-5);
     }
 
+    #[test]
+    fn camera_fit_does_not_pad_empty_corners_of_a_sparse_box() {
+        let points = [
+            Vec3::X * 100.,
+            -Vec3::X * 100.,
+            Vec3::Y * 100.,
+            -Vec3::Y * 100.,
+            Vec3::Z * 100.,
+            -Vec3::Z * 100.,
+        ];
+        let (center, distance) = camera_fit(&points).unwrap();
+        assert_eq!(center, Vec3::ZERO);
+        assert!(
+            (280.0..310.0).contains(&distance),
+            "Empty box corners inflated distance to {distance}"
+        );
+    }
     #[test]
     fn camera_fit_empty_is_none() {
         assert!(camera_fit(&[]).is_none());

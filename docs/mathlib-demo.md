@@ -161,46 +161,76 @@ HYPER_VIZ_SESSION=off target/release/hyper --projection star \
   --view spatial target/mathlib/graph.json
 ```
 
-Large import graphs start with deterministic subject positions and every import
-line and dependency-group hull enabled. Lines use 3% opacity; hull fills use
-0.1% opacity with wireframes disabled. Layout is paused so all geometry stays
-stable while orbiting and inspecting. Press Space or enable Running to apply the
-forces, then pause again to inspect. Every original vertex and hyperedge stays
-in the scene. Hulls still use the existing 24-member surface approximation;
-transparency and occlusion mean every overlapping object cannot be individually
-legible from one camera angle.
+Large star-projected import graphs start in the **Normalized** model, with
+connectivity-based positions and 64 bounded refinement steps. All 9,384 vertices,
+37,356 import lines and 7,550 dependency-group hulls remain in the scene.
+Layout is then paused for inspection. Press Space or enable Running to continue.
+Generic graphs and the scripted tour retain Legacy forces; the optional dependency
+explorer stays unused unless explicitly requested.
 
-The Layout panel opens by default for large graphs. Full graph overview clears
-focus and attention, enables all lines and hulls, applies the low-force settings,
-pauses simulation, and frames the entire graph. It preserves current positions;
-Reinitialize positions is a separate action. Existing saved preferences still
-restore when sessions are enabled.
+The initializer iterates a sparse normalized incidence operator, removes each
+component's stationary mode and uses three approximate spectral coordinates.
+It never reads subject labels or kinds. Median-based axis scaling, smooth radial
+compression and small stable-ID jitter keep localized branches from hiding the
+main structure and prevent coincident points. Disconnected components are placed
+separately. These coordinates suggest connectivity patterns; they do not establish
+mathematical topology or certify communities. The positions are reproducible for
+stable IDs, with small floating-point differences possible across platforms.
 
-| Control | Slider range | Effect |
+The Layout panel opens by default. **Full graph overview** clears focus and
+attention, restores every line/hull, applies the Normalized preset, pauses and
+frames the graph while preserving positions. **Rebuild structural layout**
+recomputes connectivity positions using the chosen weights, performs 64 actual
+refinement steps, pauses and frames the result. It reports total rebuild time.
+**Reinitialize neutral positions** resets to stable-ID positions for force-model
+comparisons. Saved preferences restore when sessions are enabled; use the command
+above for the new defaults.
+
+| Control | Range | Effect |
 |---|---|---|
-| Repulsion | 0.01–100,000,000, plus Off | Higher values spread vertices |
+| Attraction model | Legacy / Normalized / LinLog | Legacy applies the previous forces; Normalized uses linear weighted attraction; LinLog uses logarithmic distance growth |
+| Pair / set attraction | 0.000001–10, plus Off | Independent strength for arity-2 relations and larger sets |
+| Hub normalization | 0–1 | Pair weight divides by maximum endpoint degree raised to this power; set weight uses maximum member set-incidence count |
+| Large-set normalization | 0–1 | Divides set weight by (arity−1) raised to this power |
+| Derived-set influence | 0–1 | Additional multiplier for exported `dependency_group` sets; zero disables their force but retains their geometry |
+| LinLog scale | 0.01–100,000 | Distance scale for logarithmic attraction |
+| Repulsion | 0.01–100,000,000, plus Off | Spreads vertices |
 | Gravity | 0.00000001–1, plus Off | Pulls vertices toward the origin |
-| Centroid attraction | 0.00000001–1, plus Off | Pulls members toward each set's centroid |
-| Spring attraction | 0.00000001–1, plus Off | Applies only when the projection has spring links |
-| Spring length | 0.01–10,000 | Applies only when the projection has spring links |
-| Time step | 0.001–2 | Larger values move faster and can become unstable |
+| Max movement / step | 0.01–1,000 | Limits displacement in Normalized and LinLog models |
+| Hub line / large-set hull fading | 0–1 | Divides resting opacity by endpoint degree / set arity raised to this power; zero restores equal opacity |
+| Legacy centroid / spring attraction | 0.00000001–1, plus Off | Previous projection-dependent forces |
+| Legacy spring length | 0.01–10,000 | Applies when the projection has spring links |
+| Time step | 0.001–2 | Integration step |
 | Velocity retention | 0–0.9999 | Lower values damp movement more quickly |
-| Iterations/frame | 1–100 | Upper limit, with a best-effort 8 ms CPU budget |
-| Vertex size | 0.05–10 | Scales vertex markers |
-| Hull / line opacity | 0–0.6 / 0–1 | Logarithmic sliders make tiny opacity changes accessible |
+| Iterations/frame | 1–100 | Upper limit with a best-effort 8 ms CPU budget |
+| Vertex size | 0.05–100 | Scales vertex markers |
+| Hull / line opacity | 0–0.6 / 0–1 | Logarithmic sliders expose small opacity changes |
 
-Repulsion, gravity, and attraction controls use logarithmic sliders plus numeric
-entry with up to eight decimals. Numeric entry can exceed the slider's bounds.
-The star projection has no spring links: its relevant attraction control is
-Centroid attraction, not Spring attraction or Spring length. Begin with gravity
-`0.001` and centroid attraction `0.0005`; lower either to preserve more separation,
-or increase repulsion. Change one force at a time while Running. The huge umbrella
-set remains part of the force model and is not filtered out.
+The preset uses pair strength `0.1`, set strength `1`, full hub/arity normalization,
+derived-set influence `0.1`, repulsion `500`, gravity `0.00001` and vertex size `8`.
+Change weights, then Rebuild to inspect their structural effect; Running applies
+force changes to current positions. Lower repulsion or increase pair/set strength
+to tighten local groups; reduce gravity to avoid pulling all components together.
 
-Line budget 0 means every import line. Reducing the budget is optional and reports
-omissions; the overview preset always restores 0. Hull and line opacity can reach
-zero, and wireframes are optional. For a dense graph, values near `0.001` for hulls
-and `0.03` for lines are a more useful starting point than opaque overlapping fills.
+Line budget **0** submits every import line. The preset uses line opacity `0.06`
+and hull opacity `0.001`, with hub fading `0.5`, arity fading `0.3` and wireframes
+disabled. Fading does not remove relationships, and hover/selection bypasses the
+extra fading. Set both fading controls to zero for equal visual weight. The huge
+umbrella remains in both connectivity and rendering. Hull surfaces still sample
+at most 24 members; opacity and occlusion mean every overlapping object cannot
+be individually legible from one camera angle. Orbit and zoom to inspect branches.
+
+Compare models headlessly on the same Mathlib graph and stable-ID neutral seeds:
+
+```sh
+cargo run --release -p hyper-viz --example compare_layouts -- \
+  target/mathlib/graph.json target/layout-comparison 800
+```
+
+The example saves all positions and reports internal Mathlib import-distance
+and same-subject distance ratios. Subject categories are used only to evaluate
+results, never to generate structural coordinates. Ratios are diagnostic, not a
+community classification. [Native evidence and limitations](benchmarks/module-explorer.md).
 
 ## Explore imports and dependents
 
