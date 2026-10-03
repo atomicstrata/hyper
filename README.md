@@ -154,6 +154,38 @@ Notebook embedding, live Python updates, and direct scientific-library object
 adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
 for browser plans.
 
+## Full Mathlib Spatial view
+
+Generate `target/mathlib/graph.json` using the [dataset instructions](docs/mathlib-demo.md#reproduce), then launch a fresh interactive view:
+
+```sh
+cargo build --release
+HYPER_VIZ_SESSION=off target/release/hyper --projection star \
+  --view spatial target/mathlib/graph.json
+```
+
+Large star-import graphs start with **Normalized** forces and connectivity-based
+spectral positions, followed by 64 bounded refinement steps and paused simulation.
+All 9,384 Mathlib vertices, 37,356 import lines and 7,550 dependency-group hulls
+remain enabled. Subject kinds color vertices; they do not determine these positions.
+Generic graphs and the scripted video tour retain Legacy forces.
+
+The Layout panel exposes Legacy / Normalized / LinLog models, independent pair
+and set attraction, hub and large-set normalization, derived-group influence,
+movement limits, vertex size and optional line/hull fading. After changing weights,
+choose **Rebuild structural layout** to recompute positions and pause for inspection.
+Press Space to continue the forces. **Full graph overview** restores all geometry
+and frames the graph while preserving positions. The optional dependency explorer
+remains available explicitly through `--view dependencies`.
+
+See the [controls, ranges, defaults and algorithm overview](docs/mathlib-demo.md#full-spatial-overview),
+[headless API configuration](docs/API.md#hyper-viz-surface), and
+[comparisons and native measurements](docs/benchmarks/module-explorer.md#structural-spatial-follow-up).
+The structural initializer is an approximate connectivity embedding; dense overlap
+and the existing 24-member hull surface approximation remain.
+
+[View the current interactive Spatial screenshot](docs/media/mathlib-structural.png).
+
 ## Use from Rust
 
 The `hyper-viz` core handles JSON I/O, projections, and 3D force layout without
@@ -211,6 +243,11 @@ See the [viewer guide](docs/VIEWER.md) for more commands, and the
 
 ## Documentation
 
+The [Mathlib Spatial guide](docs/mathlib-demo.md#full-spatial-overview) explains
+the structural layout algorithms, controls, and tuning. The
+[validation report](docs/benchmarks/module-explorer.md#structural-spatial-follow-up)
+records native measurements, model comparisons, and limitations.
+
 | Guide | What you'll find |
 |---|---|
 | [Viewer](docs/VIEWER.md) | Setup, controls, projections, display settings, and saved sessions |
@@ -230,10 +267,3 @@ dataset, projection, and viewer settings so others can reproduce the view.
 
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
 See [NOTICE](NOTICE) for third-party notices.
-
-Mathlib stays in the spatial viewer with the complete graph. Large import graphs
-start with all lines and hulls enabled at low opacity, deterministic subject
-positions, and paused simulation. The Layout panel provides logarithmic force
-controls, precise numeric entry, vertex size, and a Full graph overview button.
-See the [spatial workflow](docs/mathlib-demo.md#full-spatial-overview).
-The optional dependency explorer is retained behind `--view dependencies`.
