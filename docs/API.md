@@ -20,7 +20,7 @@ deps.
 | Builder | `Hypergraph::new().vertex(..).hyperedge(..)` | Fluent in-process construction |
 | I/O | `load_json`, `from_json_str`, `save_json` | Writes always emit `hypergraph.v1` |
 | Project | `Projection`, `project`, `Hypergraph::project` | → `HypergraphScene` |
-| Layout | `ForceLayout3D`, `LayoutConfig` | Headless; no GPU |
+| Layout | `ForceLayout3D`, `LayoutConfig`, `LayoutModel`, `TopologySettings` | Headless; no GPU |
 | Hulls | `hull_from_points`, `HullMesh` | For custom renderers |
 | Semantics | `kind_color`, `emphasize`, status helpers | Hue-preserving hover/select |
 | Query | `scene_hits` | BM25 + Jaro–Winkler over scene labels |
@@ -41,6 +41,26 @@ let scene = graph.project(Projection::Bipartite);
 let mut layout = ForceLayout3D::from_scene(&scene, LayoutConfig::default());
 layout.step();
 ```
+
+Structural layout is opt-in for headless callers:
+
+```rust
+use hyper_viz::{LayoutModel, TopologySettings};
+let config = LayoutConfig {
+    topology: TopologySettings { model: LayoutModel::Normalized, ..Default::default() },
+    ..Default::default()
+};
+let mut layout = ForceLayout3D::from_scene(&scene, config);
+layout.seed_from_topology(&scene, 256); // use the scene that constructed this layout
+layout.step();
+```
+
+`LayoutConfig::default()` keeps Legacy forces. Full `LayoutConfig` struct literals
+must add `topology` or use `..Default::default()`. Construct `ForceLayout3D` through
+its constructors; its weighted connectivity cache is private. New session fields
+are optional: older `hyperviz.session.v1` preferences default to Legacy, and
+`hypergraph.v1` is unchanged. Rebuild via a constructor when connectivity changes;
+directly editing public legacy `edges` does not update the structural cache.
 
 Load JSON:
 

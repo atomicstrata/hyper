@@ -62,6 +62,7 @@ pub struct LayoutPrefs {
     pub ideal_length: f32,
     pub max_tree_depth: usize,
     pub centroid_attraction: f32,
+    pub topology: crate::TopologySettings,
 }
 
 impl Default for LayoutPrefs {
@@ -78,6 +79,7 @@ impl Default for LayoutPrefs {
             ideal_length: 30.0,
             max_tree_depth: 14,
             centroid_attraction: 0.008,
+            topology: crate::TopologySettings::default(),
         }
     }
 }
@@ -238,6 +240,22 @@ pub struct ExplorerSession {
 mod tests {
     use super::*;
 
+    #[test]
+    fn topology_preferences_round_trip_and_legacy_sessions_keep_legacy_forces() {
+        let old = parse_session(
+            r#"{"version":"hyperviz.session.v1","prefs":{"layout":{"gravity":0.001}}}"#,
+        )
+        .unwrap();
+        assert_eq!(old.prefs.layout.topology.model, crate::LayoutModel::Legacy);
+        let mut session = ViewerSession::default();
+        session.prefs.layout.topology.model = crate::LayoutModel::Normalized;
+        session.prefs.layout.topology.derived_set_influence = 0.037;
+        let restored = parse_session(&session_to_json(&session).unwrap()).unwrap();
+        assert_eq!(
+            restored.prefs.layout.topology,
+            session.prefs.layout.topology
+        );
+    }
     #[test]
     fn explorer_fields_and_small_opacity_round_trip_without_version_change() {
         let old = parse_session(r#"{"version":"hyperviz.session.v1","views":{"old":{}}}"#).unwrap();

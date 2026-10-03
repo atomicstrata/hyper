@@ -116,6 +116,7 @@ pub struct LayoutConfig {
     pub max_tree_depth: usize,
     /// Pull member vertices toward hyperedge centroid (StarCentroid scenes).
     pub centroid_attraction: f32,
+    pub topology: crate::TopologySettings,
 }
 
 impl Default for LayoutConfig {
@@ -130,6 +131,7 @@ impl Default for LayoutConfig {
             ideal_length: 30.0,
             max_tree_depth: 14,
             centroid_attraction: 0.008,
+            topology: Default::default(),
         }
     }
 }
@@ -141,6 +143,7 @@ pub struct ForceLayout3D {
     pub centroid_groups: Vec<Vec<usize>>,
     pub config: LayoutConfig,
     pub iterations: u64,
+    topology_forces: crate::topology::TopologyForces,
 }
 
 impl ForceLayout3D {
@@ -159,6 +162,7 @@ impl ForceLayout3D {
             })
             .collect();
 
+        let topology_forces = crate::topology::TopologyForces::from_pairs(n, edges.clone());
         Self {
             positions,
             velocities: vec![Vec3::ZERO; n],
@@ -166,6 +170,7 @@ impl ForceLayout3D {
             centroid_groups: Vec::new(),
             config,
             iterations: 0,
+            topology_forces,
         }
     }
 
@@ -183,7 +188,33 @@ impl ForceLayout3D {
                 .collect();
         }
 
+        layout.topology_forces = crate::topology::TopologyForces::from_scene(scene);
         layout
+    }
+
+    pub fn seed_from_topology(&mut self, scene: &HypergraphScene, iterations: usize) {
+        self.config.topology.normalize();
+        self.topology_forces = crate::topology::TopologyForces::from_scene(scene);
+        let ids: Vec<_> = scene.nodes.iter().map(|n| n.id.clone()).collect();
+        self.positions =
+            self.topology_forces
+                .spectral_positions(&ids, &self.config.topology, iterations);
+        self.velocities.fill(Vec3::ZERO);
+    }
+
+    pub fn pair_opacity(&self, a: usize, b: usize) -> f32 {
+        if self.config.topology.model == crate::LayoutModel::Legacy {
+            return 1.;
+        }
+        self.topology_forces
+            .pair_opacity(a, b, self.config.topology.hub_fading)
+    }
+
+    pub fn set_opacity(&self, arity: usize) -> f32 {
+        if self.config.topology.model == crate::LayoutModel::Legacy {
+            return 1.;
+        }
+        1. / (arity.max(1) as f32).powf(self.config.topology.size_fading)
     }
 
     /// Rebuild layout for a new scene, pinning positions for nodes whose ids appear in `seeds`.
@@ -216,27 +247,33 @@ impl ForceLayout3D {
                 tree.compute_repulsion(self.positions[i], self.config.repulsion, self.config.theta);
         }
 
-        for &(src, tgt) in &self.edges {
-            let delta = self.positions[tgt] - self.positions[src];
-            let dist = delta.length().max(0.01);
-            let displacement = dist - self.config.ideal_length;
-            let force = delta.normalize() * displacement * self.config.attraction;
-            forces[src] += force;
-            forces[tgt] -= force;
-        }
+        self.config.topology.normalize();
+        if self.config.topology.model == crate::LayoutModel::Legacy {
+            for &(src, tgt) in &self.edges {
+                let delta = self.positions[tgt] - self.positions[src];
+                let dist = delta.length().max(0.01);
+                let displacement = dist - self.config.ideal_length;
+                let force = delta.normalize() * displacement * self.config.attraction;
+                forces[src] += force;
+                forces[tgt] -= force;
+            }
 
-        if self.config.centroid_attraction > 0.0 {
-            for group in &self.centroid_groups {
-                if group.len() < 2 {
-                    continue;
-                }
-                let centroid =
-                    group.iter().map(|&i| self.positions[i]).sum::<Vec3>() / group.len() as f32;
-                for &idx in group {
-                    let delta = centroid - self.positions[idx];
-                    forces[idx] += delta * self.config.centroid_attraction;
+            if self.config.centroid_attraction > 0.0 {
+                for group in &self.centroid_groups {
+                    if group.len() < 2 {
+                        continue;
+                    }
+                    let centroid =
+                        group.iter().map(|&i| self.positions[i]).sum::<Vec3>() / group.len() as f32;
+                    for &idx in group {
+                        let delta = centroid - self.positions[idx];
+                        forces[idx] += delta * self.config.centroid_attraction;
+                    }
                 }
             }
+        } else {
+            self.topology_forces
+                .add_forces(&self.positions, &mut forces, &self.config.topology);
         }
 
         for (i, force) in forces.iter_mut().enumerate().take(n) {
@@ -247,6 +284,13 @@ impl ForceLayout3D {
         let damping = self.config.damping;
         for (i, force) in forces.iter().enumerate().take(n) {
             self.velocities[i] = (self.velocities[i] + *force * dt) * damping;
+            if self.config.topology.model != crate::LayoutModel::Legacy {
+                let distance = self.velocities[i].length() * dt.abs();
+                if distance > self.config.topology.max_displacement {
+                    self.velocities[i] =
+                        self.velocities[i] * (self.config.topology.max_displacement / distance);
+                }
+            }
             self.positions[i] += self.velocities[i] * dt;
         }
 

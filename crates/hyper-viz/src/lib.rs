@@ -41,6 +41,7 @@ pub mod scene;
 pub mod schema;
 pub mod semantics;
 pub mod session;
+pub mod topology;
 
 pub use dependency::{
     DependencyIndex, DependencyScope, DirectedImport, ScopeOptions, TraversalDepth,
@@ -79,6 +80,7 @@ pub use session::{
     NavigationPrefs, SESSION_VERSION, ViewerPrefs, ViewerSession, ViewerView, parse_session,
     session_to_json, view_key,
 };
+pub use topology::{LayoutModel, TopologySettings};
 
 /// Common types for host applications that build, project, and lay out a hypergraph.
 pub mod prelude {
