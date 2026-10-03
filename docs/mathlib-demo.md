@@ -20,7 +20,8 @@ on 2026-10-02). Source license: Apache-2.0; authors: the mathlib community.
 | Largest group | 8,532 | Includes the umbrella `Mathlib.lean` import set |
 | Total memberships | 118,066 | Both import pairs and dependency groups |
 
-The viewer draws undirected lines and unordered hyperedges. These groups describe
+The spatial viewer draws undirected lines and unordered hyperedges; the native
+dependency canvas draws directed import arrows. These groups describe
 module dependencies, not theorem/proof dependencies. The exporter reads Lean's
 module header (including `public`, `meta`, `import all`, and nested comments);
 it does not infer dependencies from names appearing in theorem text. Duplicate
@@ -41,7 +42,7 @@ python3 scripts/mathlib_graph.py target/mathlib/source target/mathlib/graph.json
   --release v4.34.1 --commit d13f23b723b8a846827a245b89c10fc7d3f11612
 cargo build --release
 
-# Explore interactively; set the HUD line budget to 0 to draw every import.
+# Explore interactively. Use Spatial for the full force-layout view.
 HYPER_VIZ_SESSION=off target/release/hyper --projection star target/mathlib/graph.json
 
 # Benchmark separately from video capture.
@@ -149,3 +150,71 @@ cargo test --workspace
 The exporter records a SHA-256 over sorted source paths and file bytes in graph
 metadata, in addition to the release and commit. The source digest for this
 dataset is `dde69137f0279fdb1ec0b40e16dd5252c0a13aa8550c9508e71ea811565347f3`.
+
+## Explore imports and dependents
+
+Graphs with validated directed imports open the native dependency canvas automatically.
+Start at an exact module:
+
+```sh
+HYPER_VIZ_SESSION=off target/release/hyper --projection star \
+  --module Mathlib.Topology.Basic target/mathlib/graph.json
+```
+
+Choose a search result or press Enter to select one module. Imports appear to the
+right and dependents to the left; every arrow points from importer to imported.
+The default scope is one hop in each direction, with all categories included.
+`Mathlib.Topology.Basic` therefore shows three imports, four dependents, and
+itself: eight modules. The umbrella dependency group does not expand this scope.
+
+Set each direction independently to Off, 1–6 hops, or Transitive. The node budget
+starts at 200 and can reach 1,000. Counts distinguish budget omissions and modules
+excluded by filters; filters stop traversal and always retain the center. Full
+direct-neighbor lists and the full shortest-path list remain available when the
+canvas is truncated. Use `+1` to expand a neighbor, Reset expansion to undo those
+expansions, and Back/Forward to revisit views. Drag to pan, scroll to zoom, Fit to
+frame the scope, or use List view for dense neighborhoods.
+
+The second picker traces a shortest directed import path from the center. A
+filtered path is distinguished from an absent path; selecting the center as the
+target yields zero hops. Path tracing adds path steps beyond the selected hop
+depths, within the node budget, and reports any path steps omitted from the canvas.
+Group inspection shows only the center's exported
+`deps:<module>` group and its authoritative member list. Including it in Spatial
+does not add members beyond the current scope; its hull needs all members present.
+
+Inspect displayed scope in Spatial transfers exactly the displayed modules and
+imports, plus the explicitly included group. Switch back to Dependencies to pause
+spatial simulation and geometry work. `--view spatial` forces the spatial viewer;
+`--view dependencies` forces the canvas, including its empty-state guidance for a
+graph without imports. The default `--view auto` retains Spatial for generic graphs.
+
+Large import graphs use deterministic subject seeds, gravity `0.001`, centroid
+attraction `0.0005`, subdued lines, and disabled global hulls. The Spatial Layout
+panel exposes the forces active for the projection, including precise gravity and
+centroid controls with Off, repulsion up to 100,000, and zero opacity. Simulation
+reports actual steps and CPU duration against a best-effort 8 ms frame budget; one
+step can exceed that budget. The Large graph preset reapplies these settings.
+
+Inspect directed neighbors without a window:
+
+```sh
+cargo run --release -p hyper-viz --example inspect_dependencies -- \
+  target/mathlib/graph.json Mathlib.Topology.Basic
+```
+
+Measure the ordinary native canvas independently of the camera tour:
+
+```sh
+HYPER_VIZ_SESSION=off cargo run --release -p hyper-viz-bevy \
+  --example module_benchmark -- target/mathlib/graph.json Mathlib.Init \
+  target/module-benchmark
+```
+
+This opens the normal dependency UI with a 200-module scope, saves a canvas PNG,
+and measures 180 frames after 60 startup frames. `frames.csv` records each wall
+frame duration; the terminal prints median and p95. Rendering clips nodes outside
+the viewport. Results depend on the machine, window resolution, and other work.
+
+Current implementation checks and native measurements are recorded in
+[the module explorer validation report](benchmarks/module-explorer.md).

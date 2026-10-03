@@ -82,3 +82,10 @@ uses `hub_index: Option<usize>`: bipartite hubs are `Some(index)`, while star
 and clique projections use `None`. Do not treat a member vertex as a hub.
 New attributes and optional hubs default when reading older scene JSON;
 `hypergraph.v1` input and `hyperviz.session.v1` sessions keep their versions.
+
+`DependencyIndex` validates explicit arity-two `kind: "import"` source/target
+attributes, preserves duplicate source edge IDs, and supports directed scopes and
+shortest paths. Set membership never implies direction. Malformed imports remain
+available for generic inspection and generate warnings. `ScopeOptions` bounds
+visible nodes; `ModuleFilters` can stop traversal through Mathlib categories.
+See `examples/inspect_dependencies.rs` for a headless query.

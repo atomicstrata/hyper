@@ -189,3 +189,18 @@ JSON file.
 Override the file with `HYPER_VIZ_SESSION=/path/to/session.json`, or set
 `HYPER_VIZ_SESSION=off` to disable persistence. Preferences are global; camera,
 selection, and focus are keyed by graph ID. Layout positions are not stored.
+
+## Native dependency canvas
+
+Directed-import graphs choose Dependencies in Auto mode. Search selects one exact
+module; independent import/dependent depths, filters, expansion, shortest paths,
+and bounded history support local exploration. See the [Mathlib workflow](mathlib-demo.md#explore-imports-and-dependents).
+Generic hypergraphs retain the spatial viewer. Force a mode with `--view spatial`
+or `--view dependencies`, and select an initial module with `--module ID`.
+
+Embedding hosts can use `HyperVisualizerPlugin::with_view_mode(ViewMode::Spatial)`
+or `VisualizerConfig::with_view_mode` and `with_module`. Build a configured app
+without running it using `visualizer_app_with_config(scene, config)`.
+Session version remains `hyperviz.session.v1`; explorer fields are optional and
+stable-ID scopes survive reordered scenes. `HYPER_VIZ_SESSION=off` also ignores
+saved window size. Search and direction caches rebuild after scene replacement.

@@ -230,3 +230,9 @@ dataset, projection, and viewer settings so others can reproduce the view.
 
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
 See [NOTICE](NOTICE) for third-party notices.
+
+Mathlib imports now open a native dependency explorer. Start at a module with
+`target/release/hyper --projection star --module Mathlib.Topology.Basic target/mathlib/graph.json`.
+Search selects one module, with separate imports/dependents depths, filters,
+shortest paths, bounded history, and a layered 2D canvas. Generic graphs keep the
+spatial viewer. See the [Mathlib workflow](docs/mathlib-demo.md#explore-imports-and-dependents).
