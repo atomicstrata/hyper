@@ -1,0 +1,80 @@
+name: python wheels
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    name: ${{ matrix.target }} / CPython abi3
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          targets: ${{ matrix.target }}
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install test tools
+        run: python -m pip install -r crates/hyper-viz-python/requirements-test.txt
+      - name: Generate stubs and check drift
+        run: |
+          cargo run --locked -p hyper-viz-python --bin stub_gen
+          git diff --exit-code -- crates/hyper-viz-python/python/hyper_viz/_core.pyi
+      - name: Rust checks (no Bevy dependency)
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked -p hyper-viz -p hyper-viz-python --all-targets -- -D warnings
+          cargo test --locked --offline -p hyper-viz
+      - name: Build platform wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: '1.9.6'
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --locked --manifest-path crates/hyper-viz-python/Cargo.toml --out dist
+      - name: Install built wheel
+        shell: bash
+        run: python -m pip install --no-deps dist/*.whl
+      - name: Test installed package
+        run: |
+          python -m pytest crates/hyper-viz-python/tests -q
+          python -m mypy --strict crates/hyper-viz-python/python/hyper_viz
+          python crates/hyper-viz-python/examples/xgi_interop.py
+      - name: Check wheel contents
+        run: python crates/hyper-viz-python/tests/check_wheel.py dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyper-viz-${{ matrix.target }}
+          path: dist/*.whl
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Clean-install ABI compatibility smoke test
+        shell: bash
+        run: |
+          python -m pip install --no-deps dist/*.whl
+          python -c 'from hyper_viz import HifDocument; assert "s:a" in HifDocument.from_json("{\"incidences\":[{\"node\":\"a\",\"edge\":\"e\"}]}").to_hypergraph_json()'

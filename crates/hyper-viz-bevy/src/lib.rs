@@ -130,7 +130,7 @@ impl HyperVisualizerPlugin {
         }
     }
 
-    /// Load `hypergraph.v1` JSON from `path`. Set `watch` to reload on file change.
+    /// Load native or HIF JSON from `path`. Set `watch` to reload on file change.
     pub fn from_path(path: impl Into<String>, watch: bool) -> Self {
         let path = path.into();
         Self {
@@ -145,6 +145,12 @@ impl HyperVisualizerPlugin {
             shutdown: None,
             search: None,
         }
+    }
+
+    /// Select the format for initial loading and every watched reload.
+    pub fn with_input_format(mut self, format: hyper_viz::InputFormat) -> Self {
+        self.settings.input_format = format;
+        self
     }
 
     pub fn with_projection(mut self, projection: Projection) -> Self {
@@ -252,8 +258,27 @@ pub fn run_visualizer_from_path_with(
     projection: Projection,
     config: VisualizerConfig,
 ) {
+    run_visualizer_from_path_with_format(
+        path,
+        watch,
+        projection,
+        config,
+        hyper_viz::InputFormat::Auto,
+    );
+}
+
+/// File viewer with an explicit interchange format, including watched updates.
+pub fn run_visualizer_from_path_with_format(
+    path: String,
+    watch: bool,
+    projection: Projection,
+    config: VisualizerConfig,
+    format: hyper_viz::InputFormat,
+) {
     visualizer_app_with(
-        HyperVisualizerPlugin::from_path(path, watch).with_projection(projection),
+        HyperVisualizerPlugin::from_path(path, watch)
+            .with_projection(projection)
+            .with_input_format(format),
         config,
         false,
     )

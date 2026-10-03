@@ -28,6 +28,7 @@
 //! ```
 
 pub mod error;
+pub mod hif;
 pub mod hull;
 pub mod io;
 pub mod layout;
@@ -40,8 +41,15 @@ pub mod semantics;
 pub mod session;
 
 pub use error::VizError;
+pub use hif::{
+    HifDocument, HifEdge, HifError, HifErrorKind, HifId, HifIncidence, HifNode, load_hif,
+    parse_hif, save_hif, serialize_hif,
+};
 pub use hull::{HullMesh, MAX_HULL_VERTICES, hull_from_points, select_hull_vertices};
-pub use io::{from_json_str, load_json, save_json};
+pub use io::{
+    InputFormat, from_json_str, from_json_str_with_format, load_json, load_json_with_format,
+    save_json,
+};
 pub use layout::{ForceLayout3D, LayoutConfig, Vec3, layout_edges_from_scene};
 pub use motion::{
     ONE_SHOT_CAP, ONE_SHOT_SECS, StatusMotion, apply_motion_rgba, hyperedge_status_key, id_phase,

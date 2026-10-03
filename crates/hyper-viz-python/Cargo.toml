@@ -1,0 +1,21 @@
+[package]
+name = "hyper-viz-python"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "hyper_viz_python"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hyper-viz.workspace = true
+serde_json.workspace = true
+pyo3 = { version = "=0.27.2", features = ["abi3-py310"] }
+pyo3-stub-gen = { version = "=0.19.0", default-features = false }
+
+[[bin]]
+name = "stub_gen"
+path = "src/bin/stub_gen.rs"

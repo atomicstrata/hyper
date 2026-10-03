@@ -1,0 +1,18 @@
+[build-system]
+requires = ["maturin==1.9.6"]
+build-backend = "maturin"
+
+[project]
+name = "hyper-viz"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "Rust-backed HIF interchange and native Hyper viewer launcher"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+
+[tool.maturin]
+module-name = "hyper_viz._core"
+python-source = "python"
+features = ["pyo3/extension-module"]
+include = ["python/hyper_viz/HIF-LICENSE"]
+exclude = ["**/__pycache__/**", "**/*.pyc"]

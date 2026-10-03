@@ -301,3 +301,7 @@ src/main.rs                # CLI
 - WASM / browser serve (session JSON is ready for `localStorage`)
 - Euler-style set diagrams (convex-hull member shells only)
 - Bundling any proprietary memory engine
+
+## HIF and Python
+
+Hyper reads scientific HIF datasets with offline validation and explicit viewer compatibility checks. The optional typed Python package provides HIF interchange and launches a separately installed viewer. See [HIF and Python integration](docs/HIF.md) for supported semantics, build instructions, and XGI/Julia examples.

@@ -1,7 +1,7 @@
 use clap::Parser;
-use hyper_viz::{Projection, load_json, project, sample_coauthorship};
+use hyper_viz::{InputFormat, Projection, load_json_with_format, project, sample_coauthorship};
 use hyper_viz_bevy::{
-    VisualizerConfig, run_from_graph, run_visualizer, run_visualizer_from_path_with,
+    VisualizerConfig, run_from_graph, run_visualizer, run_visualizer_from_path_with_format,
 };
 use tracing_subscriber::EnvFilter;
 
@@ -12,8 +12,12 @@ use tracing_subscriber::EnvFilter;
     after_help = "Omit FILE to open the built-in coauthorship demo."
 )]
 struct Args {
-    /// Path to hypergraph JSON (`hypergraph.v1`; legacy host exports also accepted).
+    /// Path to native hypergraph or HIF JSON (legacy host exports also accepted).
     file: Option<String>,
+
+    /// Input format (also applies to watched reloads).
+    #[arg(long, default_value = "auto", value_parser = ["auto", "hypergraph", "hif"])]
+    format: String,
 
     /// Reload when the file changes.
     #[arg(short, long)]
@@ -62,6 +66,7 @@ fn main() {
         .init();
 
     let args = Args::parse();
+    let format = InputFormat::parse(&args.format).expect("validated input format");
     let projection = Projection::parse(&args.projection).unwrap_or_else(|| {
         tracing::warn!(
             projection = %args.projection,
@@ -74,7 +79,7 @@ fn main() {
         let graph = args
             .file
             .as_deref()
-            .map(|p| load_json(p).expect("load hypergraph JSON"))
+            .map(|p| load_json_with_format(p, format).expect("load hypergraph JSON"))
             .unwrap_or_else(sample_coauthorship);
         hyper_viz_bevy::showcase::run_showcase(
             project(&graph, projection),
@@ -96,15 +101,16 @@ fn main() {
             run_visualizer(scene);
         }
         (Some(path), true) => {
-            run_visualizer_from_path_with(
+            run_visualizer_from_path_with_format(
                 path.to_string(),
                 true,
                 projection,
                 VisualizerConfig::default(),
+                format,
             );
         }
         (Some(path), false) => {
-            let graph = load_json(path).expect("load hypergraph JSON");
+            let graph = load_json_with_format(path, format).expect("load hypergraph JSON");
             if projection == Projection::Bipartite {
                 run_from_graph(graph);
             } else {
