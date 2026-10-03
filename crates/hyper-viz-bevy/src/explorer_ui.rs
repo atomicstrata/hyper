@@ -44,6 +44,12 @@ pub fn explorer_panel(
     mut hulls: ResMut<crate::hyperedge_hull::HyperedgeHullSettings>,
     mut frame: ResMut<crate::focus::FrameRequest>,
 ) {
+    if state.mode != ViewMode::Dependencies
+        && state.requested != ViewMode::Dependencies
+        && !state.user_mode
+    {
+        return;
+    }
     let Ok(ctx) = contexts.ctx_mut() else {
         return;
     };
@@ -260,7 +266,11 @@ mod tests {
     use super::*;
     use bevy_egui::{EguiContext, EguiUserTextures, PrimaryEguiContext};
     use hyper_viz::{Hyperedge, Hypergraph, Projection};
-    fn input_frame(app: &mut App, ctx: &egui::Context, events: Vec<egui::Event>) {
+    fn input_frame(
+        app: &mut App,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+    ) -> egui::FullOutput {
         ctx.begin_pass(egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
@@ -270,7 +280,7 @@ mod tests {
             ..Default::default()
         });
         app.update();
-        let _ = ctx.end_pass();
+        ctx.end_pass()
     }
     fn type_into(app: &mut App, ctx: &egui::Context, label: &str, text: &str) {
         let rect = ctx.read_response(egui::Id::new(label)).unwrap().rect;
@@ -376,6 +386,86 @@ mod tests {
     }
 
     #[test]
+    fn explicitly_opened_explorer_can_return_from_spatial() {
+        let scene = Hypergraph::new()
+            .vertex("a", "a", "module")
+            .project(Projection::StarCentroid);
+        let mut state = ExplorerState::default();
+        state.replace_scene(&scene, 0);
+        let mut app = App::new();
+        app.insert_resource(state)
+            .insert_resource(GraphLayout::from_scene(
+                scene,
+                &crate::graph::LayoutSettings::default(),
+            ))
+            .init_resource::<FocusScope>()
+            .init_resource::<crate::focus::FrameRequest>()
+            .init_resource::<crate::hyperedge_hull::HyperedgeHullSettings>()
+            .init_resource::<EguiUserTextures>()
+            .add_systems(Update, explorer_panel);
+        let entity = app
+            .world_mut()
+            .spawn((EguiContext::default(), PrimaryEguiContext))
+            .id();
+        let ctx = app
+            .world_mut()
+            .get_mut::<EguiContext>(entity)
+            .unwrap()
+            .get_mut()
+            .clone();
+        let default_output = input_frame(&mut app, &ctx, Vec::new());
+        assert!(
+            default_output.shapes.is_empty(),
+            "Default Spatial has no explorer toolbar"
+        );
+        app.world_mut().resource_mut::<ExplorerState>().requested = ViewMode::Dependencies;
+        app.world_mut()
+            .resource_mut::<ExplorerState>()
+            .choose_mode(ViewMode::Spatial);
+        let output = input_frame(&mut app, &ctx, Vec::new());
+        let pos = output
+            .shapes
+            .iter()
+            .find_map(|shape| {
+                if let egui::Shape::Text(text) = &shape.shape
+                    && text.galley.text() == "Dependencies"
+                {
+                    Some(text.pos + text.galley.rect.center().to_vec2())
+                } else {
+                    None
+                }
+            })
+            .expect("Optional explorer retains the route back from Spatial");
+        input_frame(
+            &mut app,
+            &ctx,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: Default::default(),
+                },
+            ],
+        );
+        input_frame(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed: false,
+                modifiers: Default::default(),
+            }],
+        );
+        assert_eq!(
+            app.world().resource::<ExplorerState>().mode,
+            ViewMode::Dependencies
+        );
+    }
+
+    #[test]
     fn actual_panel_selects_one_exact_module_and_traces_beyond_depth() {
         let mut graph = Hypergraph::new()
             .vertex("a", "a", "module")
@@ -389,6 +479,7 @@ mod tests {
         }
         let scene = graph.project(Projection::StarCentroid);
         let mut state = ExplorerState::default();
+        state.requested = ViewMode::Dependencies;
         state.replace_scene(&scene, 0);
         let mut app = App::new();
         app.insert_resource(state)

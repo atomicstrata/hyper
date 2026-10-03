@@ -192,10 +192,11 @@ selection, and focus are keyed by graph ID. Layout positions are not stored.
 
 ## Native dependency canvas
 
-Directed-import graphs choose Dependencies in Auto mode. Search selects one exact
+Auto mode keeps the full spatial viewer. The optional dependency canvas requires
+`--view dependencies`. Its search selects one exact
 module; independent import/dependent depths, filters, expansion, shortest paths,
 and bounded history support local exploration. See the [Mathlib workflow](mathlib-demo.md#explore-imports-and-dependents).
-Generic hypergraphs retain the spatial viewer. Force a mode with `--view spatial`
+Force a mode with `--view spatial`
 or `--view dependencies`, and select an initial module with `--module ID`.
 
 Embedding hosts can use `HyperVisualizerPlugin::with_view_mode(ViewMode::Spatial)`
@@ -204,3 +205,7 @@ without running it using `visualizer_app_with_config(scene, config)`.
 Session version remains `hyperviz.session.v1`; explorer fields are optional and
 stable-ID scopes survive reordered scenes. `HYPER_VIZ_SESSION=off` also ignores
 saved window size. Search and direction caches rebuild after scene replacement.
+
+For large import graphs, the Full graph overview preset enables every line and
+hull at low opacity and pauses layout. Force controls span several orders of
+magnitude with numeric entry. See the [spatial workflow](mathlib-demo.md#full-spatial-overview).

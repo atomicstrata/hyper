@@ -1,5 +1,12 @@
 # Module Dependency Explorer Implementation Plan
 
+> Updated user direction, 2026-10-03: the main workflow is the complete Spatial
+> graph with wider, precise controls. Keep the dependency explorer as an explicit
+> opt-in, unused by default. This supersedes the original Auto/default and
+> hidden-hull choices below. The final full overview enables every line and hull,
+> pauses layout, and frames the whole graph; force ranges and validation are
+> documented in `docs/mathlib-demo.md` and `docs/benchmarks/module-explorer.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for native execution, or superpowers:subagent-driven-development if the user selects parallel implementation and review. Steps use checkbox syntax for tracking.
 
 **Goal:** Make Mathlib module imports and dependents understandable through exact selection, directed expansion, a bounded 2D view, useful spatial controls, and a verified pull request.

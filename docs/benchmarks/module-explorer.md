@@ -6,6 +6,44 @@ were changed. Commands below use the installed Rust 1.96 toolchain compatible
 with the existing lockfile. The Rust 1.89 CI configuration was not exercised
 locally; CI remains responsible for that configuration.
 
+## Full Spatial follow-up
+
+The user's clarified goal is the complete spatial graph with useful controls.
+Auto now stays Spatial for every graph; a saved dependency mode does not activate
+the optional explorer. It remains available explicitly through `--view dependencies`.
+The full overview enables every import line and hull, uses low opacity, pauses
+layout, and frames immediately without waiting for force iterations. Logarithmic
+force ranges and eight-decimal numeric entry expose the tiny gravity/centroid
+values needed by the star projection. The controls are visible on startup for
+large graphs. [Usage and ranges](../mathlib-demo.md#full-spatial-overview).
+
+Final follow-up verification passes 72 core tests, 72 viewer tests, and 3 doctests
+(147 Rust tests), workspace clippy with warnings denied, formatting, and a release
+workspace build. Additional regressions failed before their fixes: Auto opening
+the dependency canvas, the overview hiding geometry, a paused layout not framing,
+and losing the return button in an explicitly opened explorer. The optional
+dependency workflow remains covered by the existing actual-egui selection/path test.
+
+```sh
+HYPER_VIZ_SESSION=off target/release/examples/module_benchmark \
+  target/mathlib/graph.json Mathlib.Init target/module-validation/full-spatial-framed spatial
+```
+
+The corrected native run displays all 9,384 vertices and 44,906 hyperedges:
+37,356 import lines without budget omissions and 7,550 enabled group hulls. Layout
+is paused at deterministic initial positions. At 1920 × 1080 / scale factor 1,
+180 measured wall-frame intervals after 60 startup frames give **39.667 ms median
+and 49.071 ms p95** (about 25 FPS by the median). The screenshot was inspected:
+the whole structure is framed, the Spatial controls are exposed, and no explorer
+sidebar or mode strip appears. Native validation exited successfully.
+
+This complete geometry run does not meet 30 FPS; it is a different workload from
+the bounded dependency canvas measured below. It does not measure running force
+simulation or active user input. Opacity reduces visual clutter while all surfaces
+still incur rendering work, and the existing 24-member hull approximation remains.
+
+The remaining sections record the earlier optional explorer validation.
+
 ## Correctness
 
 The final debug workspace suite passes 72 core tests, 68 viewer tests, and

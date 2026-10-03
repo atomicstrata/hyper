@@ -28,7 +28,7 @@ struct Args {
     #[arg(short, long, default_value = "bipartite")]
     projection: String,
 
-    /// View mode: auto selects Dependencies for graphs with validated imports.
+    /// View mode: auto keeps Spatial; dependencies explicitly opens the optional explorer.
     #[arg(long, default_value="auto", value_parser=["auto","spatial","dependencies"])]
     view: String,
 

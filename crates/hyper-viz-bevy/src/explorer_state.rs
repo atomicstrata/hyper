@@ -45,11 +45,7 @@ impl ExplorerState {
         self.epoch = Some(epoch);
         if !self.user_mode {
             if self.requested == ViewMode::Auto {
-                self.mode = if self.index.is_empty() {
-                    ViewMode::Spatial
-                } else {
-                    ViewMode::Dependencies
-                };
+                self.mode = ViewMode::Spatial;
             } else {
                 self.mode = self.requested;
             }
@@ -268,9 +264,6 @@ pub fn sync_explorer(
             .get(&hyper_viz::view_key(&layout.scene.meta.id))
             .and_then(|v| v.explorer.as_ref())
     {
-        if state.requested == ViewMode::Auto && saved.mode != ViewMode::Auto {
-            state.choose_mode(saved.mode);
-        }
         state.restore(saved.snapshot.clone());
         state.history = saved.history.iter().rev().take(32).cloned().collect();
         state.history.reverse();
@@ -294,6 +287,15 @@ mod tests {
         e.attrs.insert("target".into(), "ab".into());
         g.add_hyperedge(e);
         g.project(Projection::StarCentroid)
+    }
+    #[test]
+    fn imports_stay_spatial_unless_dependency_view_is_explicit() {
+        let mut state = ExplorerState::default();
+        state.replace_scene(&scene(), 0);
+        assert_eq!(state.mode, ViewMode::Spatial);
+        state.requested = ViewMode::Dependencies;
+        state.replace_scene(&scene(), 1);
+        assert_eq!(state.mode, ViewMode::Dependencies);
     }
     #[test]
     fn exact_selection_history_and_reload_use_stable_ids() {

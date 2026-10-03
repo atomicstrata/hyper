@@ -178,7 +178,7 @@ pub fn view_key(graph_id: &str) -> String {
     }
 }
 
-/// Select the native module canvas or spatial viewer. Auto inspects validated imports.
+/// Select the native module canvas or spatial viewer. Auto keeps the spatial viewer.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ViewMode {
     #[default]

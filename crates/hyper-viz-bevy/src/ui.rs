@@ -133,19 +133,20 @@ fn ui_panels(
     }
 
     let viewport = ctx.viewport_rect();
-    let panel_pos = egui::pos2((viewport.right() - 256.0).max(16.0), 48.0);
+    let panel_pos = egui::pos2((viewport.right() - 336.0).max(16.0), 48.0);
 
     egui::Window::new("Hypergraph")
         .default_pos(panel_pos)
-        .default_size(egui::vec2(260.0, 420.0))
+        .default_size(egui::vec2(320.0, 740.0))
         .resizable(true)
         .max_height((viewport.height() - 64.0).max(200.0))
         .show(ctx, |ui| {
             egui::ScrollArea::vertical()
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
+                    ui.label(format!("{} vertices · {} hyperedges · {:.0} FPS", layout.scene.vertices_count(), layout.scene.hyperedge_count(), fps));
                     egui::CollapsingHeader::new("Graph")
-                        .default_open(true)
+                        .default_open(layout.node_count < 1000)
                         .show(ui, |ui| {
                             if !layout.scene.meta.title.is_empty() {
                                 ui.label(format!("Title: {}", layout.scene.meta.title));
@@ -189,6 +190,9 @@ fn ui_panels(
                             ui.label(format!("{} lines omitted by budget", line_cache.omitted));
                             ui.add(
                                 egui::Slider::new(&mut lines.opacity, 0.0..=1.0)
+                                    .logarithmic(true)
+                                    .smallest_positive(0.000001)
+                                    .max_decimals(6)
                                     .text("Line opacity")
                                     .clamping(egui::SliderClamping::Edits),
                             );
@@ -197,7 +201,7 @@ fn ui_panels(
                         });
 
                     egui::CollapsingHeader::new("Navigation")
-                        .default_open(true)
+                        .default_open(layout.node_count < 1000)
                         .show(ui, |ui| {
                             ui.checkbox(&mut lasso.enabled, "Lasso select (disables orbit)");
                             let mut focused = focus.is_active();
@@ -230,78 +234,71 @@ fn ui_panels(
                         });
 
                     egui::CollapsingHeader::new("Layout")
-                        .default_open(false)
+                        .default_open(layout.node_count >= 1000)
                         .show(ui, |ui| {
                             ui.checkbox(&mut layout.running, "Running (Space)");
+                            ui.small("Run to apply forces. Pause to inspect stable geometry.");
+                            if layout.layout.edges.is_empty() {
+                                ui.small("Star projection: centroid attraction pulls sets together; gravity pulls toward the origin.");
+                            }
                             ui.add(
-                                egui::Slider::new(&mut settings.iterations_per_frame, 1..=50)
+                                egui::Slider::new(&mut settings.iterations_per_frame, 1..=100)
                                     .text("iters/frame"),
                             );
                             layout.iterations_per_frame = settings.iterations_per_frame;
 
                             ui.add(
-                                egui::Slider::new(&mut settings.config.dt, 0.01..=1.0)
+                                egui::Slider::new(&mut settings.config.dt, 0.001..=2.0)
                                     .clamping(egui::SliderClamping::Edits)
-                                    .text("dt"),
+                                    .logarithmic(true)
+                                    .text("Time step"),
                             );
                             layout.layout.config.dt = settings.config.dt;
 
                             ui.add(
-                                egui::Slider::new(&mut settings.config.damping, 0.5..=0.99)
+                                egui::Slider::new(&mut settings.config.damping, 0.0..=0.9999)
                                     .clamping(egui::SliderClamping::Edits)
-                                    .text("damping"),
+                                    .max_decimals(4)
+                                    .text("Velocity retention"),
                             );
                             layout.layout.config.damping = settings.config.damping;
 
-                            ui.add(
-                                egui::Slider::new(&mut settings.config.repulsion, 1.0..=100000.0)
-                                    .logarithmic(true)
-                                    .clamping(egui::SliderClamping::Edits)
-                                    .text("repulsion"),
-                            );
+                            force_control(ui, "Repulsion", &mut settings.config.repulsion, 0.01, 100000000.);
                             layout.layout.config.repulsion = settings.config.repulsion;
 
                             if !layout.layout.edges.is_empty() {
+                                force_control(ui, "Spring attraction", &mut settings.config.attraction, 0.00000001, 1.);
                                 ui.add(
-                                    egui::Slider::new(
-                                        &mut settings.config.attraction,
-                                        0.000001..=0.1,
-                                    )
-                                    .logarithmic(true)
-                                    .clamping(egui::SliderClamping::Edits)
-                                    .text("Spring attraction"),
-                                );
-                                ui.add(
-                                    egui::Slider::new(
-                                        &mut settings.config.ideal_length,
-                                        5.0..=200.0,
-                                    )
-                                    .clamping(egui::SliderClamping::Edits)
-                                    .text("Spring length"),
+                                    egui::Slider::new(&mut settings.config.ideal_length, 0.01..=10000.)
+                                        .logarithmic(true)
+                                        .clamping(egui::SliderClamping::Edits)
+                                        .text("Spring length"),
                                 );
                             }
-                            force_control(ui, "Gravity", &mut settings.config.gravity, 0.00001);
+                            force_control(ui, "Gravity", &mut settings.config.gravity, 0.00000001, 1.);
                             if !layout.layout.centroid_groups.is_empty() {
-                                force_control(
-                                    ui,
-                                    "Centroid attraction",
-                                    &mut settings.config.centroid_attraction,
-                                    0.000001,
-                                );
+                                force_control(ui, "Centroid attraction", &mut settings.config.centroid_attraction, 0.00000001, 1.);
                             }
+                            ui.small("More repulsion / less gravity spreads the graph. Less centroid attraction reduces set collapse.");
+                            ui.add(egui::Slider::new(&mut settings.node_size, 0.05..=10.)
+                                .logarithmic(true).text("Vertex size"));
                             layout.layout.config = settings.config.clone();
-                            if ui.button("Large graph preset").clicked() {
-                                settings.config.gravity = 0.001;
-                                settings.config.centroid_attraction = 0.0005;
-                                layout.layout.config = settings.config.clone();
+                            if ui.button("Full graph overview").clicked() {
+                                layout.full_graph_overview(&mut settings, &mut hull_settings, &mut lines);
+                                focus.clear();
+                                localize.isolated = false;
+                                attention.on = false;
+                                frame.pending = true;
+                            }
+                            ui.small("Overview shows all lines and hulls at low opacity and pauses layout.");
+                            if ui.button("Reinitialize positions").clicked() {
                                 crate::graph::seed_subjects(&mut layout);
-                                hull_settings.enabled = false;
-                                lines.opacity = 0.15;
+                                frame.pending = true;
                             }
                         });
 
                     egui::CollapsingHeader::new("Selection")
-                        .default_open(true)
+                        .default_open(layout.node_count < 1000)
                         .show(ui, |ui| {
                             let count = sel_state.base_selection.len();
                             ui.label(format!("Selected vertices: {count}"));
@@ -317,10 +314,13 @@ fn ui_panels(
                         });
 
                     egui::CollapsingHeader::new("Hyperedge hulls")
-                        .default_open(false)
+                        .default_open(layout.node_count >= 1000)
                         .show(ui, |ui| {
                             ui.checkbox(&mut hull_settings.enabled, "Show hulls");
-                            ui.checkbox(&mut hull_settings.hide_hubs, "Hide extra-node hubs");
+                            ui.add_enabled(
+                                layout.scene.nodes.iter().any(|n| n.role == NodeRole::HyperedgeHub),
+                                egui::Checkbox::new(&mut hull_settings.hide_hubs, "Hide extra-node hubs"),
+                            );
                             ui.label("Each hyperedge is a set: hull if arity ≥ 3, line if 2.");
                             ui.label(
                                 "Uncheck “Hide extra-node hubs” to see one node per hyperedge.",
@@ -330,6 +330,9 @@ fn ui_panels(
                                 ui.add(
                                     egui::Slider::new(&mut hull_settings.opacity, 0.0..=0.6)
                                         .clamping(egui::SliderClamping::Edits)
+                                        .logarithmic(true)
+                                        .smallest_positive(0.000001)
+                                        .max_decimals(6)
                                         .text("opacity"),
                                 );
                                 ui.checkbox(&mut hull_settings.wireframe, "Wireframe edges");
@@ -900,18 +903,24 @@ fn pointer_label(layout: &GraphLayout, target: PointerTarget) -> String {
     }
 }
 
-fn force_control(ui: &mut egui::Ui, label: &str, value: &mut f32, min: f32) {
+fn force_control(ui: &mut egui::Ui, label: &str, value: &mut f32, min: f32, max: f32) {
     let mut enabled = *value > 0.;
     if ui.checkbox(&mut enabled, label).changed() {
         *value = if enabled { min } else { 0. };
     }
     if enabled {
         ui.add(
-            egui::Slider::new(value, min..=0.1)
+            egui::Slider::new(value, min..=max)
                 .logarithmic(true)
                 .clamping(egui::SliderClamping::Edits)
                 .show_value(false),
         );
-        ui.add(egui::DragValue::new(value).speed(min).max_decimals(6));
+        let speed = (*value as f64 * 0.01).max(min as f64);
+        ui.add(
+            egui::DragValue::new(value)
+                .speed(speed)
+                .range(0.0..=f32::MAX)
+                .max_decimals(8),
+        );
     }
 }

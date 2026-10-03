@@ -1,5 +1,12 @@
 # Module dependency explorer
 
+> Updated user direction, 2026-10-03: the main workflow is the complete Spatial
+> graph with wider, precise controls. Keep the dependency explorer as an explicit
+> opt-in, unused by default. This supersedes the original Auto/default and
+> hidden-hull choices below. The final full overview enables every line and hull,
+> pauses layout, and frames the whole graph; force ranges and validation are
+> documented in `docs/mathlib-demo.md` and `docs/benchmarks/module-explorer.md`.
+
 Date: 2026-10-02
 
 ## Goal and approved direction

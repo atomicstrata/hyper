@@ -151,14 +151,65 @@ The exporter records a SHA-256 over sorted source paths and file bytes in graph
 metadata, in addition to the release and commit. The source digest for this
 dataset is `dde69137f0279fdb1ec0b40e16dd5252c0a13aa8550c9508e71ea811565347f3`.
 
+## Full spatial overview
+
+The interactive default remains the spatial viewer, with the whole graph visible.
+Launch a fresh full-graph view without restoring an older session's isolation:
+
+```sh
+HYPER_VIZ_SESSION=off target/release/hyper --projection star \
+  --view spatial target/mathlib/graph.json
+```
+
+Large import graphs start with deterministic subject positions and every import
+line and dependency-group hull enabled. Lines use 3% opacity; hull fills use
+0.1% opacity with wireframes disabled. Layout is paused so all geometry stays
+stable while orbiting and inspecting. Press Space or enable Running to apply the
+forces, then pause again to inspect. Every original vertex and hyperedge stays
+in the scene. Hulls still use the existing 24-member surface approximation;
+transparency and occlusion mean every overlapping object cannot be individually
+legible from one camera angle.
+
+The Layout panel opens by default for large graphs. Full graph overview clears
+focus and attention, enables all lines and hulls, applies the low-force settings,
+pauses simulation, and frames the entire graph. It preserves current positions;
+Reinitialize positions is a separate action. Existing saved preferences still
+restore when sessions are enabled.
+
+| Control | Slider range | Effect |
+|---|---|---|
+| Repulsion | 0.01–100,000,000, plus Off | Higher values spread vertices |
+| Gravity | 0.00000001–1, plus Off | Pulls vertices toward the origin |
+| Centroid attraction | 0.00000001–1, plus Off | Pulls members toward each set's centroid |
+| Spring attraction | 0.00000001–1, plus Off | Applies only when the projection has spring links |
+| Spring length | 0.01–10,000 | Applies only when the projection has spring links |
+| Time step | 0.001–2 | Larger values move faster and can become unstable |
+| Velocity retention | 0–0.9999 | Lower values damp movement more quickly |
+| Iterations/frame | 1–100 | Upper limit, with a best-effort 8 ms CPU budget |
+| Vertex size | 0.05–10 | Scales vertex markers |
+| Hull / line opacity | 0–0.6 / 0–1 | Logarithmic sliders make tiny opacity changes accessible |
+
+Repulsion, gravity, and attraction controls use logarithmic sliders plus numeric
+entry with up to eight decimals. Numeric entry can exceed the slider's bounds.
+The star projection has no spring links: its relevant attraction control is
+Centroid attraction, not Spring attraction or Spring length. Begin with gravity
+`0.001` and centroid attraction `0.0005`; lower either to preserve more separation,
+or increase repulsion. Change one force at a time while Running. The huge umbrella
+set remains part of the force model and is not filtered out.
+
+Line budget 0 means every import line. Reducing the budget is optional and reports
+omissions; the overview preset always restores 0. Hull and line opacity can reach
+zero, and wireframes are optional. For a dense graph, values near `0.001` for hulls
+and `0.03` for lines are a more useful starting point than opaque overlapping fills.
+
 ## Explore imports and dependents
 
-Graphs with validated directed imports open the native dependency canvas automatically.
+The earlier dependency explorer remains available as an explicit optional view.
 Start at an exact module:
 
 ```sh
 HYPER_VIZ_SESSION=off target/release/hyper --projection star \
-  --module Mathlib.Topology.Basic target/mathlib/graph.json
+  --view dependencies --module Mathlib.Topology.Basic target/mathlib/graph.json
 ```
 
 Choose a search result or press Enter to select one module. Imports appear to the
@@ -187,14 +238,7 @@ Inspect displayed scope in Spatial transfers exactly the displayed modules and
 imports, plus the explicitly included group. Switch back to Dependencies to pause
 spatial simulation and geometry work. `--view spatial` forces the spatial viewer;
 `--view dependencies` forces the canvas, including its empty-state guidance for a
-graph without imports. The default `--view auto` retains Spatial for generic graphs.
-
-Large import graphs use deterministic subject seeds, gravity `0.001`, centroid
-attraction `0.0005`, subdued lines, and disabled global hulls. The Spatial Layout
-panel exposes the forces active for the projection, including precise gravity and
-centroid controls with Off, repulsion up to 100,000, and zero opacity. Simulation
-reports actual steps and CPU duration against a best-effort 8 ms frame budget; one
-step can exceed that budget. The Large graph preset reapplies these settings.
+graph without imports. The default `--view auto` retains Spatial for all graphs.
 
 Inspect directed neighbors without a window:
 

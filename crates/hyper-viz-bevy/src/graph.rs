@@ -127,6 +127,28 @@ impl GraphLayout {
         result
     }
 
+    /// Keep every vertex and hyperedge available in a stable spatial overview.
+    pub fn full_graph_overview(
+        &mut self,
+        settings: &mut LayoutSettings,
+        hulls: &mut crate::hyperedge_hull::HyperedgeHullSettings,
+        lines: &mut crate::render::LinkRenderSettings,
+    ) {
+        settings.config.gravity = 0.001;
+        settings.config.centroid_attraction = 0.0005;
+        settings.config.repulsion = 500.;
+        settings.config.dt = 0.3;
+        settings.config.damping = 0.85;
+        self.layout.config = settings.config.clone();
+        self.running = false;
+        hulls.enabled = true;
+        hulls.opacity = 0.001;
+        hulls.wireframe = false;
+        hulls.hide_hubs = true;
+        lines.max_lines = 0;
+        lines.opacity = 0.03;
+    }
+
     /// Hot-reload: keep force-layout positions for nodes that still exist (matched by stable id).
     pub fn from_scene_preserve(
         old: &GraphLayout,
@@ -179,7 +201,7 @@ pub fn init_graph(
     initial: Option<Res<crate::InitialScene>>,
     mut watch: Option<ResMut<GraphWatchState>>,
 ) {
-    let layout = if let Some(init) = initial {
+    let mut layout = if let Some(init) = initial {
         GraphLayout::from_scene(init.0.clone(), &settings)
     } else if let Some(path) = &settings.graph_path {
         match layout_from_path(path, &settings) {
@@ -209,13 +231,12 @@ pub fn init_graph(
         "Hypergraph scene initialized"
     );
     settings.config = layout.layout.config.clone();
-    if showcase.is_none() && layout.node_count >= 1000 && layout.layout.config.gravity == 0.001 {
-        if let Some(ref mut hulls) = hulls {
-            hulls.enabled = false;
-        }
-        if let Some(ref mut lines) = lines {
-            lines.opacity = 0.15;
-        }
+    if showcase.is_none()
+        && layout.node_count >= 1000
+        && layout.layout.config.gravity == 0.001
+        && let (Some(hulls), Some(lines)) = (hulls.as_deref_mut(), lines.as_deref_mut())
+    {
+        layout.full_graph_overview(&mut settings, hulls, lines);
     }
     commands.insert_resource(layout);
 }
@@ -423,6 +444,53 @@ mod watch_tests {
             app.world().resource::<GraphLayout>().scene.vertices_count(),
             1
         );
+    }
+
+    #[test]
+    fn large_import_graph_starts_with_all_geometry_in_a_paused_overview() {
+        let mut graph = Hypergraph::new();
+        for n in 0..1000 {
+            let id = n.to_string();
+            graph = graph.vertex(&id, &id, "module");
+        }
+        for n in 1..1000 {
+            let id = n.to_string();
+            let mut edge =
+                hyper_viz::Hyperedge::new(format!("import:{n}"), ["0", &id]).with_kind("import");
+            edge.attrs.insert("source".into(), "0".into());
+            edge.attrs.insert("target".into(), id.into());
+            graph.add_hyperedge(edge);
+        }
+        graph = graph.hyperedge("group", ["0", "1", "2"], "Group");
+        let mut app = App::new();
+        app.init_resource::<LayoutSettings>()
+            .init_resource::<crate::render::LinkRenderSettings>()
+            .init_resource::<crate::hyperedge_hull::HyperedgeHullSettings>()
+            .insert_resource(crate::InitialScene(graph.project(Projection::StarCentroid)))
+            .add_systems(Startup, init_graph);
+        app.update();
+        let layout = app.world().resource::<GraphLayout>();
+        let lines = app.world().resource::<crate::render::LinkRenderSettings>();
+        let hulls = app
+            .world()
+            .resource::<crate::hyperedge_hull::HyperedgeHullSettings>();
+        assert!(
+            !layout.running,
+            "Full geometry remains stable until Run is chosen"
+        );
+        assert!(hulls.enabled, "No higher-arity hyperedges hidden");
+        assert!(!hulls.wireframe);
+        assert!(hulls.opacity > 0. && hulls.opacity <= 0.001);
+        let (visible, omitted) = crate::spatial_visibility::visible_lines(
+            &layout.scene,
+            &crate::focus::FocusScope::default(),
+            hulls.hide_hubs,
+            lines.budget(),
+        );
+        assert_eq!(visible.len(), 999);
+        assert_eq!(omitted, 0);
+        assert_eq!(layout.node_count, 1000);
+        assert_eq!(layout.iterations(), 0);
     }
 
     #[test]

@@ -77,7 +77,8 @@ selection, focus neighborhood, and find. Desktop path is
 the OS config dir (`hyper-viz/session.json`); wasm uses `localStorage`.
 `HYPER_VIZ_SESSION` overrides the file or `off` disables it.
 
-Graphs with validated imports open a native egui dependency canvas in Auto mode.
+Auto mode preserves the spatial viewer. The optional native egui dependency
+canvas requires `.with_view_mode(ViewMode::Dependencies)` or `--view dependencies`.
 It provides exact module selection, directional expansion, filters, shortest paths,
 a clipped layered canvas, full neighbor lists, and history. Use `.with_view_mode(ViewMode::Spatial)`
 on the plugin to keep a host in Spatial, or configure a standalone app through
