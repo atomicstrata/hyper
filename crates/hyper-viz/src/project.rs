@@ -29,13 +29,15 @@ impl Projection {
 }
 
 pub fn project(graph: &Hypergraph, projection: Projection) -> HypergraphScene {
-    project_inner(graph, projection)
+    let mut scene = project_inner(graph, projection);
+    scene.warnings.extend(crate::dependency::import_warnings(&scene));
+    scene
 }
 
 impl Hypergraph {
     /// Project this hypergraph into a render-agnostic [`HypergraphScene`].
     pub fn project(&self, projection: Projection) -> HypergraphScene {
-        project_inner(self, projection)
+        project(self, projection)
     }
 }
 

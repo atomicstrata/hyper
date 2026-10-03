@@ -27,6 +27,8 @@
 //! assert_eq!(layout.positions.len(), scene.node_count());
 //! ```
 
+pub mod dependency;
+pub mod module;
 pub mod error;
 pub mod hif;
 pub mod hull;
@@ -45,6 +47,8 @@ pub use hif::{
     HifDocument, HifEdge, HifError, HifErrorKind, HifId, HifIncidence, HifNode, load_hif,
     parse_hif, save_hif, serialize_hif,
 };
+pub use dependency::{DependencyIndex, DependencyScope, DirectedImport, ScopeOptions, TraversalDepth};
+pub use module::{ModuleCategory, ModuleFilters, module_categories};
 pub use hull::{HullMesh, MAX_HULL_VERTICES, hull_from_points, select_hull_vertices};
 pub use io::{
     InputFormat, from_json_str, from_json_str_with_format, load_json, load_json_with_format,
