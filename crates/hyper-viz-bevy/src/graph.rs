@@ -137,7 +137,9 @@ impl GraphLayout {
 fn hub_status_from_scene(scene: &HypergraphScene) -> Vec<Option<String>> {
     let mut hub_status = vec![None; scene.node_count()];
     for he in &scene.hyperedges {
-        if let Some(slot) = hub_status.get_mut(he.hub_index) {
+        if let Some(hub) = he.hub_index
+            && let Some(slot) = hub_status.get_mut(hub)
+        {
             *slot = Some(he.status.clone());
         }
     }

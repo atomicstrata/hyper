@@ -509,7 +509,7 @@ fn flatten_hits(scene: &HypergraphScene, hits: &SceneHits, cap: usize) -> (Vec<u
             LocalizeRow::Hyperedge(index) => {
                 hyperedges.push(index);
                 if let Some(he) = scene.hyperedges.get(index) {
-                    nodes.push(he.hub_index);
+                    nodes.extend(he.hub_index);
                     nodes.extend(he.member_indices.iter().copied());
                 }
             }
@@ -736,8 +736,8 @@ fn draw_hyperedge_labels(
         egui::Id::new("hyperedge_labels"),
     ));
 
-    for he in &layout.scene.hyperedges {
-        if !focus.contains(he.hub_index) {
+    for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
+        if !focus.contains_hyperedge(&layout.scene, he_index) {
             continue;
         }
         if he.member_indices.is_empty() {

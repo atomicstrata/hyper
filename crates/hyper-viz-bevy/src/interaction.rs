@@ -382,7 +382,9 @@ fn pointer_hover(
                     .scene
                     .hyperedges
                     .get(entity.hyperedge_index)
-                    .is_some_and(|he| focus.contains(he.hub_index))
+                    .is_some_and(|_| {
+                        focus.contains_hyperedge(&layout.scene, entity.hyperedge_index)
+                    })
             {
                 hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
             }
@@ -398,9 +400,7 @@ fn pointer_hover(
         ) else {
             continue;
         };
-        if !focus.contains(he.hub_index)
-            && !he.member_indices.iter().all(|idx| focus.contains(*idx))
-        {
+        if !focus.contains_hyperedge(&layout.scene, he_index) {
             continue;
         }
         if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
@@ -434,7 +434,8 @@ fn pointer_hover(
                     }
                 }
                 if !hide_hubs
-                    && let Some(entity) = entity_by_index.get(he.hub_index).copied().flatten()
+                    && let Some(hub) = he.hub_index
+                    && let Some(entity) = entity_by_index.get(hub).copied().flatten()
                 {
                     keep.insert(entity);
                 }

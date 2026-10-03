@@ -73,3 +73,12 @@ let hull = hull_style_emphasized("paper-a", "active", 0.28, Emphasis::Selected);
 ```bash
 cargo test -p hyper-viz
 ```
+
+### Scene API migration
+
+Projected scenes now retain graph, vertex, and hyperedge `attrs`. Include
+`attrs: Default::default()` in manual scene struct literals. `SceneHyperedge`
+uses `hub_index: Option<usize>`: bipartite hubs are `Some(index)`, while star
+and clique projections use `None`. Do not treat a member vertex as a hub.
+New attributes and optional hubs default when reading older scene JSON;
+`hypergraph.v1` input and `hyperviz.session.v1` sessions keep their versions.

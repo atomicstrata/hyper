@@ -66,7 +66,7 @@ pub fn node_motion(
             let raw = scene
                 .hyperedges
                 .iter()
-                .find(|he| he.hub_index == index)
+                .find(|he| he.hub_index == Some(index))
                 .map(|he| he.status.as_str())
                 .unwrap_or("");
             let key_id = node.hyperedge_id.as_deref().unwrap_or(&node.id);

@@ -136,7 +136,7 @@ fn sync_hyperedge_hulls(
     }
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
-        if !focus.contains(hyperedge.hub_index) {
+        if !focus.contains_hyperedge(&layout.scene, he_index) {
             continue;
         }
         if !attention_keeps(parse_status(&hyperedge.status), attention.on) {
@@ -159,7 +159,9 @@ fn sync_hyperedge_hulls(
 
         let emphasis = Emphasis::from_flags(
             hovered_he == Some(he_index),
-            selected_hubs.contains(&hyperedge.hub_index)
+            hyperedge
+                .hub_index
+                .is_some_and(|hub| selected_hubs.contains(&hub))
                 || sel_state.hyperedges.contains(&he_index),
         );
         let style =
@@ -306,7 +308,7 @@ fn draw_hull_wireframes(
             .scene
             .hyperedges
             .get(entity.hyperedge_index)
-            .is_some_and(|he| !focus.contains(he.hub_index))
+            .is_some_and(|_| !focus.contains_hyperedge(&layout.scene, entity.hyperedge_index))
         {
             continue;
         }

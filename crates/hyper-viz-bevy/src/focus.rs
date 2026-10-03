@@ -15,6 +15,7 @@ pub struct AttentionMode {
 #[derive(Resource, Debug, Clone, Default)]
 pub struct FocusScope {
     pub nodes: Option<HashSet<usize>>,
+    pub hyperedges: Option<HashSet<usize>>,
 }
 
 impl FocusScope {
@@ -28,6 +29,11 @@ impl FocusScope {
 
     pub fn clear(&mut self) {
         self.nodes = None;
+        self.hyperedges = None;
+    }
+
+    pub fn contains_hyperedge(&self, scene: &HypergraphScene, index: usize) -> bool {
+        hyper_viz::hyperedge_in_scope(scene, index, self.nodes.as_ref(), self.hyperedges.as_ref())
     }
 }
 
@@ -142,7 +148,7 @@ fn focus_seeds(
     let mut seeds = selection.to_vec();
     for he_idx in selected_hyperedges {
         if let Some(he) = layout.scene.hyperedges.get(*he_idx) {
-            seeds.push(he.hub_index);
+            seeds.extend(he.hub_index);
             seeds.extend(he.member_indices.iter().copied());
         }
     }
@@ -161,6 +167,7 @@ pub fn isolate_selection(
         return;
     }
     scope.nodes = Some(neighborhood(&layout.scene, seeds));
+    scope.hyperedges = None;
 }
 
 pub fn toggle_focus(
@@ -181,6 +188,7 @@ pub fn toggle_focus(
         return;
     }
     scope.nodes = Some(neighborhood(&layout.scene, seeds));
+    scope.hyperedges = None;
 }
 
 pub struct FocusPlugin;

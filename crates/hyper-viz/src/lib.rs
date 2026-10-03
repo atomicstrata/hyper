@@ -60,7 +60,7 @@ pub use project::{Projection, project};
 pub use query::{SceneHits, ScoredHit, scene_hits};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,
-    SceneNode, neighborhood, scenes_equivalent,
+    SceneNode, hyperedge_in_scope, neighborhood, scenes_equivalent,
 };
 pub use schema::{GRAPH_VERSION, GraphMeta, Hyperedge, Hypergraph, Vertex, sample_coauthorship};
 pub use semantics::{
