@@ -24,7 +24,7 @@ Normalized and LinLog models plus Rebuild. All original vertices, imports and
 sets remain. Extra hub/arity opacity fading can be disabled and is bypassed for
 hovered/selected relationships. [Controls](../mathlib-demo.md#full-spatial-overview).
 
-Verification passes **82 core + 75 native + 3 doctests = 160 Rust tests**, all
+Verification passes **82 core + 77 native + 3 doctests = 162 Rust tests**, all
 4 exporter tests, workspace/all-target clippy with warnings denied, formatting,
 and both CLI and example release builds. Regressions observed RED before fixes
 include topology/persistence APIs, sparse-tail core compression (median radius
@@ -33,6 +33,12 @@ padding (501.8 instead of the intended 280–310). Planted communities with a
 universal hub separate; changing all vertex labels/kinds leaves structural
 positions identical. Reordered IDs, disconnected/isolated nodes, empty input,
 weight edits, normalized/LinLog literal pair dynamics and scene reloads are covered.
+
+Independent final review found two important issues, both reproduced RED and
+fixed with GREEN regressions: explicit rebuilds now immediately resample hull
+members/triangles while ordinary paused frames retain their cache; saved force
+preferences now apply before generating the paused startup geometry. The full
+162-test suite passes after these fixes. No findings remain deferred.
 
 ### Mathlib comparison
 
@@ -45,7 +51,7 @@ Each candidate uses all 9,384 vertices and 44,906 hyperedges, the same stable-ID
 neutral seeds where applicable, and 800 force steps. Configurations use repulsion
 500, legacy gravity `0.001`/centroid `0.0005`, or structural gravity `0.00001` and the
 published normalized weights. Internal-import mean distance is divided by mean
-distance for 10,000 deterministic sampled pairs of distinct `Mathlib.*` modules.
+distance for up to 10,000 deterministic sampled pairs of distinct `Mathlib.*` modules.
 The subject ratio compares mean distance for equal versus different node kinds
 in that sample. Lower values indicate local/group coherence, not proof of
 communities. Category metadata enters evaluation only, never the initializer.

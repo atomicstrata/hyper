@@ -112,12 +112,14 @@ fn sync_hyperedge_hulls(
 
     let revision = (layout.iterations(), layout.positions_revision);
     let positions_changed = *last_iterations != Some(revision);
+    let explicitly_reinitialized = last_iterations.is_some_and(|previous| previous.1 != revision.1);
     *last_iterations = Some(revision);
     if positions_changed {
         *frame = frame.wrapping_add(1);
     }
-    let rebuild_topo =
-        (positions_changed && (*frame % TOPOLOGY_INTERVAL == 1)) || epoch.0 != *last_epoch;
+    let rebuild_topo = explicitly_reinitialized
+        || (positions_changed && (*frame % TOPOLOGY_INTERVAL == 1))
+        || epoch.0 != *last_epoch;
     *last_epoch = epoch.0;
 
     let selected_hubs: HashSet<usize> = sel_state
@@ -498,6 +500,75 @@ mod tests {
         );
     }
 
+    #[test]
+    fn paused_explicit_rebuild_recalculates_members_and_triangles() {
+        use bevy::asset::{AssetApp, AssetPlugin};
+        use hyper_viz::{Hypergraph, Projection};
+        let mut graph = Hypergraph::new();
+        for i in 0..32 {
+            graph = graph.vertex(format!("v{i}"), format!("v{i}"), "same");
+        }
+        graph = graph.hyperedge("all", (0..32).map(|i| format!("v{i}")), "all");
+        let mut layout = GraphLayout::from_scene(
+            graph.project(Projection::StarCentroid),
+            &crate::graph::LayoutSettings::default(),
+        );
+        crate::graph::seed_neutral(&mut layout);
+        layout.running = false;
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>()
+            .insert_resource(layout)
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<SelectionState>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<FocusScope>()
+            .add_systems(Update, sync_hyperedge_hulls);
+        app.update();
+        let old = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap()
+            .clone();
+        {
+            let mut layout = app.world_mut().resource_mut::<GraphLayout>();
+            layout.layout.config.topology.model = hyper_viz::LayoutModel::Normalized;
+            layout.rebuild_structural();
+        }
+        let layout = app.world().resource::<GraphLayout>();
+        let he = &layout.scene.hyperedges[0];
+        let (all_indices, points) = member_positions(he, layout);
+        let expected = hull_from_points(&points).unwrap();
+        let fresh = cache_from_hull(&expected, &all_indices, old.wire_color);
+        assert!(
+            old.member_scene_indices != fresh.member_scene_indices || old.indices != fresh.indices,
+            "Fixture must require a different topology"
+        );
+        app.update();
+        let actual = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(
+            actual.member_scene_indices, fresh.member_scene_indices,
+            "Explicit rebuild must resample hull members"
+        );
+        assert_eq!(
+            actual.indices, fresh.indices,
+            "Paused rebuild must recompute triangles"
+        );
+        app.update();
+        let stable = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(stable.indices, fresh.indices);
+    }
     #[test]
     fn nest_inflate_matches_small_arity_and_caps_large_sets() {
         assert!((nest_inflate(3) - 1.08).abs() < 1e-5);

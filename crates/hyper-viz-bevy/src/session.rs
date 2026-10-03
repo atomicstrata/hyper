@@ -194,7 +194,7 @@ fn apply_prefs(
     hulls.opacity = prefs.hulls.opacity;
 }
 
-fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
+pub(crate) fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
     settings.iterations_per_frame = prefs.iterations_per_frame.max(1);
     settings.config.dt = prefs.dt;
     settings.config.damping = prefs.damping;
@@ -688,6 +688,70 @@ mod tests {
     use super::*;
     use hyper_viz::{Hypergraph, Projection, project};
 
+    #[test]
+    fn saved_weights_drive_paused_startup_before_positions_are_built() {
+        let mut graph = Hypergraph::new();
+        for i in 0..1000 {
+            graph = graph.vertex(format!("m{i}"), format!("m{i}"), "module");
+        }
+        for i in 1..1000 {
+            let mut edge = hyper_viz::Hyperedge::new(
+                format!("import{i}"),
+                ["m0".to_string(), format!("m{i}")],
+            )
+            .with_kind("import");
+            edge.attrs.insert("source".into(), "m0".into());
+            edge.attrs.insert("target".into(), format!("m{i}").into());
+            graph.add_hyperedge(edge);
+        }
+        graph = graph.hyperedge("set", ["m0", "m1", "m2"], "set");
+        let scene = graph.project(Projection::StarCentroid);
+        let mut session = ViewerSession::default();
+        session.prefs.layout.running = false;
+        session.prefs.layout.gravity = 0.00002;
+        session.prefs.layout.repulsion = 300.;
+        session.prefs.layout.topology.model = hyper_viz::LayoutModel::LinLog;
+        session.prefs.layout.topology.pair_attraction = 0.013;
+        session.prefs.layout.topology.derived_set_influence = 0.037;
+        let mut expected_settings = LayoutSettings::default();
+        apply_layout_prefs(&session.prefs.layout, &mut expected_settings);
+        let mut expected = GraphLayout::from_scene(scene.clone(), &expected_settings);
+        expected.layout.config = expected_settings.config;
+        expected.rebuild_structural();
+        let mut app = App::new();
+        app.insert_resource(crate::InitialScene(scene))
+            .init_resource::<LayoutSettings>()
+            .insert_resource(SessionStore {
+                session,
+                enabled: true,
+                has_saved_session: true,
+                ..Default::default()
+            })
+            .init_resource::<SessionApply>()
+            .init_resource::<NodeRenderSettings>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<crate::render::LinkRenderSettings>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<LassoState>()
+            .init_resource::<LocalizeQuery>()
+            .init_resource::<SelectionState>()
+            .init_resource::<FocusScope>()
+            .init_resource::<SkipAutoFit>()
+            .add_systems(Startup, crate::graph::init_graph)
+            .add_systems(PreUpdate, apply_saved_session);
+        app.update();
+        let actual = app.world().resource::<GraphLayout>();
+        assert!(!actual.running);
+        assert_eq!(
+            actual.layout.config.topology,
+            expected.layout.config.topology
+        );
+        assert_eq!(
+            actual.layout.positions, expected.layout.positions,
+            "Paused geometry must use restored weights"
+        );
+        assert_eq!(actual.iterations(), 64);
+    }
     #[test]
     fn no_saved_session_preserves_live_first_launch_preferences() {
         let mut settings = LayoutSettings::default();

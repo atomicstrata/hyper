@@ -45,5 +45,5 @@ Files: `docs/mathlib-demo.md`, validation report, API migration notes, headless/
 
 - [x] Inspect the full Mathlib native structural view, including all nodes/edges, useful marker size, controls, and optional explorer. Record median/p95 full-graph frame times and a screenshot.
 - [x] Compare real neighbor-distance/separation metrics and the planted fixture; document initializer approximation, remaining occlusion, and performance limits.
-- [ ] Have the independent reviewer examine the final diff; reproduce/fix important findings with regressions.
-- [ ] Commit, push, update PR #9 around the final Spatial implementation, and attach it. Keep the managed worktree.
+- [x] Have the independent reviewer examine the final diff; reproduce/fix important findings with regressions.
+- [x] Commit, push, update PR #9 around the final Spatial implementation, and attach it. Keep the managed worktree.

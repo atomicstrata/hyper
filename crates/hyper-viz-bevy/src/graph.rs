@@ -212,12 +212,14 @@ fn hub_status_from_scene(scene: &HypergraphScene) -> Vec<Option<String>> {
     hub_status
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn init_graph(
     mut commands: Commands,
     mut settings: ResMut<LayoutSettings>,
     mut hulls: Option<ResMut<crate::hyperedge_hull::HyperedgeHullSettings>>,
     mut lines: Option<ResMut<crate::render::LinkRenderSettings>>,
     showcase: Option<Res<crate::showcase::ShowcaseConfig>>,
+    session: Option<Res<crate::session::SessionStore>>,
     initial: Option<Res<crate::InitialScene>>,
     mut watch: Option<ResMut<GraphWatchState>>,
 ) {
@@ -258,7 +260,18 @@ pub fn init_graph(
         && let (Some(hulls), Some(lines)) = (hulls.as_deref_mut(), lines.as_deref_mut())
     {
         layout.full_graph_overview(&mut settings, hulls, lines);
+        let saved = session
+            .as_ref()
+            .filter(|store| store.enabled && store.has_saved_session);
+        if let Some(store) = saved {
+            crate::session::apply_layout_prefs(&store.session.prefs.layout, &mut settings);
+            layout.layout.config = settings.config.clone();
+            layout.iterations_per_frame = settings.iterations_per_frame;
+        }
         layout.rebuild_structural();
+        if let Some(store) = saved {
+            layout.running = store.session.prefs.layout.running;
+        }
     }
     commands.insert_resource(layout);
 }
