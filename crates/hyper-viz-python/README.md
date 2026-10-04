@@ -43,7 +43,7 @@ not preserved.
 Install the matching prebuilt desktop viewer with the optional extra:
 
 ```sh
-python -m pip install "hypergraph-viz[viewer]"
+python -m pip install --upgrade "hypergraph-viz[viewer]"
 ```
 
 Wheels cover Linux x86_64, macOS arm64/x86_64, and Windows x86_64. No Rust

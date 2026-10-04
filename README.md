@@ -41,10 +41,12 @@ The import name is `hyper_viz`. Wheels cover Linux x86_64, macOS arm64/x86_64,
 and Windows x86_64; a compatible wheel requires no Rust compiler. Install the native desktop viewer through the optional extra:
 
 ```bash
-python -m pip install "hypergraph-viz[viewer]"
+python -m pip install --upgrade "hypergraph-viz[viewer]"
 ```
 
-The viewer needs a desktop session and graphics driver. Linux desktop wheels
+Use `--upgrade` when the core package is already installed so pip selects the
+release that provides the viewer extra. The viewer needs a desktop session and
+graphics driver. Linux desktop wheels
 require glibc 2.28+; macOS targets 11.0+. Rust is needed only for source builds.
 For a Python development build from this checkout with **Rust 1.89+**:
 

@@ -4,7 +4,7 @@ Prebuilt native viewer for [hypergraph-viz](https://pypi.org/project/hypergraph-
 Install the Python API and matching viewer together:
 
 ```sh
-python -m pip install "hypergraph-viz[viewer]"
+python -m pip install --upgrade "hypergraph-viz[viewer]"
 ```
 
 ```python

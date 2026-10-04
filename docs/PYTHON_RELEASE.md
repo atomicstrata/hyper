@@ -2,7 +2,7 @@
 
 `hypergraph-viz` provides the `hyper_viz` import, HIF bindings, typing, and a
 launcher. `hypergraph-viz-viewer` provides the native desktop executable.
-Release both at `0.1.2`; `hypergraph-viz[viewer]` pins the companion to the core
+Both packages are published at `0.1.2`; `hypergraph-viz[viewer]` pins the companion to the core
 version. Installing the core alone does not install Bevy or a viewer.
 
 PyPI treats hyphens and underscores as equivalent. The original `hyper-viz` /
