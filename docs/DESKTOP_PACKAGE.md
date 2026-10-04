@@ -20,8 +20,8 @@ The viewer executable is also available as `hyper` in your Python environment.
 The launcher locates it through installed-package metadata, so activating the
 virtual environment is optional when running that environment's Python.
 
-Wheels cover Linux x86_64, macOS arm64/x86_64, and Windows x86_64. A desktop
-session and working graphics driver are required. The viewer runs on the
+Wheels cover Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+), and
+Windows x86_64. A desktop session and working graphics driver are required. The viewer runs on the
 machine executing Python; it does not embed into a notebook or send a window
 from a remote kernel to your browser. Use the
 [notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/NOTEBOOK_ROADMAP.md)

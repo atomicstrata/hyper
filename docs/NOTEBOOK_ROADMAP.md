@@ -68,8 +68,9 @@ integer identity as a tagged decimal string rather than a JavaScript Number.
 ## Step 2: test Bevy/WASM reuse before choosing the 3D frontend
 
 Run a separate feasibility probe; do not assume the desktop dependency graph
-compiles for the browser. The current `hyper-viz-bevy` manifest enables desktop
-Bevy defaults and Wayland. The core's dependency features also need inspection.
+compiles for the browser. The current `hyper-viz-bevy` manifest selects visual
+Bevy features and desktop window backends, including Wayland, while excluding
+audio and gamepads. The core's dependency features also need inspection.
 
 ```sh
 rustup target add wasm32-unknown-unknown
