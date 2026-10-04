@@ -37,7 +37,7 @@ Native-to-HIF export keeps native string IDs, memberships, weights, and attribut
 
 ## Python installation
 
-The Python extension depends on the Rust core, not Bevy. Requires standard CPython 3.10 or newer. Until public wheels are released, build locally with Rust 1.89 and maturin:
+The distribution is named `hypergraph-viz`; import it as `hyper_viz`. The Python extension depends on the Rust core, not Bevy. Requires standard CPython 3.10 or newer. Install a platform wheel with `python -m pip install hypergraph-viz`; a compatible wheel needs no Rust compiler. For local development, build with Rust 1.89 and maturin:
 
 ```sh
 python -m venv .venv
@@ -48,7 +48,7 @@ cargo run --bin stub_gen
 maturin develop --locked
 ```
 
-For wheel installation, run `maturin build --release --locked` in the same directory and install the resulting platform wheel from `target/wheels`. CI prepares Linux x86_64, macOS arm64/x86_64, and Windows x86_64 wheels; it does not publish them. Wheels use the CPython stable ABI starting at 3.10, not the free-threaded ABI.
+For wheel installation, run `maturin build --release --locked` in the same directory and install the resulting platform wheel from `target/wheels`. CI prepares Linux x86_64, macOS arm64/x86_64, and Windows x86_64 wheels. Version tags (`python-v<version>`) publish tested wheels and a verified source archive through PyPI Trusted Publishing; ordinary CI runs do not publish. See the [Python release guide](PYTHON_RELEASE.md) for the one-time publisher setup and release procedure. Wheels use the CPython stable ABI starting at 3.10, not the free-threaded ABI. To build a standalone source archive (maintainer Python 3.11+), run `python scripts/releases/build_python_sdist.py --out dist` from the repository root with maturin on PATH; the helper excludes the root viewer package so the archive can build independently.
 
 ```python
 import hyper_viz

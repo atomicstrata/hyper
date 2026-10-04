@@ -31,8 +31,23 @@ legacy exports. The model is domain-agnostic: vertices, hyperedges, and membersh
 
 ## Python and scientific interoperability
 
-Requires **CPython 3.10+** and **Rust 1.89+** for a local build. Public PyPI wheels
-and crates.io packages have not been released; install from this checkout:
+Install the **`hypergraph-viz`** Python distribution with **CPython 3.10+**:
+
+```bash
+python -m pip install hypergraph-viz
+```
+
+The import name is `hyper_viz`. Wheels cover Linux x86_64, macOS arm64/x86_64,
+and Windows x86_64; a compatible wheel requires no Rust compiler. The native
+viewer remains a separate installation. From a repository checkout with
+**Rust 1.89+**:
+
+```bash
+# Optional: install the native viewer as `hyper` on PATH
+cargo install --path . --locked
+```
+
+For a Python development build from this checkout:
 
 ```bash
 python -m venv .venv
@@ -41,9 +56,6 @@ python -m pip install maturin==1.9.6
 cd crates/hyper-viz-python
 maturin develop --locked
 cd ../..
-
-# Optional: install the native viewer as `hyper` on PATH
-cargo install --path . --locked
 ```
 
 ```python
@@ -132,6 +144,7 @@ rendering, and timeline views remain outside the current viewer scope.
 | [docs/HIF.md](docs/HIF.md) | Scientific interchange, Python API, supported semantics, and packaging |
 | [Measured ecosystem comparison](docs/benchmarks/ecosystem-2026-10-03/README.md) | Results, completion counts, raw evidence, and limitations |
 | [Community and ecosystem research](docs/ecosystem-comparison.md) | Positioning and roadmap evidence |
+| [Python release guide](docs/PYTHON_RELEASE.md) | PyPI Trusted Publisher setup and tag-based releases |
 | [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) | Maintainer release-decision checklist |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup and PR norms |
 

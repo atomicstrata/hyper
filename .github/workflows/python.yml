@@ -1,8 +1,9 @@
-name: python wheels
+name: python wheels and release
 
 on:
   push:
     branches: [main]
+    tags: ["python-v*"]
   pull_request:
   workflow_dispatch:
 
@@ -10,8 +11,33 @@ permissions:
   contents: read
 
 jobs:
+  metadata:
+    name: Package and release version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check package versions and release tag
+        run: |
+          python - <<'PYTHON'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          package = tomllib.loads(Path('crates/hyper-viz-python/pyproject.toml').read_text())
+          workspace = tomllib.loads(Path('Cargo.toml').read_text())
+          version = package['project']['version']
+          assert version == workspace['workspace']['package']['version'], 'Python and Rust versions differ'
+          if os.environ['GITHUB_REF_TYPE'] == 'tag':
+              assert os.environ['GITHUB_REF_NAME'] == f'python-v{version}', 'Tag must match package version'
+          print(f"{package['project']['name']} {version}: metadata matches")
+          PYTHON
+
   wheels:
     name: ${{ matrix.target }} / CPython abi3
+    needs: metadata
     strategy:
       fail-fast: false
       matrix:
@@ -78,3 +104,55 @@ jobs:
         run: |
           python -m pip install --no-deps dist/*.whl
           python -c 'from hyper_viz import HifDocument; assert "s:a" in HifDocument.from_json("{\"incidences\":[{\"node\":\"a\",\"edge\":\"e\"}]}").to_hypergraph_json()'
+
+  sdist:
+    name: Source distribution
+    needs: metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.89.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Build and unpack source distribution
+        shell: bash
+        run: |
+          python -m pip install maturin==1.9.6
+          python scripts/releases/build_python_sdist.py --out dist
+          mkdir packaged-source
+          tar -xzf dist/*.tar.gz -C packaged-source --strip-components=1
+      - name: Build wheel from packaged source
+        working-directory: packaged-source
+        run: maturin build --release --locked --out ../sdist-wheel
+      - name: Verify wheel built from packaged source
+        shell: bash
+        run: |
+          python crates/hyper-viz-python/tests/check_wheel.py sdist-wheel
+          python -m pip install --no-deps sdist-wheel/*.whl
+          python -c 'from hyper_viz import HifDocument; HifDocument.from_json("{\"incidences\":[]}").to_hypergraph_json()'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyper-viz-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/python-v')
+    needs: [wheels, sdist]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/hypergraph-viz/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: hyper-viz-*
+          merge-multiple: true
+          path: dist
+      - name: Publish tested distributions with Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
