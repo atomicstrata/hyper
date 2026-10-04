@@ -10,7 +10,7 @@ anywidget prototype. Continue in the existing PR #8 worktree.
   It must work without activating the Python environment. No runtime downloads.
 - Keep core wheels and source archives free of Bevy; companion wheels contain
   the existing native CLI, MIT/Apache licenses, and the bundled HIF schema license.
-- Release 0.1.1 for both distributions on Linux x86_64, macOS arm64/Intel, and
+- Release 0.1.2 for both distributions on Linux x86_64, macOS arm64/Intel, and
   Windows x86_64. PyPI's companion publisher requires user account setup.
 - Validate executable identity, installation, real process startup, temporary
   snapshot cleanup, and Linux software-rendered window creation.
@@ -22,7 +22,7 @@ anywidget prototype. Continue in the existing PR #8 worktree.
    metadata. Implement installed-binary resolution, compatibility errors,
    explicit override, and missing-install guidance. Run the full Python suite.
 2. Package the root CLI through maturin's binary bindings. Version all packages
-   0.1.1, pin the optional dependency, check wheel contents, and clean-install
+   0.1.2, pin the optional dependency, check wheel contents, and clean-install
    the locally built companion. Preserve the independently built core sdist.
 3. Extend the existing release matrix with desktop build/install/startup checks
    and gate publishing on core and desktop jobs. Verify actual graphics startup

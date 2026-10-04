@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "hypergraph-viz-viewer"
-version = "0.1.1"
+version = "0.1.2"
 requires-python = ">=3.10"
 description = "Prebuilt Hyper native desktop viewer for hypergraph-viz"
 readme = "docs/DESKTOP_PACKAGE.md"
@@ -17,7 +17,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/atomicstrata/hyper"
-Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/HIF.md"
+Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/HIF.md"
 Issues = "https://github.com/atomicstrata/hyper/issues"
 
 [tool.maturin]

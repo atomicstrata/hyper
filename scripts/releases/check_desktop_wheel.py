@@ -17,7 +17,13 @@ for wheel in wheels:
         assert len(binary) == 1, binary
         data = archive.read(binary[0])
         assert data[:4] in (b'\x7fELF', b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xca\xfe\xba\xbe') or data[:2] == b'MZ'
-        if not wheel.name.endswith('win_amd64.whl'):
+        if wheel.name.endswith('win_amd64.whl'):
+            import pefile
+            pe = pefile.PE(data=data, fast_load=True)
+            pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_IMPORT']])
+            imports = [entry.dll.decode().lower() for entry in pe.DIRECTORY_ENTRY_IMPORT]
+            assert not any(name.startswith(('vcruntime', 'msvcp')) for name in imports), f'External Visual C++ runtime required: {imports}'
+        else:
             assert (archive.getinfo(binary[0]).external_attr >> 16) & 0o111, 'Executable permission missing'
         assert any('LICENSE-MIT' in n for n in names)
         assert any('LICENSE-APACHE' in n for n in names)

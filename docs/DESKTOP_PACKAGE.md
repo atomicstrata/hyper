@@ -24,12 +24,13 @@ Wheels cover Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+), and
 Windows x86_64. A desktop session and working graphics driver are required. The viewer runs on the
 machine executing Python; it does not embed into a notebook or send a window
 from a remote kernel to your browser. Use the
-[notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/NOTEBOOK_ROADMAP.md)
+[notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/NOTEBOOK_ROADMAP.md)
 for the planned browser frontend.
 
 This package contains a native binary, not a Python extension. It does not
 include HIF Python bindings by itself; use the `[viewer]` extra shown above.
-An explicit `executable="/path/to/hyper"` still overrides the packaged binary.
+Windows wheels link the C runtime statically, avoiding a separate Visual C++
+Redistributable installation. An explicit `executable="/path/to/hyper"` still overrides the packaged binary.
 There are no downloads during `show()`.
 
 MIT OR Apache-2.0. The bundled HIF schema is MIT-licensed. Graphics drivers
