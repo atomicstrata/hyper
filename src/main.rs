@@ -8,6 +8,7 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser, Debug)]
 #[command(
     name = "hyper",
+    version,
     about = "General-purpose 3D hypergraph viewer",
     after_help = "Omit FILE to open the built-in coauthorship demo."
 )]
