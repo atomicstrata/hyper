@@ -28,7 +28,10 @@ jobs:
 
           package = tomllib.loads(Path('crates/hyper-viz-python/pyproject.toml').read_text())
           workspace = tomllib.loads(Path('Cargo.toml').read_text())
+          desktop = tomllib.loads(Path('pyproject.toml').read_text())
           version = package['project']['version']
+          assert desktop['project']['version'] == version, 'Desktop and core versions differ'
+          assert package['project']['optional-dependencies']['viewer'] == [f'hypergraph-viz-viewer=={version}']
           assert version == workspace['workspace']['package']['version'], 'Python and Rust versions differ'
           if os.environ['GITHUB_REF_TYPE'] == 'tag':
               assert os.environ['GITHUB_REF_NAME'] == f'python-v{version}', 'Tag must match package version'
@@ -138,10 +141,118 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+
+  desktop:
+    name: ${{ matrix.target }} / desktop viewer
+    needs: metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Check desktop native dependencies
+        run: python scripts/releases/check_desktop_dependencies.py
+      - name: Build desktop wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: '1.9.6'
+          rust-toolchain: '1.89.0'
+          target: ${{ matrix.target }}
+          manylinux: '2_28'
+          before-script-linux: yum install -y wayland-devel libxkbcommon-devel
+          args: --release --locked --auditwheel check --out desktop-dist
+      - name: Check desktop wheel contents
+        run: python scripts/releases/check_desktop_wheel.py desktop-dist
+      - name: Install and verify standalone desktop binary
+        shell: bash
+        run: |
+          python -m pip install --no-index --only-binary=:all: desktop-dist/*.whl
+          python scripts/releases/smoke_desktop.py --viewer-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyper-viz-desktop-${{ matrix.target }}
+          path: desktop-dist/*.whl
+          if-no-files-found: error
+
+
+  desktop-integration:
+    name: ${{ matrix.target }} / installed viewer extra
+    needs: [wheels, desktop]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-14
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v4
+        with:
+          name: hyper-viz-desktop-${{ matrix.target }}
+          path: desktop-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: hyper-viz-${{ matrix.target }}
+          path: core-dist
+      - name: Install core and viewer together without source builds
+        shell: bash
+        run: |
+          python -m pip install --no-index --only-binary=:all: --find-links core-dist --find-links desktop-dist 'hypergraph-viz[viewer]'
+      - name: Verify executable discovery and CLI startup
+        run: python scripts/releases/smoke_desktop.py
+      - name: Install Linux graphics test runtime
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libvulkan1 mesa-vulkan-drivers libegl1 libxkbcommon-x11-0 libwayland-client0 libx11-6 libxrandr2 libxi6 libxcursor1
+      - name: Verify native window on software Vulkan
+        if: runner.os == 'Linux'
+        env:
+          WGPU_BACKEND: vulkan
+          WINIT_UNIX_BACKEND: x11
+          HYPER_VIZ_SESSION: 'off'
+        run: xvfb-run -a python scripts/releases/smoke_desktop.py --render
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux' && always()
+        with:
+          name: desktop-render-smoke
+          path: target/desktop-smoke/render.png
+          if-no-files-found: ignore
+
   publish:
     name: Publish to PyPI
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/python-v')
-    needs: [wheels, sdist]
+    needs: [wheels, sdist, desktop-integration]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -154,5 +265,16 @@ jobs:
           pattern: hyper-viz-*
           merge-multiple: true
           path: dist
-      - name: Publish tested distributions with Trusted Publishing
+      - name: Separate companion and core distributions
+        run: |
+          mkdir desktop-release core-release
+          mv dist/hypergraph_viz_viewer-*.whl desktop-release/
+          mv dist/* core-release/
+      - name: Publish desktop companion with Trusted Publishing
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: desktop-release/
+      - name: Publish core after companion is available
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: core-release/

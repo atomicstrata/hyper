@@ -57,16 +57,16 @@ document = hyper_viz.HifDocument.load("dataset.hif.json")
 document.save("roundtrip.hif.json")
 print(document.to_json())
 
-# Install/build the native viewer separately, then:
-viewer = hyper_viz.show(document, executable="/path/to/hyper", projection="bipartite")
+# Install hypergraph-viz[viewer], then:
+viewer = hyper_viz.show(document, projection="bipartite")
 code = viewer.wait() # or viewer.close() to terminate
 ```
 
 `HifDocument.from_json(raw)` accepts HIF JSON; `from_hypergraph_json(raw)` accepts native JSON. `to_hypergraph_json()` explicitly checks viewer compatibility. File arguments on document methods are strings; the launcher also accepts `pathlib.Path`.
 
-`HifValidationError` and `HifCompatibilityError` expose `location` and `reason`. I/O failures raise `OSError`. The launcher validates before launching, resolves an explicit executable or `hyper` on PATH, never invokes a shell, and inherits stdout/stderr. It creates an owned temporary snapshot, returns immediately, and cleans up automatically when the viewer exits. `wait()` returns nonzero exit codes without hiding diagnostics. A timeout preserves the running process and snapshot. `close()` terminates, waits five seconds, then kills if necessary. A context manager closes on exit. Dropping the handle keeps the viewer open; a background waiter retains ownership until exit.
+`HifValidationError` and `HifCompatibilityError` expose `location` and `reason`. I/O failures raise `OSError`. The launcher validates before launching and resolves an explicit executable, a version-matched installed `hypergraph-viz-viewer` binary, or `hyper` on PATH, in that order. Companion discovery uses installed RECORD metadata and works without virtual-environment activation. Missing/damaged installations raise `FileNotFoundError` with reinstall guidance; companion/core version mismatches raise `RuntimeError`. It never invokes a shell and inherits stdout/stderr. It creates an owned temporary snapshot, returns immediately, and cleans up automatically when the viewer exits. `wait()` returns nonzero exit codes without hiding diagnostics. A timeout preserves the running process and snapshot. `close()` terminates, waits five seconds, then kills if necessary. A context manager closes on exit. Dropping the handle keeps the viewer open; a background waiter retains ownership until exit.
 
-Viewer binaries are separate optional installations; nothing is downloaded on first launch. Live Python updates, notebook embedding, analysis/layout bindings, and direct scientific-library object adapters are outside this release.
+Install the desktop wheel with `python -m pip install "hypergraph-viz[viewer]"`; no Rust compiler or checkout is needed. The companion is pinned to the core version. Linux desktop wheels require glibc 2.28+, macOS wheels target 11.0+, and Windows wheels target x86_64. A desktop session and a working graphics driver are required; graphics drivers remain system dependencies. For source installation, use `cargo install --path . --locked`. Nothing is downloaded on first launch. Live Python updates, notebook embedding, analysis/layout bindings, and direct scientific-library object adapters are outside this release. See the [notebook prototype roadmap](NOTEBOOK_ROADMAP.md) for the next anywidget canvas and WASM probes.
 
 ## XGI and Julia
 

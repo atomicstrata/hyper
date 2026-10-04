@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "hypergraph-viz"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.10"
 description = "Rust-backed HIF interchange and native Hyper viewer launcher"
 readme = "README.md"
@@ -20,9 +20,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+viewer = ["hypergraph-viz-viewer==0.1.1"]
+
 [project.urls]
 Homepage = "https://github.com/atomicstrata/hyper"
-Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.0/docs/HIF.md"
+Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/HIF.md"
 Repository = "https://github.com/atomicstrata/hyper"
 Issues = "https://github.com/atomicstrata/hyper/issues"
 

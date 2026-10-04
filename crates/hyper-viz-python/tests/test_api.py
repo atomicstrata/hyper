@@ -70,6 +70,15 @@ def test_close_terminates_and_cleanup_is_automatic(tmp_path):
 def test_launcher_failure_cleans_and_validates(monkeypatch, tmp_path):
     doc = hv.HifDocument.from_json('{"incidences":[]}')
     monkeypatch.setenv('PATH', str(tmp_path))
+    # Exercise a missing installation even when the test environment has the extra.
+    import hyper_viz._viewer as launcher
+    from importlib.metadata import PackageNotFoundError
+    real_distribution = launcher.distribution
+    def without_companion(name):
+        if name == 'hypergraph-viz-viewer':
+            raise PackageNotFoundError(name)
+        return real_distribution(name)
+    monkeypatch.setattr(launcher, 'distribution', without_companion)
     with pytest.raises(FileNotFoundError, match='install'):
         hv.show(doc)
     with pytest.raises(FileNotFoundError):

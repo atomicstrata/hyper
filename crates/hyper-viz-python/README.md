@@ -40,12 +40,18 @@ not preserved.
 
 ## Launch the native viewer
 
-Install Hyper's viewer separately from the
-[Hyper repository](https://github.com/atomicstrata/hyper). From its checkout:
+Install the matching prebuilt desktop viewer with the optional extra:
 
 ```sh
-cargo install --path . --locked
+python -m pip install "hypergraph-viz[viewer]"
 ```
+
+Wheels cover Linux x86_64, macOS arm64/x86_64, and Windows x86_64. No Rust
+compiler or repository checkout is needed on these platforms. A desktop session
+and graphics driver are required. Linux viewer wheels require glibc 2.28+;
+macOS wheels target 11.0+. Notebook kernels on remote machines cannot open a
+window on your laptop; see the
+[notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/NOTEBOOK_ROADMAP.md).
 
 Then launch it from Python:
 
@@ -56,7 +62,9 @@ exit_code = viewer.wait()
 ```
 
 Pass `executable="/path/to/hyper"` to select a binary explicitly; otherwise the
-launcher finds `hyper` on PATH. It launches asynchronously without a shell,
+launcher finds the version-matched installed companion, then falls back to
+`hyper` on PATH. It locates the companion through installed-package metadata,
+so activating a virtual environment is not required. It launches asynchronously without a shell,
 retains an owned temporary snapshot, and cleans up after exit. It does not
 download a viewer.
 
@@ -73,6 +81,6 @@ Malformed HIF raises `HifValidationError`. Both exceptions carry `location`
 and `reason`; file failures raise `OSError`. Direct scientific object adapters,
 notebook embedding, headless layout bindings, and live Python updates are deferred.
 
-See the [integration guide](https://github.com/atomicstrata/hyper/blob/python-v0.1.0/docs/HIF.md)
-and [XGI example](https://github.com/atomicstrata/hyper/blob/python-v0.1.0/crates/hyper-viz-python/examples/xgi_interop.py).
+See the [integration guide](https://github.com/atomicstrata/hyper/blob/python-v0.1.1/docs/HIF.md)
+and [XGI example](https://github.com/atomicstrata/hyper/blob/python-v0.1.1/crates/hyper-viz-python/examples/xgi_interop.py).
 Hyper is licensed under MIT OR Apache-2.0; the bundled HIF schema is MIT-licensed.

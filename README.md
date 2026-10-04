@@ -38,16 +38,15 @@ python -m pip install hypergraph-viz
 ```
 
 The import name is `hyper_viz`. Wheels cover Linux x86_64, macOS arm64/x86_64,
-and Windows x86_64; a compatible wheel requires no Rust compiler. The native
-viewer remains a separate installation. From a repository checkout with
-**Rust 1.89+**:
+and Windows x86_64; a compatible wheel requires no Rust compiler. Install the native desktop viewer through the optional extra:
 
 ```bash
-# Optional: install the native viewer as `hyper` on PATH
-cargo install --path . --locked
+python -m pip install "hypergraph-viz[viewer]"
 ```
 
-For a Python development build from this checkout:
+The viewer needs a desktop session and graphics driver. Linux desktop wheels
+require glibc 2.28+; macOS targets 11.0+. Rust is needed only for source builds.
+For a Python development build from this checkout with **Rust 1.89+**:
 
 ```bash
 python -m venv .venv
@@ -65,12 +64,13 @@ document = hyper_viz.HifDocument.load("dataset.hif.json")
 document.save("roundtrip.hif.json")
 print(document.to_json())
 
-# Requires the separately installed native viewer.
+# Install hypergraph-viz[viewer] first.
 viewer = hyper_viz.show(document, projection="bipartite")
 exit_code = viewer.wait() # or viewer.close() to terminate
 ```
 
-Pass `executable="/path/to/hyper"` to select a viewer explicitly. The launcher
+Pass `executable="/path/to/hyper"` to select a viewer explicitly. Otherwise the
+launcher finds the matching companion package, then `hyper` on PATH. The launcher
 validates compatibility, starts the process asynchronously without a shell, and
 owns a temporary native snapshot that is cleaned up after exit. The Python
 extension itself does not depend on Bevy or download a viewer.
@@ -92,7 +92,8 @@ See [HIF and Python integration](docs/HIF.md) for API details, generated typing,
 wheel builds, and runnable [XGI](crates/hyper-viz-python/examples/xgi_interop.py)
 and [Julia](examples/hif_interop.jl) interchange examples. Direct scientific
 object adapters, notebook embedding, layout bindings, and live updates from
-Python are deferred.
+Python are deferred. The [notebook prototype roadmap](docs/NOTEBOOK_ROADMAP.md)
+sets out an anywidget canvas probe and Bevy/WASM feasibility checks.
 
 ## Ecosystem fit and measured findings
 
@@ -144,6 +145,7 @@ rendering, and timeline views remain outside the current viewer scope.
 | [docs/HIF.md](docs/HIF.md) | Scientific interchange, Python API, supported semantics, and packaging |
 | [Measured ecosystem comparison](docs/benchmarks/ecosystem-2026-10-03/README.md) | Results, completion counts, raw evidence, and limitations |
 | [Community and ecosystem research](docs/ecosystem-comparison.md) | Positioning and roadmap evidence |
+| [Notebook prototype roadmap](docs/NOTEBOOK_ROADMAP.md) | Small-dataset anywidget plan and WASM feasibility checks |
 | [Python release guide](docs/PYTHON_RELEASE.md) | PyPI Trusted Publisher setup and tag-based releases |
 | [docs/PUBLIC_RELEASE_CHECKLIST.md](docs/PUBLIC_RELEASE_CHECKLIST.md) | Maintainer release-decision checklist |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup and PR norms |
