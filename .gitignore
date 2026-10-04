@@ -6,6 +6,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+scripts/benchmarks/browser/node_modules/
 
 # Editable maturin builds place the extension in the Python source package.
 /crates/hyper-viz-python/python/hyper_viz/*.so

@@ -1,0 +1,11 @@
+{
+  "tool": "graphia",
+  "executable": "/tmp/hyper-benchmark-competitors/Graphia.app/Contents/MacOS/Graphia",
+  "timeout_seconds": 180,
+  "executable_sha256": "93094f94b6b4093bc35705b6aeea8037a7d65ba75dd6c008e30a7d42d8d8fa82",
+  "conditions": "M5Pro24GiB macOS27; lowpowermode0; no parallel benchmark/build; ordinary desktop background uncontrolled; display sleep disabled; idle sleep prevented; thermal telemetry unavailable; variable display cadence",
+  "peak_memory": "macOS /usr/bin/time -l whole-process RSS high-water in bytes",
+  "fresh_process_per_repetition": true,
+  "repetitions": 5,
+  "seed": 20261003
+}

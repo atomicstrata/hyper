@@ -1,0 +1,30 @@
+{
+  "recorded_unix": 1791051214.3176162,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "cpu": "Apple M5 Pro",
+  "cpu_cores": 15,
+  "gpu": "Apple M5 Pro,16 cores,Metal",
+  "ram_bytes": 25769803776,
+  "load_average": [
+    3.15576171875,
+    4.658203125,
+    4.48046875
+  ],
+  "power": "Now drawing from 'AC Power'",
+  "thermal": "pmset telemetry unavailable",
+  "background": "no parallel benchmark/build; ordinary desktop applications uncontrolled",
+  "display": "variable refresh; actual intervals recorded; no forced60Hz",
+  "commit": "33c34621a898b6c9d1d11ad4ddae3ad29ccf1855",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "power_checkpoint": {
+    "recorded_unix": 1791060411.970849,
+    "lowpowermode": 0,
+    "display_sleep_minutes": 0,
+    "prevent_user_idle_display_sleep": 1,
+    "prevent_user_idle_system_sleep": 1,
+    "user_is_active": 1,
+    "note": "pmset checkpoint after a small native batch timeout; display/system idle sleep is prevented. Native timeout causes remain unresolved."
+  },
+  "finished_utc": "2026-10-03T21:37:05.987003+00:00",
+  "final_hypergodot": "Stock HiDPI enabled; actual Metal render texture1920x1080; display scale2; clamped-window and fullscreen probes excluded."
+}

@@ -1,0 +1,1472 @@
+{
+  "seed": 20261003,
+  "warmup_per_combination": 1,
+  "repetitions": 5,
+  "untimed_validation": false,
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "python": "3.12.13 (main, May 10 2026, 19:20:41) [Clang 22.1.3 ]",
+  "pins": {
+    "hypernetx": "2.4.3",
+    "xgi": "0.10.2",
+    "hypergraphx": "1.8.0",
+    "matplotlib": "3.11.2",
+    "pillow": "12.3.0"
+  },
+  "installed_packages": {
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "cloudpickle": "3.1.2",
+    "kiwisolver": "1.5.1",
+    "xgi": "0.10.2",
+    "fonttools": "4.66.1",
+    "packaging": "26.3",
+    "networkx": "3.7",
+    "joblib": "1.6.0",
+    "hypergraphx": "1.8.0",
+    "requests": "2.34.2",
+    "texttable": "1.7.0",
+    "pytz": "2026.4",
+    "tzdata": "2026.5",
+    "contourpy": "1.4.0",
+    "tqdm": "4.70.1",
+    "urllib3": "2.8.0",
+    "python-dateutil": "2.9.0.post0",
+    "xopen": "2.1.0",
+    "matplotlib": "3.11.2",
+    "certifi": "2026.7.22",
+    "cycler": "0.12.1",
+    "bitsets": "0.9.1",
+    "hypernetx": "2.4.3",
+    "pandas": "2.3.3",
+    "backports.zstd": "1.7.0",
+    "threadpoolctl": "3.7.0",
+    "graphviz": "0.21",
+    "concepts": "0.9.2",
+    "fastjsonschema": "2.22.2",
+    "decorator": "5.3.1",
+    "HeapDict": "1.0.1",
+    "charset-normalizer": "3.5.2",
+    "pillow": "12.3.0",
+    "pyparsing": "3.3.3",
+    "igraph": "1.0.0",
+    "six": "1.17.0",
+    "scipy": "1.18.1",
+    "narwhals": "2.26.0",
+    "idna": "3.20"
+  },
+  "documentation": {
+    "hypernetx": "https://hypernetx.readthedocs.io/en/latest/classes/classes.html",
+    "xgi": "https://xgi.readthedocs.io/en/stable/api/core/xgi.core.hypergraph.Hypergraph.html",
+    "hypergraphx": "https://hypergraphx.readthedocs.io/en/latest/api/hypergraphx.core.html"
+  },
+  "schedule": [
+    {
+      "order": 0,
+      "repetition": -1,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 1,
+      "repetition": -1,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 2,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 3,
+      "repetition": -1,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 4,
+      "repetition": -1,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 5,
+      "repetition": -1,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 6,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 7,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 8,
+      "repetition": -1,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 9,
+      "repetition": -1,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 10,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 11,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 12,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 13,
+      "repetition": -1,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 14,
+      "repetition": -1,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 15,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 16,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 17,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 18,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 19,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 20,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 21,
+      "repetition": -1,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 22,
+      "repetition": -1,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 23,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 24,
+      "repetition": -1,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 25,
+      "repetition": -1,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 26,
+      "repetition": -1,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 27,
+      "repetition": -1,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 28,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 29,
+      "repetition": -1,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 30,
+      "repetition": -1,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 31,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 32,
+      "repetition": -1,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 33,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 34,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 35,
+      "repetition": 0,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 36,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 37,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 38,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 39,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 40,
+      "repetition": 0,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 41,
+      "repetition": 0,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 42,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 43,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 44,
+      "repetition": 0,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 45,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 46,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 47,
+      "repetition": 0,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 48,
+      "repetition": 0,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 49,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 50,
+      "repetition": 0,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 51,
+      "repetition": 0,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 52,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 53,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 54,
+      "repetition": 0,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 55,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 56,
+      "repetition": 0,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 57,
+      "repetition": 0,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 58,
+      "repetition": 0,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 59,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 60,
+      "repetition": 0,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 61,
+      "repetition": 0,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 62,
+      "repetition": 0,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 63,
+      "repetition": 0,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 64,
+      "repetition": 0,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 65,
+      "repetition": 0,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 66,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 67,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 68,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 69,
+      "repetition": 1,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 70,
+      "repetition": 1,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 71,
+      "repetition": 1,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 72,
+      "repetition": 1,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 73,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 74,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 75,
+      "repetition": 1,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 76,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 77,
+      "repetition": 1,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 78,
+      "repetition": 1,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 79,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 80,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 81,
+      "repetition": 1,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 82,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 83,
+      "repetition": 1,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 84,
+      "repetition": 1,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 85,
+      "repetition": 1,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 86,
+      "repetition": 1,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 87,
+      "repetition": 1,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 88,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 89,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 90,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 91,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 92,
+      "repetition": 1,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 93,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 94,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 95,
+      "repetition": 1,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 96,
+      "repetition": 1,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 97,
+      "repetition": 1,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 98,
+      "repetition": 1,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 99,
+      "repetition": 2,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 100,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 101,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 102,
+      "repetition": 2,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 103,
+      "repetition": 2,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 104,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 105,
+      "repetition": 2,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 106,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 107,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 108,
+      "repetition": 2,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 109,
+      "repetition": 2,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 110,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 111,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 112,
+      "repetition": 2,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 113,
+      "repetition": 2,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 114,
+      "repetition": 2,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 115,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 116,
+      "repetition": 2,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 117,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 118,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 119,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 120,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 121,
+      "repetition": 2,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 122,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 123,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 124,
+      "repetition": 2,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 125,
+      "repetition": 2,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 126,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 127,
+      "repetition": 2,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 128,
+      "repetition": 2,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 129,
+      "repetition": 2,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 130,
+      "repetition": 2,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 131,
+      "repetition": 2,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 132,
+      "repetition": 3,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 133,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 134,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 135,
+      "repetition": 3,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 136,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 137,
+      "repetition": 3,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 138,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 139,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 140,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 141,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 142,
+      "repetition": 3,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 143,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 144,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 145,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 146,
+      "repetition": 3,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 147,
+      "repetition": 3,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 148,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 149,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 150,
+      "repetition": 3,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 151,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 152,
+      "repetition": 3,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 153,
+      "repetition": 3,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 154,
+      "repetition": 3,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 155,
+      "repetition": 3,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 156,
+      "repetition": 3,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 157,
+      "repetition": 3,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 158,
+      "repetition": 3,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 159,
+      "repetition": 3,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 160,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 161,
+      "repetition": 3,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 162,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 163,
+      "repetition": 3,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 164,
+      "repetition": 3,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 165,
+      "repetition": 4,
+      "dataset": "mathlib",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 166,
+      "repetition": 4,
+      "dataset": "high-arity-100",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 167,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 168,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 169,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 170,
+      "repetition": 4,
+      "dataset": "high-arity-10",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 171,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 172,
+      "repetition": 4,
+      "dataset": "high-arity-10",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 173,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 174,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "plot"
+    },
+    {
+      "order": 175,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 176,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 177,
+      "repetition": 4,
+      "dataset": "large",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 178,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 179,
+      "repetition": 4,
+      "dataset": "high-arity-1000",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 180,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 181,
+      "repetition": 4,
+      "dataset": "high-arity-1000",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 182,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "plot"
+    },
+    {
+      "order": 183,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 184,
+      "repetition": 4,
+      "dataset": "high-arity-100",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 185,
+      "repetition": 4,
+      "dataset": "high-arity-100",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 186,
+      "repetition": 4,
+      "dataset": "high-arity-1000",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 187,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 188,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 189,
+      "repetition": 4,
+      "dataset": "correctness",
+      "tool": "xgi",
+      "mode": "plot"
+    },
+    {
+      "order": 190,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 191,
+      "repetition": 4,
+      "dataset": "mathlib",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 192,
+      "repetition": 4,
+      "dataset": "mathlib",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 193,
+      "repetition": 4,
+      "dataset": "large",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 194,
+      "repetition": 4,
+      "dataset": "large",
+      "tool": "hypernetx",
+      "mode": "construct"
+    },
+    {
+      "order": 195,
+      "repetition": 4,
+      "dataset": "scientific",
+      "tool": "xgi",
+      "mode": "construct"
+    },
+    {
+      "order": 196,
+      "repetition": 4,
+      "dataset": "high-arity-10",
+      "tool": "hypergraphx",
+      "mode": "construct"
+    },
+    {
+      "order": 197,
+      "repetition": 4,
+      "dataset": "moderate",
+      "tool": "hypernetx",
+      "mode": "construct"
+    }
+  ],
+  "settings": {
+    "resolution": [
+      1920,
+      1080
+    ],
+    "dpi": 100,
+    "backend": "Agg",
+    "labels": false,
+    "layout": "none; canonical XYZ projected to XY",
+    "thread_limit": 1,
+    "hyperedge_alpha": 0.15,
+    "hypergraphx_smoothing_refinements": 12,
+    "hypergraphx_polygon_expansion_triangle": 2.5,
+    "hypergraphx_polygon_expansion_other": 1.8
+  },
+  "limitations": [
+    "Different documented polygon/hull artists; no identical raster workload claim",
+    "No static figure vs interactive FPS ranking",
+    "Peak RSS includes imports",
+    "power/thermal/background conditions recorded by coordinator",
+    "HGX canonical edge IDs stored as metadata; native IDs differ"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "browser": "Final105 unique jobs: original70 Cytoscape/3D cases plus35 corrected Sigma cases. Original browser closed after evidence was saved; its lingering Node/esbuild worker was then terminated. Explicit esbuild shutdown was added before the corrected run.",
+  "core": "Final rows use exact ID/member/metadata and projected-incidence assertions. Count-only diagnostics are excluded.",
+  "scientific": "After timing, only orchestration stale-file/error handling and duplicate-incidence validation were hardened. Named construct and figure operations are unchanged.",
+  "sigma": "Original full-refresh camera timings are retained only as excluded diagnostics. All35 were replaced by public scheduleRender cached-redraw observations in a separate block. Consolidation verifies input hashes, protocol, browser and package versions.",
+  "hypergodot": "HiDPI-disabled window was clamped to1920x917 and excluded. Fullscreen smoke did not match. Final five repetitions restore stock HiDPI and verify actual render texture1920x1080 with exact memberships."
+}

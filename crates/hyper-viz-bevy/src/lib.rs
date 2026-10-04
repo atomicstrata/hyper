@@ -46,6 +46,8 @@ mod render;
 mod search;
 mod session;
 pub use search::{SearchPage, SearchProvider, SearchRow};
+#[cfg(feature = "benchmark")]
+pub mod benchmark;
 pub mod showcase;
 mod ui;
 

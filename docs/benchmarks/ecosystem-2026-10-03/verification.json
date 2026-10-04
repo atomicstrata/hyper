@@ -1,0 +1,40 @@
+{
+  "rust_library_tests": {
+    "core": 61,
+    "bevy_benchmark_feature": 52,
+    "failures": 0
+  },
+  "rust_hif_integration_tests": {
+    "passed": 9,
+    "failures": 0
+  },
+  "rust_core_doctests": {
+    "passed": 1,
+    "failures": 0
+  },
+  "python_harness_tests": {
+    "passed": 8,
+    "failures": 0
+  },
+  "scientific_independent_checks": {
+    "cases": 24,
+    "input_unmutated": true,
+    "unexpected_wrong_memberships_or_metadata": 0,
+    "known_native_identity_loss_retained": true
+  },
+  "rustfmt": "passed",
+  "node_syntax_checks": [
+    "browser/client.js",
+    "browser/run.mjs"
+  ],
+  "commands": [
+    "cargo test --release --lib -p hyper-viz -p hyper-viz-bevy --features hyper-viz-bevy/benchmark --locked -j6",
+    "cargo test --release -p hyper-viz --locked -j6",
+    "target/benchmark/science/venv/bin/python -m unittest discover -s scripts/benchmarks -p test_*.py",
+    "target/benchmark/science/venv/bin/python scripts/benchmarks/verify_scientific.py",
+    "cargo fmt --all --check"
+  ],
+  "note": "Checks were run after timed workloads. Python tests rerun after final metadata/summary changes. Tests verify the harness and model behavior; measured timeouts remain failures.",
+  "archived_only_reaggregation": "summary.json,summary.csv,README.md match byte-for-byte",
+  "dataset_hashes_verified": 40
+}

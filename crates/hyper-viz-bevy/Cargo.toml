@@ -22,12 +22,21 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+serde_json = { workspace = true, optional = true }
 hyper-viz = { workspace = true }
 bevy = { version = "0.18", default-features = true, features = ["wayland"] }
 bevy_egui = "0.39"
 bevy_panorbit_camera = { version = "0.34", features = ["bevy_egui"] }
 winit = "0.30"
 tracing = { workspace = true }
+
+[features]
+benchmark = ["dep:serde_json"]
+
+[[bin]]
+name = "ecosystem-benchmark"
+path = "src/bin/ecosystem_benchmark.rs"
+required-features = ["benchmark"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Storage"] }
