@@ -31,23 +31,43 @@ legacy exports. The model is domain-agnostic: vertices, hyperedges, and membersh
 
 ## Python and scientific interoperability
 
-Install the **`hypergraph-viz`** Python distribution with **CPython 3.10+**:
+Start with [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage
+Python and the project environment:
 
 ```bash
-python -m pip install hypergraph-viz
+uv init --python 3.12 hyper-example
+cd hyper-example
+uv add "hypergraph-viz[viewer]"
+uv run hyper
 ```
 
-The import name is `hyper_viz`. Wheels cover Linux x86_64, macOS arm64/x86_64,
-and Windows x86_64; a compatible wheel requires no Rust compiler. Install the native desktop viewer through the optional extra:
+This opens the built-in coauthorship demo. To view your own HIF dataset:
+
+```bash
+uv run hyper dataset.hif.json --projection bipartite
+```
+
+`uv add` records dependencies in `pyproject.toml`, creates `.venv`, and locks
+versions in `uv.lock`; `uv run` uses that environment without activation.
+uv can download Python 3.12 if needed, avoiding older system or Xcode Python.
+See the [uv project guide](https://docs.astral.sh/uv/guides/projects/).
+For interchange alone, use `uv add hypergraph-viz` without the viewer extra.
+
+The distribution is **`hypergraph-viz`**; the import name is **`hyper_viz`**.
+Requires **CPython 3.10+**. Wheels cover Linux x86_64, macOS arm64/x86_64,
+and Windows x86_64; a compatible wheel requires no Rust compiler.
+The viewer needs a desktop session and graphics driver. Linux desktop wheels
+require glibc 2.28+; macOS targets 11.0+.
+
+If you prefer pip, use a virtual environment with Python 3.10+:
 
 ```bash
 python -m pip install --upgrade "hypergraph-viz[viewer]"
 ```
 
-Use `--upgrade` when the core package is already installed so pip selects the
-release that provides the viewer extra. The viewer needs a desktop session and
-graphics driver. Linux desktop wheels
-require glibc 2.28+; macOS targets 11.0+. Rust is needed only for source builds.
+Use `python -m pip install hypergraph-viz` for interchange alone. Upgrading pip
+does not upgrade Python; check `python --version` if no matching distribution is found.
+Rust is needed only for source builds.
 For a Python development build from this checkout with **Rust 1.89+**:
 
 ```bash
@@ -70,6 +90,9 @@ print(document.to_json())
 viewer = hyper_viz.show(document, projection="bipartite")
 exit_code = viewer.wait() # or viewer.close() to terminate
 ```
+
+Save the Python example as `explore.py` alongside `dataset.hif.json`, then run
+`uv run explore.py` in your project.
 
 Pass `executable="/path/to/hyper"` to select a viewer explicitly. Otherwise the
 launcher finds the matching companion package, then `hyper` on PATH. The launcher

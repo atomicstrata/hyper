@@ -3,9 +3,22 @@
 Prebuilt native viewer for [hypergraph-viz](https://pypi.org/project/hypergraph-viz/).
 Install the Python API and matching viewer together:
 
+With [uv](https://docs.astral.sh/uv/getting-started/installation/):
+
 ```sh
-python -m pip install --upgrade "hypergraph-viz[viewer]"
+uv init --python 3.12 hyper-example
+cd hyper-example
+uv add "hypergraph-viz[viewer]"
+uv run hyper
 ```
+
+This opens the built-in demo. In an existing uv project, start with `uv add`.
+Use `uv run hyper dataset.hif.json` to open your own dataset, or save the Python
+example below as `explore.py` and run `uv run explore.py`. No environment
+activation is needed. uv can download a compatible Python when necessary.
+
+For pip, use `python -m pip install --upgrade "hypergraph-viz[viewer]"` in a
+Python 3.10+ virtual environment.
 
 ```python
 import hyper_viz
