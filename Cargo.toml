@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["crates/hyper-viz", "crates/hyper-viz-bevy"]
+members = ["crates/hyper-viz", "crates/hyper-viz-bevy", "crates/hyper-viz-python"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Bregy Malpartida <bregy@atomicstrata.ai>"]
@@ -15,7 +15,7 @@ homepage = "https://github.com/atomicstrata/hyper"
 hyper-viz = { path = "crates/hyper-viz" }
 hyper-viz-bevy = { path = "crates/hyper-viz-bevy" }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["arbitrary_precision"] }
 thiserror = "2"
 tracing = "0.1"
 

@@ -1,0 +1,12 @@
+{
+  "source": "scientific-raw.json",
+  "main_source": "target/benchmark/science/results/raw.json",
+  "replacement_source": "target/benchmark/science/hnx-final/raw.json",
+  "replaced_cases": "All HNX construct and plot repetitions (including warmup) for correctness, moderate and scientific; clean repeat after fixing alpha configuration. Other cases retain original observations.",
+  "excluded_diagnostics": [
+    "discarded-checker-run",
+    "discarded-validation-overhead"
+  ],
+  "measured_rows": 165,
+  "warmup_rows": 33
+}

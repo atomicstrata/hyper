@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin==1.9.6"]
+build-backend = "maturin"
+
+[project]
+name = "hypergraph-viz-viewer"
+version = "0.1.2"
+requires-python = ">=3.10"
+description = "Prebuilt Hyper native desktop viewer for hypergraph-viz"
+readme = "docs/DESKTOP_PACKAGE.md"
+license = "MIT OR Apache-2.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Rust",
+]
+
+[project.urls]
+Homepage = "https://github.com/atomicstrata/hyper"
+Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/HIF.md"
+Issues = "https://github.com/atomicstrata/hyper/issues"
+
+[tool.maturin]
+bindings = "bin"
+strip = true
+include = [
+    {path = "NOTICE", format = "wheel"},
+    {path = "crates/hyper-viz/schemas/HIF-LICENSE", format = "wheel"},
+]

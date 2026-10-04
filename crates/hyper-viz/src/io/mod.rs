@@ -10,13 +10,37 @@ use std::path::Path;
 use crate::error::VizError;
 use crate::schema::{GRAPH_VERSION, Hypergraph};
 
+/// Select an interchange format. Auto rejects mixed HIF/native envelopes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum InputFormat {
+    #[default]
+    Auto,
+    Hypergraph,
+    Hif,
+}
+impl InputFormat {
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "auto" => Some(Self::Auto),
+            "hypergraph" => Some(Self::Hypergraph),
+            "hif" => Some(Self::Hif),
+            _ => None,
+        }
+    }
+}
 pub fn load_json(path: impl AsRef<Path>) -> Result<Hypergraph, VizError> {
+    load_json_with_format(path, InputFormat::Auto)
+}
+pub fn load_json_with_format(
+    path: impl AsRef<Path>,
+    format: InputFormat,
+) -> Result<Hypergraph, VizError> {
     let path = path.as_ref();
     let raw = std::fs::read_to_string(path).map_err(|source| VizError::Io {
         path: path.to_path_buf(),
         source,
     })?;
-    from_json_str(&raw)
+    from_json_str_with_format(&raw, format)
 }
 
 pub fn save_json(path: impl AsRef<Path>, graph: &Hypergraph) -> Result<(), VizError> {
@@ -29,7 +53,24 @@ pub fn save_json(path: impl AsRef<Path>, graph: &Hypergraph) -> Result<(), VizEr
 }
 
 pub fn from_json_str(raw: &str) -> Result<Hypergraph, VizError> {
+    from_json_str_with_format(raw, InputFormat::Auto)
+}
+pub fn from_json_str_with_format(raw: &str, format: InputFormat) -> Result<Hypergraph, VizError> {
     let value: serde_json::Value = serde_json::from_str(raw)?;
+    let hif = ["incidences", "nodes", "edges", "network-type", "metadata"]
+        .iter()
+        .any(|key| value.get(key).is_some());
+    let native = ["version", "vertices", "hyperedges", "meta"]
+        .iter()
+        .any(|key| value.get(key).is_some());
+    if format == InputFormat::Hif || (format == InputFormat::Auto && hif && !native) {
+        return Ok(crate::parse_hif(raw)?.to_hypergraph()?);
+    }
+    if hif || !native || !value.is_object() {
+        return Err(VizError::InputFormat(
+            "unrecognized or ambiguous envelope; select a format and supply its fields".into(),
+        ));
+    }
     let version = value
         .get("version")
         .and_then(|v| v.as_str())

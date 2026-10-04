@@ -1,0 +1,70 @@
+{
+  "note": "Commands run sequentially. Browser original full-refresh Sigma cases and early scientific checker probes are excluded; replacements are described in consolidation evidence.",
+  "core": [
+    "python3",
+    "scripts/benchmarks/run_local.py",
+    "core",
+    "--output",
+    "target/benchmark/core"
+  ],
+  "native_incidence": [
+    "python3",
+    "scripts/benchmarks/run_local.py",
+    "native",
+    "--output",
+    "target/benchmark/native"
+  ],
+  "native_star": [
+    "python3",
+    "scripts/benchmarks/run_local.py",
+    "native",
+    "--datasets",
+    "mathlib",
+    "--projection",
+    "star",
+    "--live-datasets",
+    "mathlib",
+    "--output",
+    "target/benchmark/native-star"
+  ],
+  "native_default_policy": [
+    "python3",
+    "scripts/benchmarks/run_local.py",
+    "native",
+    "--datasets",
+    "moderate,mathlib",
+    "--projection",
+    "star",
+    "--live-datasets",
+    "moderate,mathlib",
+    "--labels",
+    "--only-hulls",
+    "--output",
+    "target/benchmark/native-interactive"
+  ],
+  "browser_final_method": "browser/run.mjs with seven datasets, camera-motion, warmup120, samples300, repetitions5, job-timeout-ms90000; original70 Cytoscape/3D rows retained and35 corrected Sigma rows substituted after exact environment/protocol/hash checks.",
+  "browser_replacement": [
+    "node",
+    "scripts/benchmarks/browser/run.mjs",
+    "--tools",
+    "sigma",
+    "--datasets",
+    "moderate,large,high-arity-10,high-arity-100,high-arity-1000,scientific,mathlib",
+    "--modes",
+    "camera-motion",
+    "--warmup",
+    "120",
+    "--samples",
+    "300",
+    "--repetitions",
+    "5",
+    "--job-timeout-ms",
+    "90000",
+    "--output",
+    "target/benchmark/browser-sigma-final",
+    "--executable",
+    "/Users/bregy/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+  ],
+  "desktop": "desktop/run.py with pinned installed executable; HyperGodot prepared moderate project; Graphia moderate,scientific,mathlib; timeout180.",
+  "scientific": "scientific.py --run main suite plus all HNX correctness/moderate/scientific construct+plot cases repeated after checker/alpha correction. Final raw consolidation records the replacement sources; construct/figure code is unchanged by later orchestration hardening."
+}

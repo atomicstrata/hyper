@@ -4,6 +4,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum VizError {
+    #[error(transparent)]
+    Hif(#[from] crate::hif::HifError),
+    #[error("input format: {0}")]
+    InputFormat(String),
     #[error("io error at {path}: {source}")]
     Io {
         path: PathBuf,

@@ -1,0 +1,19 @@
+{
+  "name": "hyper-browser-benchmark",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node run.mjs --validate-only",
+    "benchmark": "node run.mjs"
+  },
+  "dependencies": {
+    "3d-force-graph": "1.80.1",
+    "cytoscape": "3.34.3",
+    "sigma": "3.0.3",
+    "graphology": "0.26.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0"
+  }
+}

@@ -1,0 +1,207 @@
+[
+  {
+    "dataset": "correctness",
+    "vertices": 30,
+    "hyperedges": 15,
+    "memberships": 57,
+    "maximum_arity": 8,
+    "empty_edges": 1,
+    "isolated_nodes": 2,
+    "provenance": {
+      "id": "correctness",
+      "title": "correctness",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "correctness.json": "337abbc12cccb553a57fb410e18f9eb28a8c9f8df5a7b4a7129be0a85c6f5062",
+      "correctness.hif.json": "cf2000d1fafe2b98f5cc27936b4314bacc39df0998bad7f920a90b27c295ed74",
+      "correctness.incidence.json": "31f598742003d72967c156056c7f3ea8631d9293274723430c812d02747a794f",
+      "correctness.updated.json": "b3f999c5f882b8cf1eab8f927c161850433898120b3f2ce2b971ff9ca1d5b5e0",
+      "correctness.updated.incidence.json": "f964da790c51e47b20f5f6c653c0580ac4f1386ced684cc5e35329003705e811"
+    }
+  },
+  {
+    "dataset": "moderate",
+    "vertices": 1000,
+    "hyperedges": 2000,
+    "memberships": 13200,
+    "maximum_arity": 16,
+    "empty_edges": 0,
+    "isolated_nodes": 0,
+    "provenance": {
+      "id": "moderate",
+      "title": "moderate",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "moderate.json": "7581070d4ca0672f5a0e44d2190d14e5c30a03ab424893bedf2622bcc9b86bca",
+      "moderate.hif.json": "cf03c4bcccaedda5b648f90b23a23be5e502cf4232a8000546a690a1666fc70b",
+      "moderate.incidence.json": "509a4af00f02459948acbe31d3f858277b7d5b3e628577b497b43f5679fa80fe",
+      "moderate.updated.json": "714ac7349cfa36bb9a4044a87df9a0330e1ce86005283f47ee38d0017fc34e00",
+      "moderate.updated.incidence.json": "af2f15be0dff64cdd5d87daae81bbf87ad75b2a94bfbf2f9fb538347c840a693"
+    }
+  },
+  {
+    "dataset": "large",
+    "vertices": 10000,
+    "hyperedges": 10000,
+    "memberships": 66000,
+    "maximum_arity": 16,
+    "empty_edges": 0,
+    "isolated_nodes": 11,
+    "provenance": {
+      "id": "large",
+      "title": "large",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "large.json": "e5885423a1d56e60cab0986125439d089c292fe0eacc7778012029c0c1dcec31",
+      "large.hif.json": "4d9ed034aafa0e856fc72f19b8379d543c2c79d9af7623aaf59cf65f4ef0286e",
+      "large.incidence.json": "140fa8444d7df3226e90f96b14a64212dce7644f5294b6f1fb7ae615684bf174",
+      "large.updated.json": "8cc913644f1a809cd305df7c7b6585260cf35cd7dd1d269702f147957582f017",
+      "large.updated.incidence.json": "732042295f9acc6fa05e0207a7c490dfe2df4ea17ae6f8b5ec5d0ec254fbeda0"
+    }
+  },
+  {
+    "dataset": "high-arity-10",
+    "vertices": 1000,
+    "hyperedges": 200,
+    "memberships": 2000,
+    "maximum_arity": 10,
+    "empty_edges": 0,
+    "isolated_nodes": 126,
+    "provenance": {
+      "id": "high-arity-10",
+      "title": "high-arity-10",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "high-arity-10.json": "9aff0db69c344a2d1f0b9d23ad5062b5b09d306e6c04e25c080ff9179cea96a1",
+      "high-arity-10.hif.json": "ae03a2d2dc83b745c59b5ea46b8ac434c4c33dd53733ecc14487d2053352c56a",
+      "high-arity-10.incidence.json": "8558e933ab370429244084db265d93909fe68d538ebc543c4d6733d6ae5d57ee",
+      "high-arity-10.updated.json": "f464573486df6f9c2c04527f6d2a752f537255f47cd72d17d803ca11de8741c2",
+      "high-arity-10.updated.incidence.json": "6ab4e5f9908c61e6bc74a21987ec78100976dd89280a73f07299f0602383dc6e"
+    }
+  },
+  {
+    "dataset": "high-arity-100",
+    "vertices": 1000,
+    "hyperedges": 200,
+    "memberships": 20000,
+    "maximum_arity": 100,
+    "empty_edges": 0,
+    "isolated_nodes": 0,
+    "provenance": {
+      "id": "high-arity-100",
+      "title": "high-arity-100",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "high-arity-100.json": "947331dcf67e3c7362972d7b43eae15d97aafbc64df3fe48ff0c702530787dac",
+      "high-arity-100.hif.json": "ada3c3c8274b3c5653cc1863e1754d12b3dcf616344a708dd9d8f5ffc1a05774",
+      "high-arity-100.incidence.json": "cfa115631dbcf4bce45c4988321bf2e4f008ad4bd74db8ea74b56be8ea7526b2",
+      "high-arity-100.updated.json": "a1b42ec4ee3554edb8520cc7c4c0e568cfe38519038b118ad84258c7a3f7d32a",
+      "high-arity-100.updated.incidence.json": "d7165eccca36718220a183eb4801c682278299773417c0caba072490a201e312"
+    }
+  },
+  {
+    "dataset": "high-arity-1000",
+    "vertices": 1000,
+    "hyperedges": 200,
+    "memberships": 200000,
+    "maximum_arity": 1000,
+    "empty_edges": 0,
+    "isolated_nodes": 0,
+    "provenance": {
+      "id": "high-arity-1000",
+      "title": "high-arity-1000",
+      "attrs": {
+        "license": "CC0-1.0",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "high-arity-1000.json": "eeb20e8a28bf9bfae2518b371318e5bdf9b793eeac84acc35f5b4089508786f2",
+      "high-arity-1000.hif.json": "896c657c69bc6a5c4abebaff51a75f6bec1071be347e024b47003113a74a9602",
+      "high-arity-1000.incidence.json": "772fa1cacad08ce8e08674351dcf926ef2071011a6d2e7741d77401c72477d58",
+      "high-arity-1000.updated.json": "e52856cc8eab5c50e5f7ccbf6c538d60ce84ebd97086f9b6d2eeed7694527f99",
+      "high-arity-1000.updated.incidence.json": "0f0c32cd04bf4708b42eb05e391914f47b3d2b26a3224d77bbeea21875d3b867"
+    }
+  },
+  {
+    "dataset": "scientific",
+    "vertices": 516,
+    "hyperedges": 903,
+    "memberships": 1550,
+    "maximum_arity": 11,
+    "empty_edges": 0,
+    "isolated_nodes": 0,
+    "provenance": {
+      "id": "diseasome",
+      "title": "Diseasome",
+      "attrs": {
+        "license": "CC-BY-4.0",
+        "source": "https://doi.org/10.5281/zenodo.21909416",
+        "source_metadata": {
+          "name": "Diseasome"
+        },
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "scientific.json": "1e721ab444d6b769b2c27f6d23818eb0a847a5ad14dd039c7ff0818450e5baec",
+      "scientific.hif.json": "28dd17deac2707e215dc58acde26b93adc1d34ec78b0c6c8ac66077e61cb6315",
+      "scientific.incidence.json": "3f470f655701325c6407b30026e408060aef2a28a356bba496e041542c8a6b2b",
+      "scientific.updated.json": "2e2d973fcda04c0022302fc08e486668498bd97a95b5e0b19129be5fcd9e3516",
+      "scientific.updated.incidence.json": "fb763310014b88c982eedec9f6063b9bf9ba8983d96d7f5bec07f197bbfa0257"
+    }
+  },
+  {
+    "dataset": "mathlib",
+    "vertices": 9384,
+    "hyperedges": 44906,
+    "memberships": 118066,
+    "maximum_arity": 8532,
+    "empty_edges": 0,
+    "isolated_nodes": 3,
+    "provenance": {
+      "id": "mathlib-d13f23b723b8a846827a245b89c10fc7d3f11612",
+      "title": "Mathlib v4.34.1 \u00b7 source dependency atlas",
+      "attrs": {
+        "repository": "https://github.com/leanprover-community/mathlib4",
+        "release": "v4.34.1",
+        "commit": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+        "source_sha256": "dde69137f0279fdb1ec0b40e16dd5252c0a13aa8550c9508e71ea811565347f3",
+        "source_files": 9112,
+        "external_modules": 272,
+        "imports": 37356,
+        "dependency_groups": 7550,
+        "max_group_arity": 8532,
+        "semantics": "Undirected import pairs; one source + direct imports set per file with >=2 imports. Direction is retained in attrs. External dependencies are stubs.",
+        "benchmark_seed": 20261003
+      }
+    },
+    "sha256": {
+      "mathlib.json": "696929b325b7297107f85eb811adb95460bc8bd298126f265d9f746cdce3b2e1",
+      "mathlib.hif.json": "8d272f9de87de2a94e4107b35730175f02bc7f71bc284a5992c73cdb9cdb3005",
+      "mathlib.incidence.json": "867d398d4f44b522670f6e1700e922125aed10e029322690218e0adc7700df57",
+      "mathlib.updated.json": "d02a87fa099f99218371847f7a168ba9a21986ae0faf942b9e083e7f9467370a",
+      "mathlib.updated.incidence.json": "73def033e50da3da4d42a949232bdc6ea6511e0a84caad94818febdadaa6f9b9"
+    }
+  }
+]

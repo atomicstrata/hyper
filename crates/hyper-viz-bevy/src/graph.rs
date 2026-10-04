@@ -3,7 +3,8 @@ use std::time::SystemTime;
 
 use bevy::prelude::*;
 use hyper_viz::{
-    ForceLayout3D, HypergraphScene, LayoutConfig, Projection, load_json, project, scenes_equivalent,
+    ForceLayout3D, HypergraphScene, InputFormat, LayoutConfig, Projection, load_json_with_format,
+    project, scenes_equivalent,
 };
 
 #[derive(Resource)]
@@ -47,6 +48,7 @@ pub struct LayoutSettings {
     pub graph_path: Option<String>,
     pub watch: bool,
     pub projection: Projection,
+    pub input_format: InputFormat,
 }
 
 /// Published with each replacement scene so renderers cannot consume a stale layout.
@@ -72,6 +74,7 @@ impl Default for LayoutSettings {
             graph_path: None,
             watch: false,
             projection: Projection::Bipartite,
+            input_format: InputFormat::Auto,
         }
     }
 }
@@ -80,7 +83,7 @@ fn layout_from_path(
     path: &str,
     settings: &LayoutSettings,
 ) -> Result<GraphLayout, hyper_viz::VizError> {
-    let graph = load_json(path)?;
+    let graph = load_json_with_format(path, settings.input_format)?;
     let scene = project(&graph, settings.projection);
     Ok(GraphLayout::from_scene(scene, settings))
 }
@@ -205,8 +208,12 @@ pub fn poll_graph_watch(
         return;
     }
 
-    let Ok(graph) = load_json(&watch.path) else {
-        return;
+    let graph = match load_json_with_format(&watch.path, settings.input_format) {
+        Ok(graph) => graph,
+        Err(error) => {
+            tracing::warn!(path = %watch.path, %error, "retaining scene after failed reload");
+            return;
+        }
     };
     let scene = project(&graph, settings.projection);
 
@@ -334,6 +341,31 @@ mod watch_tests {
             })
             .add_systems(Update, poll_graph_watch);
         (tmp, app)
+    }
+
+    #[test]
+    fn hif_watch_obeys_explicit_format_and_keeps_scene_on_incompatible_update() {
+        let (tmp, mut app) = fixture();
+        let path = tmp.path().join("graph.json");
+        std::fs::write(&path, r#"{"incidences":[{"node":"n","edge":"e"}]}"#).unwrap();
+        app.world_mut()
+            .resource_mut::<LayoutSettings>()
+            .input_format = hyper_viz::InputFormat::Hif;
+        app.world_mut().resource_mut::<GraphWatchState>().last_mtime = None;
+        app.update();
+        assert_eq!(
+            app.world().resource::<GraphLayout>().scene.vertices_count(),
+            1
+        );
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 1);
+        std::fs::write(&path, r#"{"network-type":"directed","incidences":[]}"#).unwrap();
+        app.world_mut().resource_mut::<GraphWatchState>().last_mtime = None;
+        app.update();
+        assert_eq!(app.world().resource::<GraphSceneEpoch>().0, 1);
+        assert_eq!(
+            app.world().resource::<GraphLayout>().scene.vertices_count(),
+            1
+        );
     }
 
     #[test]

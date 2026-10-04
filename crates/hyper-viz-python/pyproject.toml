@@ -1,0 +1,37 @@
+[build-system]
+requires = ["maturin==1.9.6"]
+build-backend = "maturin"
+
+[project]
+name = "hypergraph-viz"
+version = "0.1.2"
+requires-python = ">=3.10"
+description = "Rust-backed HIF interchange and native Hyper viewer launcher"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["hypergraph", "hif", "visualization", "scientific-computing", "rust"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
+
+[project.optional-dependencies]
+viewer = ["hypergraph-viz-viewer==0.1.2"]
+
+[project.urls]
+Homepage = "https://github.com/atomicstrata/hyper"
+Documentation = "https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/HIF.md"
+Repository = "https://github.com/atomicstrata/hyper"
+Issues = "https://github.com/atomicstrata/hyper/issues"
+
+[tool.maturin]
+module-name = "hyper_viz._core"
+python-source = "python"
+features = ["pyo3/extension-module"]
+include = ["python/hyper_viz/HIF-LICENSE"]
+exclude = ["**/__pycache__/**", "**/*.pyc"]

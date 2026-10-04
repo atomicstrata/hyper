@@ -1,0 +1,11 @@
+{
+  "tool": "hypergodot",
+  "executable": "/tmp/hyper-benchmark-competitors/Godot.app/Contents/MacOS/Godot",
+  "timeout_seconds": 180,
+  "executable_sha256": "c7cccbf8fb143e34e02fd6521e09be2c2b974f0d5db080b19071c9c570718ccf",
+  "conditions": "M5Pro24GiB macOS27; lowpowermode0; no parallel benchmark/build; ordinary desktop background uncontrolled; display sleep disabled; idle sleep prevented; thermal telemetry unavailable; variable display cadence",
+  "peak_memory": "macOS /usr/bin/time -l whole-process RSS high-water in bytes",
+  "fresh_process_per_repetition": false,
+  "repetitions": 5,
+  "seed": 20261003
+}

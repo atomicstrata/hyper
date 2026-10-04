@@ -1,0 +1,67 @@
+{
+	"adaptations": [
+		"remove missing unused MaterialIconsDB autoload",
+		"reversible safe token IDs and line-order hyperedge IDs",
+		"unit weights and one baseline group",
+		"fixed XY projection of canonical 3D positions",
+		"override startup layout; production read_file/create_nodes/populate_edge_data/drawing",
+		"scripted camera and wall-clock process-boundary frame intervals",
+		"fullscreen to avoid macOS working-area window clamp"
+	],
+	"allow_hidpi": false,
+	"color_seed": 20261003,
+	"dataset": "/Users/bregy/.codex/worktrees/ef9d/hyper/target/benchmark/datasets/moderate.json",
+	"edge_width": 1.0,
+	"exact_parser_memberships_and_rendered_group_count": true,
+	"godot_version": {
+		"build": "official",
+		"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+		"hex": 263938,
+		"major": 4,
+		"minor": 7,
+		"patch": 2,
+		"status": "stable",
+		"string": "4.7.2-stable (official)",
+		"timestamp": 0
+	},
+	"hyperedges": 2000.0,
+	"matched_requested_viewport": false,
+	"measured_frames": 2,
+	"memberships": 13200.0,
+	"metric": "wall-clock frame intervals, not GPU timestamps",
+	"node_radius": 30.0,
+	"point_count": 4.0,
+	"renderer": "forward_plus",
+	"renderer_driver": "metal",
+	"repetitions": [
+		{
+			"frame_ms": [
+				8.428,
+				8.336
+			],
+			"repetition": 0
+		}
+	],
+	"screen_dpi": 256,
+	"screen_scale": 1.0,
+	"screen_size": [
+		1512,
+		982
+	],
+	"sha256": "7581070d4ca0672f5a0e44d2190d14e5c30a03ab424893bedf2622bcc9b86bca",
+	"source_commit": "49d03cd7540d2900cc8624048973ef430ff4e009",
+	"startup_construction_ms": 318.639,
+	"tool": "HyperGodot",
+	"vertices": 1000.0,
+	"viewport_size": [
+		1512.0,
+		949.0
+	],
+	"vsync": "disabled by upstream project",
+	"warmup_frames": 120,
+	"window_mode": 3,
+	"window_size": [
+		1512,
+		949
+	]
+}

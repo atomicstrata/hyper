@@ -1,0 +1,21 @@
+{
+  "network-type": "undirected",
+  "metadata": {"name": "Notebook prototype", "source": {"kind": "synthetic", "seed": 20261004}},
+  "nodes": [
+    {"node": 0, "attrs": {"label": "Zero", "category": "A"}},
+    {"node": 1, "attrs": {"label": "Integer one", "score": 1.25}},
+    {"node": "1", "attrs": {"label": "String one", "category": "B"}},
+    {"node": "b"}, {"node": "c"}, {"node": "d"},
+    {"node": "isolated", "attrs": {"note": "No memberships"}}
+  ],
+  "edges": [
+    {"edge": "pair"}, {"edge": "triple", "weight": 1.5},
+    {"edge": "overlap", "attrs": {"evidence": ["synthetic", null]}},
+    {"edge": "empty"}
+  ],
+  "incidences": [
+    {"node": 0, "edge": "pair"}, {"node": 1, "edge": "pair"},
+    {"node": 1, "edge": "triple"}, {"node": "1", "edge": "triple"}, {"node": "b", "edge": "triple"},
+    {"node": "b", "edge": "overlap"}, {"node": "c", "edge": "overlap"}, {"node": "d", "edge": "overlap"}
+  ]
+}

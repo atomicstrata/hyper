@@ -1,0 +1,141 @@
+{
+  "track": "native",
+  "seed": 20261003,
+  "repetitions": 5,
+  "fresh_process_per_run": true,
+  "warmup": "120 render frames per run",
+  "schedule": [
+    [
+      0,
+      "mathlib",
+      true,
+      false
+    ],
+    [
+      0,
+      "mathlib",
+      true,
+      true
+    ],
+    [
+      0,
+      "moderate",
+      true,
+      true
+    ],
+    [
+      0,
+      "moderate",
+      true,
+      false
+    ],
+    [
+      1,
+      "mathlib",
+      true,
+      true
+    ],
+    [
+      1,
+      "mathlib",
+      true,
+      false
+    ],
+    [
+      1,
+      "moderate",
+      true,
+      false
+    ],
+    [
+      1,
+      "moderate",
+      true,
+      true
+    ],
+    [
+      2,
+      "mathlib",
+      true,
+      false
+    ],
+    [
+      2,
+      "moderate",
+      true,
+      false
+    ],
+    [
+      2,
+      "mathlib",
+      true,
+      true
+    ],
+    [
+      2,
+      "moderate",
+      true,
+      true
+    ],
+    [
+      3,
+      "moderate",
+      true,
+      false
+    ],
+    [
+      3,
+      "mathlib",
+      true,
+      false
+    ],
+    [
+      3,
+      "moderate",
+      true,
+      true
+    ],
+    [
+      3,
+      "mathlib",
+      true,
+      true
+    ],
+    [
+      4,
+      "moderate",
+      true,
+      true
+    ],
+    [
+      4,
+      "mathlib",
+      true,
+      false
+    ],
+    [
+      4,
+      "mathlib",
+      true,
+      true
+    ],
+    [
+      4,
+      "moderate",
+      true,
+      false
+    ]
+  ],
+  "commit": "33c34621a898b6c9d1d11ad4ddae3ad29ccf1855",
+  "binary_sha256": "19fcc7d83c98a0bf5669d47cc6883cf51d0e45d6341e6d0656000d20a3b39cee",
+  "conditions": "M5Pro24GiB macOS27; lowpowermode0; no parallel benchmark/build; ordinary desktop background uncontrolled; display sleep disabled; idle sleep prevented; thermal telemetry unavailable; variable display cadence",
+  "peak_memory": "/usr/bin/time -l process RSS high-water; bytes on macOS; includes startup",
+  "build_profile": "release",
+  "projection": "star",
+  "labels": true,
+  "only_hulls": true,
+  "live_datasets": [
+    "moderate",
+    "mathlib"
+  ]
+}

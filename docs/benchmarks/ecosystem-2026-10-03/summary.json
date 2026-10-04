@@ -1,0 +1,1843 @@
+[
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "high-arity-10",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 8.5,
+    "average_fps": 120.00480019200768,
+    "frame_p95_run_min_ms": 8.400000000000091,
+    "frame_p95_run_max_ms": 8.699999999999829,
+    "load_wall_ms": 211.85579199995846,
+    "update_commit_ms": 0.7999999523162842,
+    "update_two_raf_ms": 20.300000071525574,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "high-arity-10",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 9.09999999999992,
+    "average_fps": 119.99999999999997,
+    "frame_p95_run_min_ms": 9.0,
+    "frame_p95_run_max_ms": 16.700000000000045,
+    "load_wall_ms": 277.26941599999554,
+    "update_commit_ms": 45.700000047683716,
+    "update_two_raf_ms": 96.5,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "high-arity-10",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.699999999999818,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598704,
+    "frame_p95_run_min_ms": 17.5,
+    "frame_p95_run_max_ms": 17.504999999999974,
+    "load_wall_ms": 162.49337499999092,
+    "update_commit_ms": 4.100000023841858,
+    "update_two_raf_ms": 10.5,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "high-arity-100",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 41.699999999998,
+    "frame_p95_ms": 50.0,
+    "average_fps": 24.70844040324175,
+    "frame_p95_run_min_ms": 41.799999999999365,
+    "frame_p95_run_max_ms": 50.39999999999973,
+    "load_wall_ms": 953.8225000000093,
+    "update_commit_ms": 5.800000071525574,
+    "update_two_raf_ms": 745,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "high-arity-100",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 9.199999999999818,
+    "average_fps": 120.0,
+    "frame_p95_run_min_ms": 9.100000000000364,
+    "frame_p95_run_max_ms": 9.200000000000273,
+    "load_wall_ms": 1282.8094170000404,
+    "update_commit_ms": 2450,
+    "update_two_raf_ms": 2771.5,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "high-arity-100",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.699999999999818,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598704,
+    "frame_p95_run_min_ms": 17.40000000000009,
+    "frame_p95_run_max_ms": 17.5,
+    "load_wall_ms": 663.5854169999948,
+    "update_commit_ms": 13.900000095367432,
+    "update_two_raf_ms": 32,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "high-arity-1000",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "failed"
+    ],
+    "frame_p50_ms": null,
+    "frame_p95_ms": null,
+    "average_fps": null,
+    "frame_p95_run_min_ms": null,
+    "frame_p95_run_max_ms": null,
+    "load_wall_ms": null,
+    "update_commit_ms": null,
+    "update_two_raf_ms": null,
+    "failure_stages": [
+      "incremental update",
+      "timed sampling"
+    ]
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "high-arity-1000",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "failed"
+    ],
+    "frame_p50_ms": null,
+    "frame_p95_ms": null,
+    "average_fps": null,
+    "frame_p95_run_min_ms": null,
+    "frame_p95_run_max_ms": null,
+    "load_wall_ms": null,
+    "update_commit_ms": null,
+    "update_two_raf_ms": null,
+    "failure_stages": [
+      "timed sampling"
+    ]
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "high-arity-1000",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.700000000000728,
+    "frame_p95_ms": 50.0,
+    "average_fps": 43.15925766076823,
+    "frame_p95_run_min_ms": 50.0,
+    "frame_p95_run_max_ms": 50.100000000000364,
+    "load_wall_ms": 5762.138208000048,
+    "update_commit_ms": 167.79999995231628,
+    "update_two_raf_ms": 351.2999999523163,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "large",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 2,
+    "statuses": [
+      "completed",
+      "failed"
+    ],
+    "frame_p50_ms": 191.64999999999782,
+    "frame_p95_ms": 203.62000000000552,
+    "average_fps": 5.217109705983209,
+    "frame_p95_run_min_ms": 201.3300000000032,
+    "frame_p95_run_max_ms": 205.91000000000787,
+    "load_wall_ms": 3335.5768124999013,
+    "update_commit_ms": 48.34999996423721,
+    "update_two_raf_ms": 4161.699999988079,
+    "failure_stages": [
+      "incremental update"
+    ]
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "large",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 4,
+    "statuses": [
+      "completed",
+      "failed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 9.299999999999272,
+    "average_fps": 120.01920787479659,
+    "frame_p95_run_min_ms": 9.205000000000656,
+    "frame_p95_run_max_ms": 9.299999999999272,
+    "load_wall_ms": 5253.855395499966,
+    "update_commit_ms": 51638.90000003576,
+    "update_two_raf_ms": 53253.200000047684,
+    "failure_stages": [
+      "incremental update"
+    ]
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "large",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.699999999999818,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598705,
+    "frame_p95_run_min_ms": 17.399999999999682,
+    "frame_p95_run_max_ms": 17.504999999999974,
+    "load_wall_ms": 2999.3059169999906,
+    "update_commit_ms": 1079.8000000715256,
+    "update_two_raf_ms": 1160.9000000953674,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "mathlib",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 133.3000000000029,
+    "frame_p95_ms": 150.0,
+    "average_fps": 7.371822437370225,
+    "frame_p95_run_min_ms": 134.0,
+    "frame_p95_run_max_ms": 191.3150000000027,
+    "load_wall_ms": 7748.540666999994,
+    "update_commit_ms": 73.30000007152557,
+    "update_two_raf_ms": 11238.900000095367,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "mathlib",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "failed"
+    ],
+    "frame_p50_ms": null,
+    "frame_p95_ms": null,
+    "average_fps": null,
+    "frame_p95_run_min_ms": null,
+    "frame_p95_run_max_ms": null,
+    "load_wall_ms": null,
+    "update_commit_ms": null,
+    "update_two_raf_ms": null,
+    "failure_stages": [
+      "incremental update",
+      "timed sampling"
+    ]
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "mathlib",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.69999999999891,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598705,
+    "frame_p95_run_min_ms": 17.399999999999636,
+    "frame_p95_run_max_ms": 17.600000000000364,
+    "load_wall_ms": 7231.883042000001,
+    "update_commit_ms": 13242.900000095367,
+    "update_two_raf_ms": 13612.400000095367,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "moderate",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 25.100000000000364,
+    "frame_p95_ms": 33.399999999999636,
+    "average_fps": 35.40240736370073,
+    "frame_p95_run_min_ms": 33.399999999999636,
+    "frame_p95_run_max_ms": 34.10500000000038,
+    "load_wall_ms": 727.1333330001216,
+    "update_commit_ms": 4.200000047683716,
+    "update_two_raf_ms": 414.7999999523163,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "moderate",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 9.205000000000656,
+    "average_fps": 120.0,
+    "frame_p95_run_min_ms": 9.199999999999818,
+    "frame_p95_run_max_ms": 10.0,
+    "load_wall_ms": 1014.5705409999937,
+    "update_commit_ms": 1342.6000000238419,
+    "update_two_raf_ms": 1586.5,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "moderate",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.699999999999818,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598704,
+    "frame_p95_run_min_ms": 17.404999999999657,
+    "frame_p95_run_max_ms": 17.59999999999993,
+    "load_wall_ms": 538.9120419999817,
+    "update_commit_ms": 42.199999928474426,
+    "update_two_raf_ms": 56.5,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "3d-force-graph",
+    "dataset": "scientific",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 8.400000000000091,
+    "average_fps": 120.0,
+    "frame_p95_run_min_ms": 8.400000000000091,
+    "frame_p95_run_max_ms": 8.704999999999837,
+    "load_wall_ms": 190.25154200010002,
+    "update_commit_ms": 0.7999999523162842,
+    "update_two_raf_ms": 17.800000071525574,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "cytoscape",
+    "dataset": "scientific",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 8.300000000000182,
+    "frame_p95_ms": 9.200000000000273,
+    "average_fps": 120.00480019200768,
+    "frame_p95_run_min_ms": 9.099999999999909,
+    "frame_p95_run_max_ms": 10.0,
+    "load_wall_ms": 247.11237500002608,
+    "update_commit_ms": 37.5,
+    "update_two_raf_ms": 79.19999992847443,
+    "failure_stages": []
+  },
+  {
+    "track": "browser",
+    "tool": "sigma",
+    "dataset": "scientific",
+    "mode": "camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "completed"
+    ],
+    "frame_p50_ms": 16.699999999999818,
+    "frame_p95_ms": 17.5,
+    "average_fps": 59.99640021598705,
+    "frame_p95_run_min_ms": 17.399999999999636,
+    "frame_p95_run_max_ms": 17.5,
+    "load_wall_ms": 148.42616599996109,
+    "update_commit_ms": 7.5,
+    "update_two_raf_ms": 10.700000047683716,
+    "failure_stages": []
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "high-arity-10",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 34.5625,
+    "native_parse_ms": 1.12825,
+    "hif_parse_validate_ms": 3.872959,
+    "hif_viewer_conversion_ms": 3.3592079999999997,
+    "bipartite_projection_ms": 0.15075,
+    "all_hulls_cpu_ms": 1.284417,
+    "layout_step_p50_ms": 0.899458
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "high-arity-100",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 91.78125,
+    "native_parse_ms": 1.478708,
+    "hif_parse_validate_ms": 12.999042000000001,
+    "hif_viewer_conversion_ms": 15.998292000000001,
+    "bipartite_projection_ms": 0.611,
+    "all_hulls_cpu_ms": 37.928333,
+    "layout_step_p50_ms": 1.1687705
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "high-arity-1000",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 677.53125,
+    "native_parse_ms": 4.778042,
+    "hif_parse_validate_ms": 104.577791,
+    "hif_viewer_conversion_ms": 147.098334,
+    "bipartite_projection_ms": 4.31825,
+    "all_hulls_cpu_ms": 44.921375,
+    "layout_step_p50_ms": 1.7627920000000001
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "large",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 423.453125,
+    "native_parse_ms": 14.190125,
+    "hif_parse_validate_ms": 60.409125,
+    "hif_viewer_conversion_ms": 85.064167,
+    "bipartite_projection_ms": 4.0865,
+    "all_hulls_cpu_ms": 78.29204200000001,
+    "layout_step_p50_ms": 31.9006245
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 1020.78125,
+    "native_parse_ms": 36.261500000000005,
+    "hif_parse_validate_ms": 141.10008399999998,
+    "hif_viewer_conversion_ms": 228.002417,
+    "bipartite_projection_ms": 15.366,
+    "all_hulls_cpu_ms": 10.773333,
+    "layout_step_p50_ms": 97.660187
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 80.765625,
+    "native_parse_ms": 2.123292,
+    "hif_parse_validate_ms": 11.522792,
+    "hif_viewer_conversion_ms": 12.630625,
+    "bipartite_projection_ms": 0.634666,
+    "all_hulls_cpu_ms": 15.588708,
+    "layout_step_p50_ms": 3.5262705
+  },
+  {
+    "track": "core",
+    "tool": "Hyper",
+    "dataset": "scientific",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 30.078125,
+    "native_parse_ms": 0.76725,
+    "hif_parse_validate_ms": 3.079375,
+    "hif_viewer_conversion_ms": 2.420291,
+    "bipartite_projection_ms": 0.185833,
+    "all_hulls_cpu_ms": 0.109791,
+    "layout_step_p50_ms": 2.0560625000000003
+  },
+  {
+    "track": "desktop-group",
+    "tool": "HyperGodot",
+    "dataset": "moderate",
+    "mode": "frozen-camera-motion",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "frame_p50_ms": 8.3265,
+    "frame_p95_ms": 10.369250000000003,
+    "frame_p95_run_min_ms": 8.6895,
+    "frame_p95_run_max_ms": 11.88155,
+    "average_fps": 118.81973976100595,
+    "whole_session_peak_rss_mib": 336.546875,
+    "exact_parser_memberships": true,
+    "viewport_size": [
+      1920.0,
+      1080.0
+    ],
+    "render_target_size": [
+      1920.0,
+      1080.0
+    ],
+    "matched_requested_viewport": true,
+    "startup_construction_ms": 188.342
+  },
+  {
+    "track": "desktop-import",
+    "tool": "Graphia",
+    "dataset": "mathlib",
+    "mode": "headless-import-save",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "import_save_wall_ms": 1490.5674999999992,
+    "peak_rss_mib_median": 656.15625,
+    "exact_incidence_records": true
+  },
+  {
+    "track": "desktop-import",
+    "tool": "Graphia",
+    "dataset": "moderate",
+    "mode": "headless-import-save",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "import_save_wall_ms": 390.8611670000006,
+    "peak_rss_mib_median": 130.734375,
+    "exact_incidence_records": true
+  },
+  {
+    "track": "desktop-import",
+    "tool": "Graphia",
+    "dataset": "scientific",
+    "mode": "headless-import-save",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "import_save_wall_ms": 332.8365420000008,
+    "peak_rss_mib_median": 106.375,
+    "exact_incidence_records": true
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-10",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 4,
+    "statuses": [
+      "ok",
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": 235.171875,
+    "frame_p50_ms": 8.343771,
+    "frame_p95_ms": 8.9930366,
+    "frame_p95_run_min_ms": 8.610943099999998,
+    "frame_p95_run_max_ms": 17.45418335,
+    "average_fps": 119.82986869988167,
+    "update_commit_ms": 0.24362499999999998,
+    "update_next_frame_ms": 8.400521000000001,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-10",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 260.625,
+    "frame_p50_ms": 8.6670625,
+    "frame_p95_ms": 17.0684306,
+    "frame_p95_run_min_ms": 16.94330175,
+    "frame_p95_run_max_ms": 26.3379021,
+    "average_fps": 64.61796892456307,
+    "update_commit_ms": 0.277417,
+    "update_next_frame_ms": 16.408915999999998,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-100",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 255.796875,
+    "frame_p50_ms": 8.324667,
+    "frame_p95_ms": 9.530175,
+    "frame_p95_run_min_ms": 8.696767,
+    "frame_p95_run_max_ms": 17.019593150000002,
+    "average_fps": 117.86454974748196,
+    "update_commit_ms": 0.870208,
+    "update_next_frame_ms": 8.27925,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-100",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 271.90625,
+    "frame_p50_ms": 16.717312,
+    "frame_p95_ms": 33.508365250000004,
+    "frame_p95_run_min_ms": 25.29628335,
+    "frame_p95_run_max_ms": 33.732054500000004,
+    "average_fps": 49.447122452522876,
+    "update_commit_ms": 0.5804579999999999,
+    "update_next_frame_ms": 42.724375,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-1000",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 411.09375,
+    "frame_p50_ms": 12.6834165,
+    "frame_p95_ms": 17.106894099999998,
+    "frame_p95_run_min_ms": 11.7243215,
+    "frame_p95_run_max_ms": 20.55327295,
+    "average_fps": 71.99500139281292,
+    "update_commit_ms": 6.159333,
+    "update_next_frame_ms": 18.402124999999998,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "high-arity-1000",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 427.140625,
+    "frame_p50_ms": 33.347542000000004,
+    "frame_p95_ms": 41.77612115,
+    "frame_p95_run_min_ms": 34.796988150000004,
+    "frame_p95_run_max_ms": 53.862216,
+    "average_fps": 29.77707208874065,
+    "update_commit_ms": 8.971290999999999,
+    "update_next_frame_ms": 56.79325,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "large",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 4,
+    "statuses": [
+      "ok",
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": 700.1484375,
+    "frame_p50_ms": 61.367645499999995,
+    "frame_p95_ms": 68.10254567499999,
+    "frame_p95_run_min_ms": 66.62374615,
+    "frame_p95_run_max_ms": 82.65074374999999,
+    "average_fps": 16.345351441727637,
+    "update_commit_ms": 5.769916499999999,
+    "update_next_frame_ms": 62.76875,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "large",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 4,
+    "statuses": [
+      "ok",
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": 1006.703125,
+    "frame_p50_ms": 270.729198,
+    "frame_p95_ms": 375.32187310000006,
+    "frame_p95_run_min_ms": 347.00522440000003,
+    "frame_p95_run_max_ms": 455.02350145000014,
+    "average_fps": 3.5191572363889527,
+    "update_commit_ms": 6.9078955,
+    "update_next_frame_ms": 302.924271,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": null,
+    "frame_p50_ms": null,
+    "frame_p95_ms": null,
+    "frame_p95_run_min_ms": null,
+    "frame_p95_run_max_ms": null,
+    "average_fps": null,
+    "update_commit_ms": null,
+    "update_next_frame_ms": null,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": null,
+    "frame_p50_ms": null,
+    "frame_p95_ms": null,
+    "frame_p95_run_min_ms": null,
+    "frame_p95_run_max_ms": null,
+    "average_fps": null,
+    "update_commit_ms": null,
+    "update_next_frame_ms": null,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 281.796875,
+    "frame_p50_ms": 8.312187999999999,
+    "frame_p95_ms": 9.6822396,
+    "frame_p95_run_min_ms": 8.726020799999999,
+    "frame_p95_run_max_ms": 17.1010667,
+    "average_fps": 117.14653303371168,
+    "update_commit_ms": 0.9233330000000001,
+    "update_next_frame_ms": 8.483708,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 358.375,
+    "frame_p50_ms": 49.975916500000004,
+    "frame_p95_ms": 62.078327050000034,
+    "frame_p95_run_min_ms": 51.964571450000015,
+    "frame_p95_run_max_ms": 74.2269899,
+    "average_fps": 19.566884191655177,
+    "update_commit_ms": 0.7896249999999999,
+    "update_next_frame_ms": 58.941583,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "live",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 287.140625,
+    "frame_p50_ms": 16.656437500000003,
+    "frame_p95_ms": 17.009687200000002,
+    "frame_p95_run_min_ms": 9.089753500000002,
+    "frame_p95_run_max_ms": 17.233082699999997,
+    "average_fps": 59.998014065734424,
+    "update_commit_ms": 0.907625,
+    "update_next_frame_ms": 16.757542,
+    "layout_step_p50_ms": 3.4929794999999997
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "live+hulls",
+    "attempts": 5,
+    "successful_runs": 3,
+    "statuses": [
+      "ok",
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": 384.796875,
+    "frame_p50_ms": 21.9059585,
+    "frame_p95_ms": 37.07194615,
+    "frame_p95_run_min_ms": 34.935810749999995,
+    "frame_p95_run_max_ms": 43.48701425,
+    "average_fps": 41.350638667505976,
+    "update_commit_ms": 0.874833,
+    "update_next_frame_ms": 25.381958,
+    "layout_step_p50_ms": 3.4389995
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "scientific",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 237.25,
+    "frame_p50_ms": 8.413896,
+    "frame_p95_ms": 9.082428850000001,
+    "frame_p95_run_min_ms": 8.6574399,
+    "frame_p95_run_max_ms": 17.76361605,
+    "average_fps": 119.37348022637987,
+    "update_commit_ms": 0.358834,
+    "update_next_frame_ms": 8.502666000000001,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native",
+    "tool": "Hyper",
+    "dataset": "scientific",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 257.5,
+    "frame_p50_ms": 8.332979,
+    "frame_p95_ms": 9.15702465,
+    "frame_p95_run_min_ms": 8.698001750000001,
+    "frame_p95_run_max_ms": 17.2186851,
+    "average_fps": 119.59758207431508,
+    "update_commit_ms": 0.38875,
+    "update_next_frame_ms": 8.541542,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native-interactive",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 880.296875,
+    "frame_p50_ms": 162.184188,
+    "frame_p95_ms": 219.9086247,
+    "frame_p95_run_min_ms": 191.63183125,
+    "frame_p95_run_max_ms": 257.63149730000004,
+    "average_fps": 5.932056024739585,
+    "update_commit_ms": 10.35475,
+    "update_next_frame_ms": 195.358458,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native-interactive",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "live+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 935.109375,
+    "frame_p50_ms": 97.1940415,
+    "frame_p95_ms": 171.71294405,
+    "frame_p95_run_min_ms": 166.69555655,
+    "frame_p95_run_max_ms": 176.77365565,
+    "average_fps": 9.081420199218897,
+    "update_commit_ms": 9.243917000000001,
+    "update_next_frame_ms": 97.096375,
+    "layout_step_p50_ms": 14.230917
+  },
+  {
+    "track": "native-interactive",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 298.53125,
+    "frame_p50_ms": 50.037853999999996,
+    "frame_p95_ms": 64.92663155000001,
+    "frame_p95_run_min_ms": 53.9034247,
+    "frame_p95_run_max_ms": 95.84127980000001,
+    "average_fps": 19.04790043287936,
+    "update_commit_ms": 0.36612500000000003,
+    "update_next_frame_ms": 50.895165999999996,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native-interactive",
+    "tool": "Hyper",
+    "dataset": "moderate",
+    "mode": "live+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 321.875,
+    "frame_p50_ms": 18.000854,
+    "frame_p95_ms": 30.836029449999998,
+    "frame_p95_run_min_ms": 30.097470799999996,
+    "frame_p95_run_max_ms": 37.94153095,
+    "average_fps": 50.06377464047368,
+    "update_commit_ms": 0.334833,
+    "update_next_frame_ms": 20.603042,
+    "layout_step_p50_ms": 0.8554785
+  },
+  {
+    "track": "native-star",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 674.3125,
+    "frame_p50_ms": 18.1558745,
+    "frame_p95_ms": 25.95170445,
+    "frame_p95_run_min_ms": 25.77922710000001,
+    "frame_p95_run_max_ms": 33.882346150000004,
+    "average_fps": 47.75056283313845,
+    "update_commit_ms": 9.548667,
+    "update_next_frame_ms": 31.525791999999996,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native-star",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "frozen+hulls",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 746.03125,
+    "frame_p50_ms": 187.351604,
+    "frame_p95_ms": 216.6013354,
+    "frame_p95_run_min_ms": 174.73731285000002,
+    "frame_p95_run_max_ms": 253.4044726,
+    "average_fps": 5.3932981919356555,
+    "update_commit_ms": 12.262,
+    "update_next_frame_ms": 205.938875,
+    "layout_step_p50_ms": null
+  },
+  {
+    "track": "native-star",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "live",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "peak_rss_mib_median": 666.34375,
+    "frame_p50_ms": 21.7779375,
+    "frame_p95_ms": 24.799570850000002,
+    "frame_p95_run_min_ms": 22.542967,
+    "frame_p95_run_max_ms": 27.75147535,
+    "average_fps": 45.09819822161659,
+    "update_commit_ms": 7.620542,
+    "update_next_frame_ms": 42.012625,
+    "layout_step_p50_ms": 14.1977295
+  },
+  {
+    "track": "native-star",
+    "tool": "Hyper",
+    "dataset": "mathlib",
+    "mode": "live+hulls",
+    "attempts": 5,
+    "successful_runs": 4,
+    "statuses": [
+      "ok",
+      "watchdog_timeout"
+    ],
+    "peak_rss_mib_median": 1057.625,
+    "frame_p50_ms": 100.75751050000001,
+    "frame_p95_ms": 179.874916675,
+    "frame_p95_run_min_ms": 173.5838253,
+    "frame_p95_run_max_ms": 220.50807085000002,
+    "average_fps": 8.846815336427651,
+    "update_commit_ms": 9.592875,
+    "update_next_frame_ms": 101.556396,
+    "layout_step_p50_ms": 14.70263525
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "correctness",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 67.546875,
+    "tool_import_ms": 7.113292,
+    "file_read_ms": 0.212541,
+    "json_parse_ms": 0.071667,
+    "canonical_validate_ms": 0.010916,
+    "adapter_construct_ms": 0.056875,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "correctness",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 125.40625,
+    "tool_import_ms": 7.001334,
+    "file_read_ms": 0.078417,
+    "json_parse_ms": 0.063292,
+    "canonical_validate_ms": 0.010917,
+    "adapter_construct_ms": 0.05575,
+    "artist_setup_ms": 1149.301958,
+    "agg_raster_draw_ms": 30.262417,
+    "pixel_buffer_copy_ms": 1.558458,
+    "png_export_ms": 20.909042
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "correctness",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 198.125,
+    "tool_import_ms": 755.6835,
+    "file_read_ms": 0.03725,
+    "json_parse_ms": 0.031792,
+    "canonical_validate_ms": 0.008458,
+    "adapter_construct_ms": 5.145541,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "correctness",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 222.375,
+    "tool_import_ms": 760.475375,
+    "file_read_ms": 0.048417,
+    "json_parse_ms": 0.032041,
+    "canonical_validate_ms": 0.008584,
+    "adapter_construct_ms": 4.998208,
+    "artist_setup_ms": 6.026375,
+    "agg_raster_draw_ms": 5.47725,
+    "pixel_buffer_copy_ms": 1.73575,
+    "png_export_ms": 21.036917
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "correctness",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 104.5625,
+    "tool_import_ms": 283.202042,
+    "file_read_ms": 0.047459,
+    "json_parse_ms": 0.034583,
+    "canonical_validate_ms": 0.009541,
+    "adapter_construct_ms": 0.058583,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "correctness",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 129.265625,
+    "tool_import_ms": 284.31775,
+    "file_read_ms": 0.051208,
+    "json_parse_ms": 0.0355,
+    "canonical_validate_ms": 0.00975,
+    "adapter_construct_ms": 0.06325,
+    "artist_setup_ms": 7.765333,
+    "agg_raster_draw_ms": 3.999584,
+    "pixel_buffer_copy_ms": 1.547667,
+    "png_export_ms": 18.327667
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "high-arity-10",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 69.34375,
+    "tool_import_ms": 6.339625,
+    "file_read_ms": 0.229625,
+    "json_parse_ms": 0.717166,
+    "canonical_validate_ms": 0.149667,
+    "adapter_construct_ms": 1.0235,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "high-arity-10",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 202.453125,
+    "tool_import_ms": 841.494375,
+    "file_read_ms": 0.27925,
+    "json_parse_ms": 0.656375,
+    "canonical_validate_ms": 0.148042,
+    "adapter_construct_ms": 32.927667,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "high-arity-10",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 106.078125,
+    "tool_import_ms": 281.07,
+    "file_read_ms": 0.265875,
+    "json_parse_ms": 0.675667,
+    "canonical_validate_ms": 0.144458,
+    "adapter_construct_ms": 0.748625,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "high-arity-100",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 72.265625,
+    "tool_import_ms": 6.501292,
+    "file_read_ms": 0.559625,
+    "json_parse_ms": 1.144125,
+    "canonical_validate_ms": 0.882125,
+    "adapter_construct_ms": 6.682958,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "high-arity-100",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 212.765625,
+    "tool_import_ms": 840.271958,
+    "file_read_ms": 0.098791,
+    "json_parse_ms": 1.05225,
+    "canonical_validate_ms": 0.875542,
+    "adapter_construct_ms": 193.156208,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "high-arity-100",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 110.828125,
+    "tool_import_ms": 278.170625,
+    "file_read_ms": 0.439584,
+    "json_parse_ms": 1.118125,
+    "canonical_validate_ms": 0.876333,
+    "adapter_construct_ms": 2.603958,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "high-arity-1000",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 89.765625,
+    "tool_import_ms": 7.142959,
+    "file_read_ms": 0.62225,
+    "json_parse_ms": 5.15575,
+    "canonical_validate_ms": 4.725667,
+    "adapter_construct_ms": 15.997,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "high-arity-1000",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 342.265625,
+    "tool_import_ms": 900.420291,
+    "file_read_ms": 0.531291,
+    "json_parse_ms": 4.8025,
+    "canonical_validate_ms": 4.877208,
+    "adapter_construct_ms": 1827.21875,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "high-arity-1000",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 142.65625,
+    "tool_import_ms": 271.909334,
+    "file_read_ms": 2.555083,
+    "json_parse_ms": 4.782375,
+    "canonical_validate_ms": 4.70875,
+    "adapter_construct_ms": 21.3205,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "large",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 104.4375,
+    "tool_import_ms": 7.07125,
+    "file_read_ms": 0.636084,
+    "json_parse_ms": 11.655541,
+    "canonical_validate_ms": 4.093667,
+    "adapter_construct_ms": 34.99625,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "large",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 295.484375,
+    "tool_import_ms": 860.484333,
+    "file_read_ms": 0.629625,
+    "json_parse_ms": 11.665208,
+    "canonical_validate_ms": 4.19175,
+    "adapter_construct_ms": 876.699333,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "large",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 148.53125,
+    "tool_import_ms": 280.495541,
+    "file_read_ms": 0.648041,
+    "json_parse_ms": 11.503042,
+    "canonical_validate_ms": 4.224125,
+    "adapter_construct_ms": 53.333666,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "mathlib",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 237.46875,
+    "tool_import_ms": 6.886417,
+    "file_read_ms": 2.072791,
+    "json_parse_ms": 58.149625,
+    "canonical_validate_ms": 12.713375,
+    "adapter_construct_ms": 108.1725,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "mathlib",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 650.90625,
+    "tool_import_ms": 885.215458,
+    "file_read_ms": 8.097792,
+    "json_parse_ms": 62.972667,
+    "canonical_validate_ms": 12.971375,
+    "adapter_construct_ms": 1798.545625,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "mathlib",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 280.421875,
+    "tool_import_ms": 274.656875,
+    "file_read_ms": 2.040375,
+    "json_parse_ms": 60.567708,
+    "canonical_validate_ms": 12.875291,
+    "adapter_construct_ms": 166.9665,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "moderate",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 72.5625,
+    "tool_import_ms": 9.13125,
+    "file_read_ms": 0.10275,
+    "json_parse_ms": 1.418208,
+    "canonical_validate_ms": 0.706542,
+    "adapter_construct_ms": 5.894708,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "moderate",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 0,
+    "statuses": [
+      "watchdog_timeout"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": null,
+    "tool_import_ms": null,
+    "file_read_ms": null,
+    "json_parse_ms": null,
+    "canonical_validate_ms": null,
+    "adapter_construct_ms": null,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "moderate",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 211.375,
+    "tool_import_ms": 757.944458,
+    "file_read_ms": 0.061709,
+    "json_parse_ms": 1.276042,
+    "canonical_validate_ms": 0.695084,
+    "adapter_construct_ms": 161.783542,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "moderate",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 242.421875,
+    "tool_import_ms": 756.206792,
+    "file_read_ms": 0.061292,
+    "json_parse_ms": 1.27025,
+    "canonical_validate_ms": 0.696541,
+    "adapter_construct_ms": 159.922167,
+    "artist_setup_ms": 2717.868041,
+    "agg_raster_draw_ms": 1089.548291,
+    "pixel_buffer_copy_ms": 1.588708,
+    "png_export_ms": 28.119
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "moderate",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 110.0,
+    "tool_import_ms": 280.063417,
+    "file_read_ms": 0.269875,
+    "json_parse_ms": 1.34325,
+    "canonical_validate_ms": 0.703334,
+    "adapter_construct_ms": 4.386834,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "moderate",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 144.0,
+    "tool_import_ms": 275.288375,
+    "file_read_ms": 0.066292,
+    "json_parse_ms": 1.369208,
+    "canonical_validate_ms": 0.799083,
+    "adapter_construct_ms": 4.709417,
+    "artist_setup_ms": 214.565458,
+    "agg_raster_draw_ms": 452.824667,
+    "pixel_buffer_copy_ms": 1.568875,
+    "png_export_ms": 37.701
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "scientific",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 69.296875,
+    "tool_import_ms": 6.417375,
+    "file_read_ms": 0.084,
+    "json_parse_ms": 0.557875,
+    "canonical_validate_ms": 0.161542,
+    "adapter_construct_ms": 1.101458,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypergraphx",
+    "dataset": "scientific",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "unsupported_records"
+    ],
+    "exact_model_records": false,
+    "peak_rss_mib_median": 181.5625,
+    "tool_import_ms": 6.540083,
+    "file_read_ms": 0.085834,
+    "json_parse_ms": 0.518292,
+    "canonical_validate_ms": 0.1615,
+    "adapter_construct_ms": 1.09425,
+    "artist_setup_ms": 13764.899333,
+    "agg_raster_draw_ms": 396.785417,
+    "pixel_buffer_copy_ms": 1.708541,
+    "png_export_ms": 40.778666
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "scientific",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 202.125,
+    "tool_import_ms": 753.316166,
+    "file_read_ms": 0.049,
+    "json_parse_ms": 0.458125,
+    "canonical_validate_ms": 0.158541,
+    "adapter_construct_ms": 27.517958,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "hypernetx",
+    "dataset": "scientific",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 228.1875,
+    "tool_import_ms": 755.231709,
+    "file_read_ms": 0.049292,
+    "json_parse_ms": 0.458959,
+    "canonical_validate_ms": 0.159917,
+    "adapter_construct_ms": 27.489833,
+    "artist_setup_ms": 500.677833,
+    "agg_raster_draw_ms": 154.867125,
+    "pixel_buffer_copy_ms": 1.595667,
+    "png_export_ms": 35.96675
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "scientific",
+    "mode": "construct",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 105.984375,
+    "tool_import_ms": 274.38325,
+    "file_read_ms": 0.045958,
+    "json_parse_ms": 0.492708,
+    "canonical_validate_ms": 0.154791,
+    "adapter_construct_ms": 1.325541,
+    "artist_setup_ms": null,
+    "agg_raster_draw_ms": null,
+    "pixel_buffer_copy_ms": null,
+    "png_export_ms": null
+  },
+  {
+    "track": "scientific",
+    "tool": "xgi",
+    "dataset": "scientific",
+    "mode": "plot",
+    "attempts": 5,
+    "successful_runs": 5,
+    "statuses": [
+      "ok"
+    ],
+    "exact_model_records": true,
+    "peak_rss_mib_median": 132.25,
+    "tool_import_ms": 274.083,
+    "file_read_ms": 0.27325,
+    "json_parse_ms": 0.518833,
+    "canonical_validate_ms": 0.159708,
+    "adapter_construct_ms": 1.372583,
+    "artist_setup_ms": 23.956792,
+    "agg_raster_draw_ms": 28.11425,
+    "pixel_buffer_copy_ms": 1.591291,
+    "png_export_ms": 33.236709
+  }
+]
