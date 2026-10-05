@@ -58,9 +58,9 @@ HYPER_VIZ_SESSION=off target/release/hyper target/mathlib/graph.json \
 
 # macOS encoders; the frame directory and output files must be new.
 swift scripts/encode_video.swift target/mathlib/realtime-frames \
-  docs/media/mathlib-realtime.mp4 30 target/mathlib/realtime-frames/timing.csv
-swift scripts/encode_gif.swift docs/media/mathlib-realtime.mp4 \
-  docs/media/mathlib-realtime.gif 800 12
+  target/mathlib/realtime.mp4 30 target/mathlib/realtime-frames/timing.csv
+swift scripts/encode_gif.swift target/mathlib/realtime.mp4 \
+  target/mathlib/realtime.gif 800 12
 ```
 
 `--realtime-tour` makes `--frames / --fps` the wall-clock navigation duration
