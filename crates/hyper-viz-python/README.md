@@ -64,6 +64,19 @@ uv run hyper
 `uv run hyper dataset.hif.json --projection bipartite` for your own dataset.
 For pip, use `python -m pip install --upgrade "hypergraph-viz[viewer]"`.
 
+To launch only the desktop viewer without creating a project:
+
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+# Open your dataset:
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+`--from` selects the distribution that supplies the `hyper` executable.
+`hypergraph-viz` supplies the Python API and has no executable of its own;
+use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
 Wheels cover Linux x86_64, macOS arm64/x86_64, and Windows x86_64. No Rust
 compiler or repository checkout is needed on these platforms. A desktop session
 and graphics driver are required. Linux viewer wheels require glibc 2.28+;

@@ -17,6 +17,19 @@ Use `uv run hyper dataset.hif.json` to open your own dataset, or save the Python
 example below as `explore.py` and run `uv run explore.py`. No environment
 activation is needed. uv can download a compatible Python when necessary.
 
+To launch only the desktop viewer without creating a project:
+
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+# Open your dataset:
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+`--from` selects the distribution that supplies the `hyper` executable.
+`hypergraph-viz` supplies the Python API and has no executable of its own;
+use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
 For pip, use `python -m pip install --upgrade "hypergraph-viz[viewer]"` in a
 Python 3.10+ virtual environment.
 

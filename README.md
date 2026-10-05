@@ -47,6 +47,19 @@ This opens the built-in coauthorship demo. To view your own HIF dataset:
 uv run hyper dataset.hif.json --projection bipartite
 ```
 
+To launch only the desktop viewer without creating a project:
+
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+# Open your dataset:
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+`--from` selects the distribution that supplies the `hyper` executable.
+`hypergraph-viz` supplies the Python API and has no executable of its own;
+use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
 `uv add` records dependencies in `pyproject.toml`, creates `.venv`, and locks
 versions in `uv.lock`; `uv run` uses that environment without activation.
 uv can download Python 3.12 if needed, avoiding older system or Xcode Python.
