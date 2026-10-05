@@ -7,7 +7,7 @@ Install with `npm ci --prefix scripts/benchmarks/browser`. Node 24.16.0, Playwri
 Run untimed validation:
 
 ```sh
-node scripts/benchmarks/browser/run.mjs --validate-only --executable '/Users/bregy/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
+node scripts/benchmarks/browser/run.mjs --validate-only --executable '/path/to/chrome'
 ```
 
 This cached browser was verified as Chrome for Testing 153.0.8010.12, Chromium revision `971a7443b0c9b0a9b2860529b33331b76077ec62`. Use an explicit installed browser path, or install Playwright's pinned browser with `npx --prefix scripts/benchmarks/browser playwright install chromium` and omit `--executable`. Evidence includes the *actual* CDP browser version/revision. Do not silently substitute another browser and combine its results.
@@ -16,7 +16,7 @@ Timed run, after the coordinator has finished other resource-intensive workloads
 
 ```sh
 BENCHMARK_CONDITIONS='AC power; thermal condition; background jobs; display refresh rate' \
-node scripts/benchmarks/browser/run.mjs --datasets moderate,large,high-arity-10,high-arity-100,high-arity-1000,scientific,mathlib --modes camera-motion --job-timeout-ms 90000 --executable '/Users/bregy/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
+node scripts/benchmarks/browser/run.mjs --datasets moderate,large,high-arity-10,high-arity-100,high-arity-1000,scientific,mathlib --modes camera-motion --job-timeout-ms 90000 --executable '/path/to/chrome'
 ```
 
 The main example selects camera motion only across seven datasets (105 runs). Both modes remain the default. A per-job 180-second watchdog (`--job-timeout-ms`) closes failed/stalled pages, saves a failed row with its stage/reason and continues, preserving partial evidence. The default is a headed 1920×1080 viewport with DPR 1, browser default vsync, five repetitions, 120 warmup rAF callbacks and 300 sample callbacks for both static and camera-motion modes. A seeded Fisher–Yates shuffle randomizes tool/dataset/mode order within every repetition. `--datasets`, `--tools`, `--modes static,camera-motion`, `--seed`, `--output`, `--executable` can restrict or place runs. `--headless` is explicit and recorded. `--swiftshader` requests software rendering explicitly and records the true backend; do not publish it as hardware performance.

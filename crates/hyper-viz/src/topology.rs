@@ -4,25 +4,44 @@
 use crate::{HypergraphScene, Vec3};
 use serde::{Deserialize, Serialize};
 
+/// Attraction law used by [`crate::ForceLayout3D`]; repulsion stays Barnes–Hut.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LayoutModel {
+    /// Existing spring/centroid forces controlled by [`crate::LayoutConfig`].
     #[default]
     Legacy,
+    /// Linear attraction weighted by pair degree, set size, and memberships.
     Normalized,
+    /// The same weights with logarithmic attraction at large distances.
     LinLog,
 }
+/// Weights and display multipliers for structural layout models.
+///
+/// Star scenes distinguish arity-two pairs from larger centroid sets. Scenes
+/// with projected links (bipartite/clique) use those links as pairs instead.
+/// Values are clamped by [`Self::normalize`] before structural stepping/seeding.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TopologySettings {
+    /// Legacy by default; structural models are opt-in for headless callers.
     pub model: LayoutModel,
+    /// Pair coefficient in 0–10; default 0.1.
     pub pair_attraction: f32,
+    /// Centroid-set coefficient in 0–10; default 1.
     pub set_attraction: f32,
+    /// Degree/membership exponent in 0–1; default 1.
     pub hub_normalization: f32,
+    /// Set weight divisor exponent for `(arity - 1)`, in 0–1; default 1.
     pub size_normalization: f32,
+    /// Extra multiplier for `dependency_group` sets, in 0–1; default 0.1.
     pub derived_set_influence: f32,
+    /// LinLog distance scale in 0.01–100,000; default 100.
     pub linlog_scale: f32,
+    /// Pair opacity degree exponent in 0–1; default 0.5. Does not change forces.
     pub hub_fading: f32,
+    /// Hull opacity arity exponent in 0–1; default 0.3. Does not change forces.
     pub size_fading: f32,
+    /// Maximum displacement per structural step in 0.01–1,000; default 10.
     pub max_displacement: f32,
 }
 impl Default for TopologySettings {
@@ -42,6 +61,7 @@ impl Default for TopologySettings {
     }
 }
 impl TopologySettings {
+    /// Clamp finite values to supported ranges; replace non-finite values with defaults.
     pub fn normalize(&mut self) {
         fn bound(v: &mut f32, lo: f32, hi: f32, fallback: f32) {
             *v = if v.is_finite() {

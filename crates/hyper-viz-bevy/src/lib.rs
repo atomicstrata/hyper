@@ -76,7 +76,9 @@ pub struct VisualizerConfig {
     pub title: String,
     pub width: u32,
     pub height: u32,
+    /// Auto keeps Spatial; Dependencies selects the optional native canvas.
     pub view_mode: ViewMode,
+    /// Exact initial vertex ID for dependency exploration; unknown IDs are ignored.
     pub initial_module: Option<String>,
 }
 
@@ -100,11 +102,13 @@ impl VisualizerConfig {
         }
     }
 
+    /// Select the standalone view; Auto currently behaves as Spatial.
     pub fn with_view_mode(mut self, mode: ViewMode) -> Self {
         self.view_mode = mode;
         self
     }
 
+    /// Set an exact starting vertex ID for the dependency canvas.
     pub fn with_module(mut self, id: impl Into<String>) -> Self {
         self.initial_module = Some(id.into());
         self
@@ -174,6 +178,7 @@ impl HyperVisualizerPlugin {
         self
     }
 
+    /// Select the embedded view; Auto currently behaves as Spatial.
     pub fn with_view_mode(mut self, mode: ViewMode) -> Self {
         self.settings.view_mode = mode;
         self

@@ -1,5 +1,11 @@
 # Module explorer validation — 2026-10-03
 
+This report records the original PR measurements and verification before its
+October 5 rebase onto main. Test counts, screenshots, and timings below are
+historical evidence; current integration checks are recorded in the
+[public-readiness checklist](../PUBLIC_RELEASE_CHECKLIST.md). The benchmarks
+were not rerun as part of the rebase.
+
 Validated in the native managed worktree on Apple M5 Pro, 24 GiB RAM,
 macOS 27.0, Metal. No dependency versions or the declared Rust 1.89 floor
 were changed. Commands below use the installed Rust 1.96 toolchain compatible

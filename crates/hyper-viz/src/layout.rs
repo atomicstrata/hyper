@@ -116,6 +116,7 @@ pub struct LayoutConfig {
     pub max_tree_depth: usize,
     /// Pull member vertices toward hyperedge centroid (StarCentroid scenes).
     pub centroid_attraction: f32,
+    /// Structural attraction, movement bounds, and display fading. Legacy by default.
     pub topology: crate::TopologySettings,
 }
 
@@ -192,6 +193,26 @@ impl ForceLayout3D {
         layout
     }
 
+    /// Replace positions with a sparse connectivity embedding and clear velocities.
+    ///
+    /// Pass the same scene/node order used to construct this layout. Diffusion
+    /// passes clamp to 8–512; labels and kinds do not determine coordinates.
+    /// The iteration counter is unchanged. Construct a new layout for a new scene.
+    ///
+    /// ```
+    /// use hyper_viz::{ForceLayout3D, Hypergraph, LayoutConfig, LayoutModel, Projection};
+    /// let scene = Hypergraph::new()
+    ///     .vertex("a", "A", "person").vertex("b", "B", "person")
+    ///     .hyperedge("pair", ["a", "b"], "Pair")
+    ///     .project(Projection::StarCentroid);
+    /// let mut config = LayoutConfig::default();
+    /// config.topology.model = LayoutModel::Normalized;
+    /// let mut layout = ForceLayout3D::from_scene(&scene, config);
+    /// layout.seed_from_topology(&scene, 256);
+    /// assert_eq!(layout.positions.len(), 2);
+    /// assert_eq!(layout.iterations, 0);
+    /// layout.step();
+    /// ```
     pub fn seed_from_topology(&mut self, scene: &HypergraphScene, iterations: usize) {
         self.config.topology.normalize();
         self.topology_forces = crate::topology::TopologyForces::from_scene(scene);
@@ -202,6 +223,7 @@ impl ForceLayout3D {
         self.velocities.fill(Vec3::ZERO);
     }
 
+    /// Pair display multiplier based on endpoint degree; Legacy returns 1.
     pub fn pair_opacity(&self, a: usize, b: usize) -> f32 {
         if self.config.topology.model == crate::LayoutModel::Legacy {
             return 1.;
@@ -210,6 +232,7 @@ impl ForceLayout3D {
             .pair_opacity(a, b, self.config.topology.hub_fading)
     }
 
+    /// Hull display multiplier based on arity; Legacy returns 1.
     pub fn set_opacity(&self, arity: usize) -> f32 {
         if self.config.topology.model == crate::LayoutModel::Legacy {
             return 1.;

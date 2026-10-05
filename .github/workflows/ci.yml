@@ -8,6 +8,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -15,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install system deps (Bevy / winit)
         run: |
@@ -35,13 +43,27 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: test hyper-viz
-        run: cargo test -p hyper-viz
+        run: cargo test --locked -p hyper-viz
 
       - name: test hyper-viz-bevy (lib)
-        run: cargo test -p hyper-viz-bevy --lib
+        run: cargo test --locked -p hyper-viz-bevy --lib
 
       - name: clippy
-        run: cargo clippy -p hyper-viz -p hyper-viz-bevy --all-targets -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+      - name: Public Rust documentation
+        run: cargo doc --locked --workspace --no-deps
+
+      - name: Exporter and benchmark aggregation tests
+        run: |
+          PYTHONPATH=scripts:scripts/benchmarks python -m unittest \
+            scripts/test_mathlib_graph.py scripts/benchmarks/test_datasets.py \
+            scripts/benchmarks/test_summarize.py
+
+      - name: CLI help and version
+        run: |
+          cargo run --locked -- --help
+          cargo run --locked -- --version
 
       - name: headless example
-        run: cargo run -p hyper-viz --example project_scene
+        run: cargo run --locked -p hyper-viz --example project_scene

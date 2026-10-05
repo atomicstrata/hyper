@@ -156,6 +156,10 @@ for browser plans.
 
 ## Full Mathlib Spatial view
 
+This workflow describes the source revision in this repository. Previously
+published `0.1.2` viewer wheels predate these layout controls; build this checkout
+to use them until a new viewer release is published.
+
 Generate `target/mathlib/graph.json` using the [dataset instructions](docs/mathlib-demo.md#reproduce), then launch a fresh interactive view:
 
 ```sh

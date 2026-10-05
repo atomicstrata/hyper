@@ -3,6 +3,7 @@ use crate::{HypergraphScene, NodeRole};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+/// Optional Mathlib classifications inferred from source paths, namespaces, or stubs.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ModuleCategory {
     pub umbrella: bool,
@@ -10,6 +11,7 @@ pub struct ModuleCategory {
     pub tactic: bool,
     pub external: bool,
 }
+/// Include/exclude category switches; all categories are included by default.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ModuleFilters {
@@ -29,6 +31,7 @@ impl Default for ModuleFilters {
     }
 }
 impl ModuleFilters {
+    /// A vertex is allowed only if every category it belongs to is enabled.
     pub fn allows(&self, category: ModuleCategory) -> bool {
         (self.umbrella || !category.umbrella)
             && (self.tests || !category.test)
@@ -36,6 +39,8 @@ impl ModuleFilters {
             && (self.external || !category.external)
     }
 }
+/// Return categories indexed by scene node. Umbrellas match source directory
+/// stems rather than degree; external vertices use `source: "external"` or `stub: true`.
 pub fn module_categories(scene: &HypergraphScene) -> Vec<ModuleCategory> {
     let mut directories = HashSet::new();
     for node in &scene.nodes {

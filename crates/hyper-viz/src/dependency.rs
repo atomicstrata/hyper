@@ -4,18 +4,26 @@ use crate::{HypergraphScene, NodeRole};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
+/// How far to follow one direction independently of the other direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TraversalDepth {
+    /// Keep the center without traversing this direction.
     Off,
+    /// Traverse at most this many edges; normalization clamps to 1–6.
     Hops(u8),
+    /// Traverse all reachable allowed vertices, with cycle detection.
     Transitive,
 }
 
+/// Independent traversal depths and the number of nodes retained for display.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ScopeOptions {
+    /// Follow source → imported target; defaults to one hop.
     pub imports: TraversalDepth,
+    /// Follow the reverse adjacency; defaults to one hop.
     pub dependents: TraversalDepth,
+    /// Display cap in 1–1,000; default 200. Traversal counts remain complete.
     pub budget: usize,
 }
 impl Default for ScopeOptions {
@@ -28,6 +36,7 @@ impl Default for ScopeOptions {
     }
 }
 impl ScopeOptions {
+    /// Clamp hop depths to 1–6 and the visible-node budget to 1–1,000.
     pub fn normalize(&mut self) {
         self.budget = self.budget.clamp(1, 1000);
         for depth in [&mut self.imports, &mut self.dependents] {
@@ -38,23 +47,57 @@ impl ScopeOptions {
     }
 }
 
+/// A bounded visible scope with untruncated reachability and omission counts.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DependencyScope {
+    /// Center scene index; absent when the requested center is invalid.
     pub center: Option<usize>,
+    /// Visible scene indices, ordered by distance then stable ID, center first.
     pub nodes: Vec<usize>,
+    /// Directed relations whose endpoints both appear in `nodes`.
     pub edges: Vec<(usize, usize)>,
     /// Depths cover all reached nodes, including budget-omitted nodes.
     pub import_depths: HashMap<usize, usize>,
+    /// Reverse depths, including budget-omitted nodes.
     pub dependent_depths: HashMap<usize, usize>,
+    /// Union of reached vertices before budget truncation, including the center.
     pub total_reachable: usize,
+    /// Number of reached vertices omitted from `nodes` by the budget.
     pub omitted: usize,
 }
+/// One validated directed relation, retaining every original hyperedge identity.
 #[derive(Debug, Clone)]
 pub struct DirectedImport {
+    /// Importing vertex's scene index.
     pub source: usize,
+    /// Imported vertex's scene index.
     pub target: usize,
+    /// Indices into the source scene's hyperedges, including duplicate relations.
     pub hyperedge_indices: Vec<usize>,
 }
+/// Directed adjacency derived from explicit native import attributes.
+///
+/// Only arity-two `kind: "import"` edges with string `source` and `target`
+/// attributes matching member vertex IDs establish direction. Other hyperedges
+/// remain unordered. Rebuild this index after replacing/reordering a scene.
+///
+/// ```
+/// use hyper_viz::{DependencyIndex, Hyperedge, Hypergraph, Projection, ScopeOptions};
+/// let mut graph = Hypergraph::new()
+///     .vertex("app", "App", "module").vertex("base", "Base", "module");
+/// let mut edge = Hyperedge::new("import", ["app", "base"]).with_kind("import");
+/// edge.attrs.insert("source".into(), "app".into());
+/// edge.attrs.insert("target".into(), "base".into());
+/// graph.add_hyperedge(edge);
+/// let scene = graph.project(Projection::StarCentroid);
+/// let index = DependencyIndex::new(&scene);
+/// let allowed = vec![true; scene.node_count()];
+/// let app = index.node_index("app").unwrap();
+/// let base = index.node_index("base").unwrap();
+/// assert_eq!(index.scope(app, &ScopeOptions::default(), &allowed).nodes.len(), 2);
+/// assert_eq!(index.shortest_path(app, base, &allowed), Some(vec![app, base]));
+/// assert_eq!(index.shortest_path(base, app, &allowed), None);
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct DependencyIndex {
     ids: HashMap<String, usize>,
@@ -112,6 +155,7 @@ fn vertex_ids(scene: &HypergraphScene) -> HashMap<String, usize> {
 }
 
 impl DependencyIndex {
+    /// Validate imports and build deduplicated adjacency ordered by stable IDs.
     pub fn new(scene: &HypergraphScene) -> Self {
         let ids = vertex_ids(scene);
         let mut pairs: BTreeMap<(usize, usize), Vec<usize>> = BTreeMap::new();
@@ -154,24 +198,31 @@ impl DependencyIndex {
             warnings,
         }
     }
+    /// Resolve a stable vertex ID; bipartite hubs are not dependency vertices.
     pub fn node_index(&self, id: &str) -> Option<usize> {
         self.ids.get(id).copied()
     }
+    /// Return the scene node's stable ID, or `None` for an out-of-range index.
     pub fn id(&self, node: usize) -> Option<&str> {
         self.node_ids.get(node).map(String::as_str)
     }
+    /// Outgoing imported vertices; invalid indices return an empty slice.
     pub fn imports(&self, node: usize) -> &[usize] {
         self.outgoing.get(node).map(Vec::as_slice).unwrap_or(&[])
     }
+    /// Incoming dependent vertices; invalid indices return an empty slice.
     pub fn dependents(&self, node: usize) -> &[usize] {
         self.incoming.get(node).map(Vec::as_slice).unwrap_or(&[])
     }
+    /// Validated unique relations, with all original hyperedge indices retained.
     pub fn relations(&self) -> &[DirectedImport] {
         &self.relations
     }
+    /// Malformed import direction; those edges remain available in the source scene.
     pub fn warnings(&self) -> &[String] {
         &self.warnings
     }
+    /// Whether there are no validated directed relations.
     pub fn is_empty(&self) -> bool {
         self.relations.is_empty()
     }
@@ -179,6 +230,11 @@ impl DependencyIndex {
         self.id(node).and_then(|id| self.node_index(id)) == Some(node)
     }
 
+    /// Traverse both directions independently and select a deterministic visible subset.
+    ///
+    /// The center is always retained. `allowed` uses scene indices; missing or
+    /// false entries stop traversal through non-center vertices. The budget caps
+    /// visible nodes, not reachability/depth maps. Invalid centers return an empty scope.
     pub fn scope(
         &self,
         center: usize,
@@ -192,6 +248,8 @@ impl DependencyIndex {
         let dependents = traverse(&self.incoming, center, options.dependents, allowed);
         self.finish_scope(center, imports, dependents, options.budget)
     }
+    /// Add one hop in each enabled direction from a previously reached node.
+    /// Invalid/unreached/filtered expansion nodes leave the previous scope intact.
     pub fn expand(
         &self,
         center: usize,
@@ -333,6 +391,9 @@ impl DependencyIndex {
             total_reachable,
         }
     }
+    /// Find a shortest source → target path with stable-ID tie breaking.
+    /// Every path vertex, including endpoints, must be allowed. Equal valid
+    /// endpoints yield a one-node path; blocked or unreachable paths return `None`.
     pub fn shortest_path(
         &self,
         source: usize,

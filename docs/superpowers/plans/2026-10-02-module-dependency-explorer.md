@@ -319,7 +319,7 @@ if let Some(material) = materials.get_mut(&mat_handle) {
 - [ ] Run the actual dataset acceptance command, using the existing graph read-only if it is available only in the primary checkout:
 
 ```sh
-cargo +1.96.0 run --release -p hyper-viz --example inspect_dependencies -- /Users/bregy/Documents/atomicstrata/hyper/target/mathlib/graph.json Mathlib.Topology.Basic
+cargo +1.96.0 run --release -p hyper-viz --example inspect_dependencies -- target/mathlib/graph.json Mathlib.Topology.Basic
 ```
 
 Expected: imports `Mathlib.Data.Set.Finite.Range`, `Mathlib.Data.Set.Lattice.Bounded`, and `Mathlib.Topology.Defs.Filter`; dependents `Mathlib`, `Mathlib.Topology.Closure`, `Mathlib.Topology.Defs.Induced`, and `MathlibTest.Tactic.Continuity`; eight vertices with all filters included.
@@ -337,7 +337,7 @@ git diff --check
 
 Expected: successful exits. Read every output; identify pre-existing failures by name rather than claiming a clean suite.
 
-- [ ] Launch the native viewer with `HYPER_VIZ_SESSION=off target/release/hyper --projection star /Users/bregy/Documents/atomicstrata/hyper/target/mathlib/graph.json`. Inspect exact selection, neighbor lists, arrows, filters, expansion, path tracing, group inspection, mode transfer, and small coauthorship fallback. Record interactive median/p95 frame times at 200 visible nodes and disclose whether the 30 FPS target is met. Do not substitute tour capture or a headless timing for this measurement.
+- [ ] Launch the native viewer with `HYPER_VIZ_SESSION=off target/release/hyper --projection star target/mathlib/graph.json`. Inspect exact selection, neighbor lists, arrows, filters, expansion, path tracing, group inspection, mode transfer, and small coauthorship fallback. Record interactive median/p95 frame times at 200 visible nodes and disclose whether the 30 FPS target is met. Do not substitute tour capture or a headless timing for this measurement.
 - [ ] Document the launch command, module workflow, arrow semantics, filters/truncation, optional spatial preset, embedding view override, scene API migration, and verification limitations. Update the ledger's acceptance checklist. Commit documentation and final verified changes.
 - [ ] Run one independent whole-branch code review using the requesting-code-review skill. Supply the spec, plan, diff, checks, Review Focus above, and ledger rulings. Reproduce important findings with failing tests, fix them, and rerun affected/full checks. Verify final Git status and commits.
 - [ ] Verify repository default branch and authentication through `gh`. Write a PR body to a temporary file with the concrete behavior, scene API changes, validation, and any material limitation. Push the verified branch and open a PR using the user's existing authorization:

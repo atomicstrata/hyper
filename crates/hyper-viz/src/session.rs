@@ -180,15 +180,19 @@ pub fn view_key(graph_id: &str) -> String {
     }
 }
 
-/// Select the native module canvas or spatial viewer. Auto keeps the spatial viewer.
+/// Native view selection persisted without changing the session version.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ViewMode {
+    /// Uses Spatial until the user explicitly selects another view.
     #[default]
     Auto,
+    /// Full 3D hypergraph, force layout, picking, and neighborhood focus.
     Spatial,
+    /// Optional directed-import canvas, pausing spatial work while active.
     Dependencies,
 }
 
+/// Stable-ID explorer state; resolve IDs again after replacing the scene.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ExplorerSnapshot {
@@ -214,6 +218,7 @@ impl Default for ExplorerSnapshot {
     }
 }
 impl ExplorerSnapshot {
+    /// Bound options, pan/zoom, and expanded-ID count before restoring the view.
     pub fn normalize(&mut self) {
         self.options.normalize();
         if self.pan.iter().any(|v| !v.is_finite()) {
@@ -227,6 +232,7 @@ impl ExplorerSnapshot {
         self.expanded_ids.truncate(1000);
     }
 }
+/// Per-graph explorer snapshot and navigation history (the native UI keeps 32 entries).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ExplorerSession {

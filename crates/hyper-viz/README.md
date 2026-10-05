@@ -46,9 +46,15 @@ cargo run -p hyper-viz --example project_scene
 | Module | What it does |
 |---|---|
 | `schema` | `Hypergraph`, `Vertex`, `Hyperedge` (`hypergraph.v1`) |
-| `io` | JSON load/save (`hypergraph.v1`); quarantined legacy host-export import |
+| `io` | Native/HIF auto-detection or explicit format; native save; quarantined legacy import |
+| `hif` | Offline-validated scientific document interchange and viewer conversion |
 | `project` | `Bipartite`, `CliqueExpansion`, `StarCentroid` → `HypergraphScene` |
 | `layout` | Headless 3D force layout (`ForceLayout3D`) |
+| `topology` | Normalized/LinLog attraction, sparse connectivity-based initialization |
+| `dependency` | Validated directed imports, scopes, expansion, shortest paths |
+| `module` | Optional Mathlib category detection and traversal filters |
+| `scene` | Render-independent nodes, optional hubs, attributes, scene comparison |
+| `query` / `session` / `motion` | Search, portable preferences, status animation |
 | `hull` | Convex hull from member positions (arity ≥ 3) |
 | `semantics` | Kind/id colors, status, hover/selected **emphasis** |
 
