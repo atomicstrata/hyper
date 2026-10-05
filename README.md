@@ -2,6 +2,8 @@
 
 **A native 3D hypergraph viewer for Python workflows and Rust applications.**
 
+[![Realtime navigation through the Mathlib dependency case study](docs/media/mathlib-realtime.gif)](docs/media/mathlib-realtime.mp4)
+
 A hypergraph represents a group relationship as one edge connecting any number
 of nodes: authors on a paper, participants in an interaction, or modules in a
 dependency group. Hyper lets you inspect those memberships, find overlapping
@@ -228,7 +230,6 @@ One larger case study explores **Mathlib module imports** and their dependency
 groups. It provides a reproducible dataset and a workload for evaluating layout
 and rendering behavior.
 
-[![Realtime navigation through the Mathlib dependency case study](docs/media/mathlib-realtime.gif)](docs/media/mathlib-realtime.mp4)
 
 [Case study and reproduction](docs/mathlib-demo.md) ·
 [Full-resolution recording](docs/media/mathlib-realtime.mp4) ·
