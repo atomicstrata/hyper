@@ -1,159 +1,230 @@
-# hyper
+# Hyper
 
-**A native 3D hypergraph viewer for Python and Rust.**
+**A native 3D hypergraph viewer for Python workflows and Rust applications.**
 
-A hypergraph connects several items through one relationship: coauthors on a
-paper, molecules in a reaction, or files in a dependency group. Hyper lets you
-explore those groups with search, picking, lasso selection, and neighborhood
-isolation.
+A hypergraph represents a group relationship as one edge connecting any number
+of nodes: authors on a paper, participants in an interaction, or modules in a
+dependency group. Hyper lets you inspect those memberships, find overlapping
+groups, and explore neighborhoods with search, picking, and lasso selection.
 
-[![Mathlib dependency graph in Hyper](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
+[Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
+[Use Rust](#use-from-rust) · [Documentation](#documentation)
 
-[Mathlib demo in full resolution](docs/media/mathlib.mp4) ·
-[How the demo was made](docs/mathlib-demo.md).
-The recording uses a settled layout.
+[![Mathlib module dependency groups in Hyper's native 3D viewer](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
 
-## Quick start
+[Full-resolution Mathlib demo](docs/media/mathlib.mp4) ·
+[Reproduce the demo](docs/mathlib-demo.md).
+The recording uses a settled layout; it is not a live-layout performance test.
 
-### Install with Python
+## Try the viewer
 
-Requires **CPython 3.10+**, a desktop session, and working graphics drivers.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
+the built-in coauthorship demo:
 
 ```bash
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+```
+
+No project, repository checkout, or Rust compiler is needed. `--from` selects
+the package that supplies the `hyper` executable. To open your own dataset:
+
+```bash
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+Requires a **desktop session and working graphics drivers**. Prebuilt viewer
+wheels support Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+), and
+Windows x86_64. The viewer opens on the machine running the command.
+See [platform requirements](docs/DESKTOP_PACKAGE.md).
+
+Once the window opens, drag to orbit, scroll to zoom, and click a node or group
+to inspect it. Press **Space** to pause the layout, **F** to frame the camera,
+or **Cmd+F / Ctrl+F** to search. Press **Enter** in search to isolate matching
+neighborhoods. The [viewer guide](docs/VIEWER.md#controls) covers all controls.
+
+## Use from Python
+
+Create a project and install the API with its matching desktop viewer:
+
+```bash
+uv init --python 3.12 hyper-example
+cd hyper-example
+uv add "hypergraph-viz[viewer]"
+```
+
+In an existing uv project using CPython 3.10+, run only `uv add`.
+uv manages the environment and lockfile; `uv run` needs no activation.
+
+Save this as `explore.py`. It creates two papers with a shared author, saves a
+HIF dataset, and opens the viewer:
+
+```python
+import json
+import hyper_viz
+
+document = hyper_viz.HifDocument.from_json(json.dumps({
+    "network-type": "undirected",
+    "nodes": [{"node": name} for name in ["alice", "bob", "carol", "dana"]],
+    "edges": [{"edge": "paper-a"}, {"edge": "paper-b"}],
+    "incidences": [
+        {"node": "alice", "edge": "paper-a"},
+        {"node": "bob", "edge": "paper-a"},
+        {"node": "carol", "edge": "paper-a"},
+        {"node": "bob", "edge": "paper-b"},
+        {"node": "dana", "edge": "paper-b"},
+    ],
+}))
+document.save("papers.hif.json")
+
+viewer = hyper_viz.show(document)
+viewer.wait()  # Keep the script running until the window closes.
+```
+
+```bash
+uv run explore.py
+```
+
+For existing data, replace the constructor with
+`document = hyper_viz.HifDocument.load("dataset.hif.json")`.
+You can also open the saved example with `uv run hyper papers.hif.json`.
+
+| Name | Purpose |
+|---|---|
+| `hypergraph-viz` | Python distribution for HIF validation and interchange |
+| `hypergraph-viz[viewer]` | Python API plus the matching `hypergraph-viz-viewer` distribution |
+| `hyper_viz` | Python import |
+| `hyper` | Desktop viewer executable |
+
+For interchange alone, install `hypergraph-viz` and omit the `show()` and
+`wait()` calls. The API works without a desktop or Bevy. Use `uv run` for
+project scripts; `uvx` runs tools in a separate environment and the API package
+has no executable. See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
+<details>
+<summary>Use pip instead of uv</summary>
+
+Requires CPython 3.10+. With Python 3.12 installed, create a virtual environment:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
 python -m pip install --upgrade "hypergraph-viz[viewer]"
 hyper
 ```
 
-This installs the Python API and native viewer, then opens the built-in
-coauthorship demo. Prebuilt wheels support Linux x86_64, macOS arm64/x86_64,
-and Windows x86_64. See [platform requirements](docs/DESKTOP_PACKAGE.md)
-for details.
+On Windows, create it with `py -3.12 -m venv .venv` and activate it in
+PowerShell with `.venv\Scripts\Activate.ps1`. Run the example with
+`python explore.py`. For the API alone, install `hypergraph-viz`.
+If installation reports no matching distribution, check `python --version`;
+upgrading pip does not upgrade Python.
 
-To open your own HIF dataset from Python:
+</details>
 
-```python
-import hyper_viz
-
-document = hyper_viz.HifDocument.load("dataset.hif.json")
-viewer = hyper_viz.show(document)
-viewer.wait()  # Wait until the window closes.
-```
-
-The distribution name is [hypergraph-viz](https://pypi.org/project/hypergraph-viz/);
-the import name is `hyper_viz`.
-For document loading, validation, and export alone, install
-`hypergraph-viz` without the viewer extra.
-See the [Python and HIF guide](docs/HIF.md) for the full API and
-[XGI example](crates/hyper-viz-python/examples/xgi_interop.py).
-
-### Run from source
-
-Requires **Rust 1.89+** and a desktop graphics environment.
-
-```bash
-git clone https://github.com/atomicstrata/hyper.git
-cd hyper
-cargo run --release
-```
-
-The first build can take several minutes. To open the sample dataset:
-
-```bash
-cargo run --release -- fixtures/sample.json
-```
-
-See the [viewer guide](docs/VIEWER.md) for installation and more commands.
-
-## Open your data
+## Data and scientific use
 
 The viewer reads [HIF](docs/HIF.md) (Hypergraph Interchange Format) and native
-`hypergraph.v1` JSON. It detects the format automatically.
+`hypergraph.v1` JSON, detecting the format automatically. See the
+[native JSON example](docs/VIEWER.md#example-scene) and
+[projection guide](docs/VIEWER.md#quick-start) for `bipartite` (default),
+`clique`, and `star` projections, and `--watch` for file reloads.
 
-```bash
-hyper dataset.hif.json
-hyper --watch graph.json
-hyper --projection star graph.json
-```
+Hyper complements analysis tools such as [XGI](https://github.com/xgi-org/xgi),
+[HyperNetX](https://github.com/pnnl/HyperNetX), and
+[Hypergraphx](https://github.com/HGX-Team/hypergraphx). Export supported data to
+HIF, explore it in Hyper, and keep your analysis in the original library.
+The [XGI example](crates/hyper-viz-python/examples/xgi_interop.py) demonstrates
+export and round-trip interchange.
 
-Use `--watch` to reload a file as it changes. Choose `bipartite` (default),
-`clique`, or `star` for the projection.
+Before using a visualization in research:
 
-For a small native example, save this as `graph.json` and run
-`hyper graph.json`:
+- **Check viewer compatibility.** The viewer supports undirected memberships.
+  Directed or simplicial semantics and incidence properties are rejected during
+  conversion. HIF document interchange preserves richer data; keep the original
+  `HifDocument` for export. See [supported semantics](docs/HIF.md#supported-semantics).
+- **Read hulls as visual aids.** Large groups use approximate hulls. Confirm
+  membership in the selection panel; spatial proximity is a layout result.
+- **Measure your workload.** Dense hulls can be expensive. The
+  [benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md) report completion
+  counts, methods, and limits; they do not establish an overall speed ranking.
 
-```json
-{
-  "version": "hypergraph.v1",
-  "vertices": [
-    { "id": "alice", "label": "Alice" },
-    { "id": "bob", "label": "Bob" },
-    { "id": "carol", "label": "Carol" }
-  ],
-  "hyperedges": [
-    { "id": "paper", "label": "Paper", "vertices": ["alice", "bob", "carol"] }
-  ]
-}
-```
-
-The viewer supports undirected memberships. HIF documents can preserve richer
-data, but directed or simplicial semantics and incidence properties are rejected
-when converting for viewing. Keep the original `HifDocument` for scientific
-export; see [supported semantics](docs/HIF.md#supported-semantics).
-
-Groups appear as colored lines or hulls. Large hulls approximate group shape;
-use the membership list to check which nodes belong to a group. Dense datasets
-can be expensive to render; see the [measured benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md).
-
-## Controls
-
-| Input | Action |
-|---|---|
-| Left drag | Orbit |
-| Scroll | Zoom |
-| Left click | Select a node or group |
-| Shift + click | Add to selection |
-| Space | Pause or resume the force layout |
-| F | Frame the camera |
-| Cmd+F / Ctrl+F | Search |
-| Enter in search | Isolate matching neighborhoods and frame them |
-| Esc | Clear search or neighborhood focus |
-
-Use the lasso panel to select several nodes.
-See the [viewer guide](docs/VIEWER.md#controls) for all controls and display settings.
+Hyper is **early-stage software**. The current Python API exposes HIF
+interchange and viewer launching; Rust exposes projections and layout too.
+The viewer opens a native window, including when launched from Python.
+Notebook embedding, live Python updates, and direct scientific-library object
+adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
+for browser plans.
 
 ## Use from Rust
 
-Add the core library to your application's `Cargo.toml`:
+The `hyper-viz` core handles JSON I/O, projections, and 3D force layout without
+Bevy or a window. Add it to your application's `Cargo.toml`:
 
 ```toml
 [dependencies]
 hyper-viz = { git = "https://github.com/atomicstrata/hyper.git" }
-
-# Add this for a native viewer window:
-# hyper-viz-bevy = { git = "https://github.com/atomicstrata/hyper.git" }
 ```
 
-`hyper-viz` provides JSON I/O, projections, and 3D force layout without Bevy.
-`hyper-viz-bevy` adds a standalone viewer and a plugin for existing Bevy apps.
+Build and lay out a group:
 
-Start with the [Rust API guide](docs/API.md) or the
-[headless example](crates/hyper-viz/examples/project_scene.rs):
+```rust
+use hyper_viz::prelude::*;
+
+fn main() {
+    let graph = Hypergraph::new()
+        .vertex("alice", "Alice", "person")
+        .vertex("bob", "Bob", "person")
+        .vertex("carol", "Carol", "person")
+        .hyperedge("paper-a", ["alice", "bob", "carol"], "Paper A");
+
+    let scene = graph.project(Projection::Bipartite);
+    let mut layout = ForceLayout3D::from_scene(&scene, LayoutConfig::default());
+    layout.step();
+    println!("{} layout nodes", layout.positions.len());
+}
+```
+
+Add `hyper-viz-bevy` from the same Git repository for a standalone window or a
+plugin in an existing Bevy app. The [Rust API guide](docs/API.md) covers viewer
+embedding and live scene updates; [architecture](docs/ARCHITECTURE.md) explains
+the crate boundaries. Rust builds require **1.89+**.
+
+<details>
+<summary>Run from source</summary>
 
 ```bash
-cargo run -p hyper-viz --example project_scene
+git clone https://github.com/atomicstrata/hyper.git
+cd hyper
+cargo run --locked --release -- fixtures/sample.json
 ```
+
+The native viewer requires a desktop graphics environment; the first build can
+take several minutes. To run the core example without a window:
+
+```bash
+cargo run --locked -p hyper-viz --example project_scene
+```
+
+See the [viewer guide](docs/VIEWER.md) for more commands, and the
+[Python build instructions](docs/HIF.md#python-installation) for extension development.
+
+</details>
 
 ## Documentation
 
 | Guide | What you'll find |
 |---|---|
-| [Viewer](docs/VIEWER.md) | Setup, controls, display settings, and saved sessions |
-| [Python and HIF](docs/HIF.md) | Interchange, Python API, supported semantics, and source builds |
+| [Viewer](docs/VIEWER.md) | Setup, controls, projections, display settings, and saved sessions |
+| [Python and HIF](docs/HIF.md) | Interchange, Python API, scientific semantics, and source builds |
 | [Rust API](docs/API.md) | Build graphs, run layouts, and embed the viewer |
 | [Architecture](docs/ARCHITECTURE.md) | Crate responsibilities and integration boundaries |
 | [Benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md) | Measured results, methods, and limitations |
-| [Notebook roadmap](docs/NOTEBOOK_ROADMAP.md) | Plans for a browser frontend; the current viewer opens a native window |
-| [Contributing](CONTRIBUTING.md) | Development setup, checks, and pull request guidelines |
+
+For questions or bug reports, [open an issue](https://github.com/atomicstrata/hyper/issues).
+To contribute, start with [CONTRIBUTING.md](CONTRIBUTING.md) for development
+setup, checks, and pull request guidelines.
+
+If you use Hyper in research, record the package version or Git commit,
+dataset, projection, and viewer settings so others can reproduce the view.
 
 ## License
 

@@ -5,16 +5,22 @@ and working graphics drivers.
 
 ## Install
 
-With CPython 3.10+, install the prebuilt viewer and Python API together:
+With [uv](https://docs.astral.sh/uv/getting-started/installation/), open the
+prebuilt viewer without creating a project:
 
 ```bash
-python -m pip install --upgrade "hypergraph-viz[viewer]"
-hyper
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
 ```
 
-`hyper` opens the built-in coauthorship demo. Pass a file to open your own
-dataset, for example `hyper dataset.hif.json`.
-See [platform requirements](DESKTOP_PACKAGE.md) for supported wheels.
+Omitting the file opens the built-in coauthorship demo. `--from` selects the
+distribution containing the `hyper` executable. For Python integration, use
+`uv add "hypergraph-viz[viewer]"` in a CPython 3.10+ project and run scripts
+with `uv run`; see the [complete Python example](../README.md#use-from-python).
+
+Alternatively, run `python -m pip install --upgrade "hypergraph-viz[viewer]"`
+in a CPython 3.10+ virtual environment, then run
+`hyper`. See [platform requirements](DESKTOP_PACKAGE.md) for supported wheels.
 
 For a source build, use Rust 1.89+ and run the commands below from this checkout.
 The first Bevy build can take several minutes. For regular use, build with
@@ -45,7 +51,9 @@ cargo run -- --projection clique fixtures/sample.json
 cargo run -p hyper-viz-bevy --example view -- fixtures/sample.json
 ```
 
-When installed, use `hyper` in place of `cargo run --` for file commands.
+For prebuilt wheels, replace `cargo run --` with
+`uvx --python 3.12 --from hypergraph-viz-viewer hyper`, `uv run hyper` in a
+project with the viewer extra, or `hyper` in an activated pip environment.
 `--watch` reloads the graph while retaining positions by stable ID and remapping
 surviving selection and focus. Invalid input leaves the previous scene visible.
 
