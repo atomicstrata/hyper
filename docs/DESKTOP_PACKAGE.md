@@ -1,34 +1,35 @@
 # Hyper desktop viewer
 
 Prebuilt native viewer for [hypergraph-viz](https://pypi.org/project/hypergraph-viz/).
-Install the Python API and matching viewer together:
+Launch the built-in demo with [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
-With [uv](https://docs.astral.sh/uv/getting-started/installation/):
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+```
+
+Open your own dataset:
+
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+`--from` selects this package, which supplies the `hyper` executable.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
+For Python integration, install the API and matching viewer in a project:
 
 ```sh
 uv init --python 3.12 hyper-example
 cd hyper-example
 uv add "hypergraph-viz[viewer]"
-uv run hyper
 ```
 
-This opens the built-in demo. In an existing uv project, start with `uv add`.
-Use `uv run hyper dataset.hif.json` to open your own dataset, or save the Python
-example below as `explore.py` and run `uv run explore.py`. No environment
-activation is needed. uv can download a compatible Python when necessary.
-
-To launch only the desktop viewer without creating a project:
-
-```sh
-uvx --python 3.12 --from hypergraph-viz-viewer hyper
-# Open your dataset:
-uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
-```
-
-`--from` selects the distribution that supplies the `hyper` executable.
-`hypergraph-viz` supplies the Python API and has no executable of its own;
-use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
-See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+In an existing uv project using Python 3.10+, run only `uv add`.
+Save the Python example below as `explore.py` alongside `dataset.hif.json`,
+then run `uv run explore.py`. No environment activation is needed.
+uv can download Python 3.12 when necessary.
+`hypergraph-viz` provides the Python API and has no executable of its own;
+`uvx hypergraph-viz` cannot launch the viewer.
 
 For pip, use `python -m pip install --upgrade "hypergraph-viz[viewer]"` in a
 Python 3.10+ virtual environment.

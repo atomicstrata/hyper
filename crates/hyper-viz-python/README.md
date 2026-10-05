@@ -51,9 +51,7 @@ not preserved.
 
 ## Launch the native viewer
 
-Install the matching prebuilt desktop viewer with the optional extra:
-
-From your uv project:
+From your uv project, install the matching prebuilt desktop viewer:
 
 ```sh
 uv add "hypergraph-viz[viewer]"
@@ -84,9 +82,13 @@ macOS wheels target 11.0+. Notebook kernels on remote machines cannot open a
 window on your laptop; see the
 [notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/NOTEBOOK_ROADMAP.md).
 
-Then launch it from Python:
+Save the following as `explore.py` alongside `dataset.hif.json`, then run
+`uv run explore.py`:
 
 ```python
+import hyper_viz
+
+document = hyper_viz.HifDocument.load("dataset.hif.json")
 viewer = hyper_viz.show(document, projection="bipartite")
 exit_code = viewer.wait()
 # Or viewer.close() to terminate and clean up.

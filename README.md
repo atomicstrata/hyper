@@ -29,59 +29,111 @@ the workload and rendering limits.
 Inputs include scientific **HIF**, native **`hypergraph.v1`** JSON, and supported
 legacy exports. The model is domain-agnostic: vertices, hyperedges, and memberships.
 
-## Python and scientific interoperability
+## Quick start: desktop viewer
 
-Start with [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage
-Python and the project environment:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
+the built-in coauthorship demo with one command:
+
+```bash
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+```
+
+To open your own HIF or native Hyper JSON file:
+
+```bash
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json --projection bipartite
+```
+
+No project, repository checkout, or Rust compiler is needed. `--from` selects
+**`hypergraph-viz-viewer`**, the package containing the **`hyper`** executable.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
+
+Desktop wheels support Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+),
+and Windows x86_64. A desktop session and working graphics driver are required.
+The viewer opens on the machine running the command; it does not embed in a notebook.
+
+## Use Hyper from Python
+
+Create a project with Python 3.12 and install the API plus matching desktop viewer:
 
 ```bash
 uv init --python 3.12 hyper-example
 cd hyper-example
 uv add "hypergraph-viz[viewer]"
-uv run hyper
 ```
 
-This opens the built-in coauthorship demo. To view your own HIF dataset:
-
-```bash
-uv run hyper dataset.hif.json --projection bipartite
-```
-
-To launch only the desktop viewer without creating a project:
-
-```sh
-uvx --python 3.12 --from hypergraph-viz-viewer hyper
-# Open your dataset:
-uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
-```
-
-`--from` selects the distribution that supplies the `hyper` executable.
-`hypergraph-viz` supplies the Python API and has no executable of its own;
-use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
-See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
-
-`uv add` records dependencies in `pyproject.toml`, creates `.venv`, and locks
-versions in `uv.lock`; `uv run` uses that environment without activation.
-uv can download Python 3.12 if needed, avoiding older system or Xcode Python.
+In an existing uv project using Python 3.10+, run just the `uv add` command.
+uv manages `.venv` and `uv.lock` and can download Python 3.12 if needed.
+`uv run` uses the project environment without activation.
 See the [uv project guide](https://docs.astral.sh/uv/guides/projects/).
-For interchange alone, use `uv add hypergraph-viz` without the viewer extra.
 
-The distribution is **`hypergraph-viz`**; the import name is **`hyper_viz`**.
-Requires **CPython 3.10+**. Wheels cover Linux x86_64, macOS arm64/x86_64,
-and Windows x86_64; a compatible wheel requires no Rust compiler.
-The viewer needs a desktop session and graphics driver. Linux desktop wheels
-require glibc 2.28+; macOS targets 11.0+.
+Save this complete example as `explore.py`:
 
-If you prefer pip, use a virtual environment with Python 3.10+:
+```python
+import json
+import hyper_viz
 
-```bash
-python -m pip install --upgrade "hypergraph-viz[viewer]"
+document = hyper_viz.HifDocument.from_json(json.dumps({
+    "network-type": "undirected",
+    "nodes": [{"node": "alice"}, {"node": "bob"}, {"node": "carol"}],
+    "edges": [{"edge": "team"}],
+    "incidences": [
+        {"node": "alice", "edge": "team"},
+        {"node": "bob", "edge": "team"},
+        {"node": "carol", "edge": "team"},
+    ],
+}))
+document.save("team.hif.json")
+
+viewer = hyper_viz.show(document, projection="bipartite")
+exit_code = viewer.wait()  # Or viewer.close() to terminate and clean up.
 ```
 
-Use `python -m pip install hypergraph-viz` for interchange alone. Upgrading pip
-does not upgrade Python; check `python --version` if no matching distribution is found.
-Rust is needed only for source builds.
-For a Python development build from this checkout with **Rust 1.89+**:
+Run it:
+
+```bash
+uv run explore.py
+```
+
+For an existing dataset, replace the constructor with
+`document = hyper_viz.HifDocument.load("dataset.hif.json")`.
+You can also open the exported example directly with `uv run hyper team.hif.json`.
+
+| What you need | Package / command |
+|---|---|
+| Standalone desktop viewer | `uvx --python 3.12 --from hypergraph-viz-viewer hyper` |
+| Python API and desktop viewer | `uv add "hypergraph-viz[viewer]"` |
+| HIF validation and interchange only | `uv add hypergraph-viz` |
+| Python import | `import hyper_viz` |
+
+The API requires CPython 3.10+. `hypergraph-viz` has no executable of its own,
+so `uvx hypergraph-viz` cannot launch the viewer. For interchange alone, omit
+`show()` from your script; the core package has no Bevy dependency.
+
+<details>
+<summary>Install with pip instead</summary>
+
+Use a Python 3.10+ virtual environment. For example, with Python 3.12 installed:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade "hypergraph-viz[viewer]"
+python explore.py
+```
+
+On Windows, create the environment with `py -3.12 -m venv .venv` and activate
+it in PowerShell with `.venv\Scripts\Activate.ps1`.
+For interchange alone, use `python -m pip install hypergraph-viz`.
+If pip reports no matching distribution, check `python --version`: upgrading
+pip does not upgrade Python, and Xcode's Python 3.9 is too old.
+
+</details>
+
+<details>
+<summary>Build the Python extension from this checkout</summary>
+
+Source builds require Rust 1.89+ and CPython 3.10+:
 
 ```bash
 python -m venv .venv
@@ -92,20 +144,10 @@ maturin develop --locked
 cd ../..
 ```
 
-```python
-import hyper_viz
+This builds the core extension. Install the viewer extra separately if you want
+prebuilt desktop launching, or build the native viewer with Cargo.
 
-document = hyper_viz.HifDocument.load("dataset.hif.json")
-document.save("roundtrip.hif.json")
-print(document.to_json())
-
-# Install hypergraph-viz[viewer] first.
-viewer = hyper_viz.show(document, projection="bipartite")
-exit_code = viewer.wait() # or viewer.close() to terminate
-```
-
-Save the Python example as `explore.py` alongside `dataset.hif.json`, then run
-`uv run explore.py` in your project.
+</details>
 
 Pass `executable="/path/to/hyper"` to select a viewer explicitly. Otherwise the
 launcher finds the matching companion package, then `hyper` on PATH. The launcher
