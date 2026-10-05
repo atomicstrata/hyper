@@ -7,9 +7,20 @@ The package includes generated extension type stubs, typed Python wrappers, and 
 
 ## Installation
 
+With [uv](https://docs.astral.sh/uv/getting-started/installation/), create a project
+with a supported Python version and add the package:
+
 ```sh
-python -m pip install hypergraph-viz
+uv init --python 3.12 hyper-example
+cd hyper-example
+uv add hypergraph-viz
 ```
+
+uv manages `.venv` and `uv.lock`, and can download Python 3.12 if needed.
+Save your Python code as `explore.py` and run it with `uv run explore.py`.
+In an existing uv project, run only `uv add hypergraph-viz`.
+Alternatively, use `python -m pip install hypergraph-viz` in a Python 3.10+
+virtual environment. Upgrading pip does not upgrade Python.
 
 Requires standard CPython 3.10 or newer. Platform wheels cover Linux x86_64,
 macOS arm64/x86_64, and Windows x86_64; installing a compatible wheel requires
@@ -40,11 +51,29 @@ not preserved.
 
 ## Launch the native viewer
 
-Install the matching prebuilt desktop viewer with the optional extra:
+From your uv project, install the matching prebuilt desktop viewer:
 
 ```sh
-python -m pip install --upgrade "hypergraph-viz[viewer]"
+uv add "hypergraph-viz[viewer]"
+uv run hyper
 ```
+
+`uv run hyper` opens the built-in demo; use
+`uv run hyper dataset.hif.json --projection bipartite` for your own dataset.
+For pip, use `python -m pip install --upgrade "hypergraph-viz[viewer]"`.
+
+To launch only the desktop viewer without creating a project:
+
+```sh
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+# Open your dataset:
+uvx --python 3.12 --from hypergraph-viz-viewer hyper dataset.hif.json
+```
+
+`--from` selects the distribution that supplies the `hyper` executable.
+`hypergraph-viz` supplies the Python API and has no executable of its own;
+use `uv add "hypergraph-viz[viewer]"` for Python integration in a project.
+See [uv's tool guide](https://docs.astral.sh/uv/guides/tools/).
 
 Wheels cover Linux x86_64, macOS arm64/x86_64, and Windows x86_64. No Rust
 compiler or repository checkout is needed on these platforms. A desktop session
@@ -53,9 +82,13 @@ macOS wheels target 11.0+. Notebook kernels on remote machines cannot open a
 window on your laptop; see the
 [notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/NOTEBOOK_ROADMAP.md).
 
-Then launch it from Python:
+Save the following as `explore.py` alongside `dataset.hif.json`, then run
+`uv run explore.py`:
 
 ```python
+import hyper_viz
+
+document = hyper_viz.HifDocument.load("dataset.hif.json")
 viewer = hyper_viz.show(document, projection="bipartite")
 exit_code = viewer.wait()
 # Or viewer.close() to terminate and clean up.
