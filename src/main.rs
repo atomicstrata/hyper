@@ -40,9 +40,29 @@ struct Args {
     #[arg(long, conflicts_with = "watch")]
     tour: bool,
 
-    /// Save a numbered PNG sequence to a NEW directory (requires --tour).
+    /// Save frames to a NEW directory (PNG offline, BMP + timing CSV in realtime).
     #[arg(long, requires = "tour")]
     capture: Option<std::path::PathBuf>,
+
+    /// Hide every tour title, counter, and progress indicator.
+    #[arg(long, requires = "tour")]
+    clean_tour: bool,
+
+    /// Navigate by wall-clock time; duration is --frames / --fps seconds.
+    #[arg(long, requires = "tour")]
+    realtime_tour: bool,
+
+    /// Use connectivity initialization and show all groups throughout the tour.
+    #[arg(long, requires = "tour")]
+    structural_tour: bool,
+
+    /// Override tour hull fill opacity (0–1); larger groups still fade by arity.
+    #[arg(long, requires = "tour", value_parser = parse_opacity)]
+    tour_hull_opacity: Option<f32>,
+
+    /// Outline up to 64 small groups, including in a dense structural overview.
+    #[arg(long, requires = "tour")]
+    tour_hull_outlines: bool,
 
     /// Number of tour frames. At 30 fps, 900 frames makes a 30-second video.
     #[arg(long, default_value_t = 900, value_parser = clap::value_parser!(u32).range(1..))]
@@ -63,6 +83,17 @@ struct Args {
     /// Benchmark a moving force layout (one step/frame), rather than frozen geometry.
     #[arg(long, requires = "tour", conflicts_with = "capture")]
     live_layout: bool,
+}
+
+fn parse_opacity(value: &str) -> Result<f32, String> {
+    let opacity = value
+        .parse::<f32>()
+        .map_err(|_| "expected a number from 0 to 1")?;
+    if opacity.is_finite() && (0.0..=1.0).contains(&opacity) {
+        Ok(opacity)
+    } else {
+        Err("expected a finite number from 0 to 1".into())
+    }
 }
 
 fn main() {
@@ -99,6 +130,11 @@ fn main() {
                 capture: args.capture,
                 report: args.report,
                 live_layout: args.live_layout,
+                clean: args.clean_tour,
+                realtime: args.realtime_tour,
+                structural: args.structural_tour,
+                hull_opacity: args.tour_hull_opacity,
+                hull_outlines: args.tour_hull_outlines,
             },
         );
         return;
@@ -117,5 +153,43 @@ fn main() {
         run_visualizer_from_path_with_format(path, args.watch, projection, config, format);
     } else {
         run_visualizer_with(project(&sample_coauthorship(), projection), config);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clean_realtime_capture_accepts_structural_navigation() {
+        let result = Args::try_parse_from([
+            "hyper",
+            "graph.json",
+            "--tour",
+            "--clean-tour",
+            "--realtime-tour",
+            "--structural-tour",
+            "--tour-hull-opacity",
+            "0.025",
+            "--tour-hull-outlines",
+            "--capture",
+            "frames",
+        ]);
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[test]
+    fn tour_hull_opacity_rejects_invalid_values() {
+        for opacity in ["NaN", "inf", "-0.1", "1.1"] {
+            assert!(
+                Args::try_parse_from(["hyper", "--tour", "--tour-hull-opacity", opacity]).is_err(),
+                "accepted {opacity}"
+            );
+        }
+    }
+
+    #[test]
+    fn realtime_navigation_requires_a_tour() {
+        assert!(Args::try_parse_from(["hyper", "--realtime-tour"]).is_err());
     }
 }

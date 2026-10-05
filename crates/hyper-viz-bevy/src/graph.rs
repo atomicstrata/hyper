@@ -569,6 +569,11 @@ mod watch_tests {
                 capture: None,
                 report: Default::default(),
                 live_layout: false,
+                clean: false,
+                realtime: false,
+                structural: false,
+                hull_opacity: None,
+                hull_outlines: false,
             })
             .add_systems(Startup, init_graph);
         app.update();

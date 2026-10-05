@@ -308,6 +308,7 @@ fn cache_from_hull(
 }
 
 fn draw_hull_wireframes(
+    tour_outlines: Option<Res<crate::showcase::TourHullOutlines>>,
     hulls: Query<(&HyperedgeHullEntity, &HullWireCache)>,
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
@@ -331,9 +332,22 @@ fn draw_hull_wireframes(
         }
         let emphasized = hovered == Some(entity.hyperedge_index)
             || sel_state.hyperedges.contains(&entity.hyperedge_index);
-        if hull_count > WIREFRAME_ALL_LIMIT && !emphasized {
+        let tour_sample = tour_outlines
+            .as_ref()
+            .is_some_and(|outlines| outlines.0.contains(&entity.hyperedge_index));
+        // Dense interactive views retain their hover/selection-only behavior.
+        // Captures can opt into a small stable sample, never all wireframes.
+        if !emphasized
+            && (tour_outlines.is_some() && !tour_sample
+                || tour_outlines.is_none() && hull_count > WIREFRAME_ALL_LIMIT)
+        {
             continue;
         }
+        let color = if tour_sample {
+            cache.wire_color.with_alpha(0.22)
+        } else {
+            cache.wire_color
+        };
         for &(a, b) in &cache.edges {
             let Some(p1) = cache.positions.get(a as usize) else {
                 continue;
@@ -341,11 +355,7 @@ fn draw_hull_wireframes(
             let Some(p2) = cache.positions.get(b as usize) else {
                 continue;
             };
-            gizmos.line(
-                Vec3::from_array(*p1),
-                Vec3::from_array(*p2),
-                cache.wire_color,
-            );
+            gizmos.line(Vec3::from_array(*p1), Vec3::from_array(*p2), color);
         }
     }
 }

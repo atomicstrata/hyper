@@ -16,6 +16,9 @@ exploration features and Rust API changes while the project remains pre-1.0.
   import direction, independent import/dependent traversal, filters, shortest
   paths, exact module search, expansion, and bounded navigation history.
 - Rust dependency-query APIs and source attributes retained in projected scenes.
+- Clean camera tours with structural layout and wall-clock navigation capture;
+  timestamped video export preserves navigation speed when captures are dropped,
+  with adjustable hull opacity and bounded group outlines for dense tours.
 - Expanded API, architecture, viewer, migration, and contributor documentation.
 
 ### Fixes
@@ -33,6 +36,9 @@ exploration features and Rust API changes while the project remains pre-1.0.
 - Manual `SceneMeta`, `SceneNode`, and `SceneHyperedge` literals require `attrs`.
   `SceneHyperedge::hub_index` is optional: only bipartite projections have hubs.
   See the [Rust API migration guide](docs/API.md#scene-migration).
+- Manual `ShowcaseConfig` literals require `clean`, `realtime`, `structural`,
+  `hull_opacity`, and `hull_outlines`. Use `false` for these booleans and `None`
+  for opacity to retain the original annotated offline tour.
 - Headless layout defaults retain Legacy forces, and Auto view remains Spatial.
   Native `hypergraph.v1` and session `hyperviz.session.v1` formats remain supported.
 - Python imports, HIF interchange, viewer launching, and CPython 3.10+ support

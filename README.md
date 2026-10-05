@@ -228,12 +228,13 @@ One larger case study explores **Mathlib module imports** and their dependency
 groups. It provides a reproducible dataset and a workload for evaluating layout
 and rendering behavior.
 
-[![Mathlib dependency case study in Hyper's native viewer](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
+[![Realtime navigation through the Mathlib dependency case study](docs/media/mathlib-realtime.gif)](docs/media/mathlib-realtime.mp4)
 
 [Case study and reproduction](docs/mathlib-demo.md) ·
-[Full-resolution recording](docs/media/mathlib.mp4) ·
+[Full-resolution recording](docs/media/mathlib-realtime.mp4) ·
 [Layout comparisons and native measurements](docs/benchmarks/module-explorer.md).
-The recording uses a settled layout; it is not a live-layout performance test.
+The recording follows realtime camera motion through a settled layout, with
+capture overhead included; it is not a live-layout performance test.
 The [ecosystem benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md)
 cover additional workloads, methods, and limitations.
 

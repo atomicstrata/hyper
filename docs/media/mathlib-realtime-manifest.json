@@ -1,0 +1,97 @@
+{
+  "recorded_date": "2026-10-05",
+  "dataset": {
+    "repository": "https://github.com/leanprover-community/mathlib4",
+    "release": "v4.34.1",
+    "commit": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+    "source_sha256": "dde69137f0279fdb1ec0b40e16dd5252c0a13aa8550c9508e71ea811565347f3",
+    "source_files": 9112,
+    "external_modules": 272,
+    "imports": 37356,
+    "dependency_groups": 7550,
+    "max_group_arity": 8532,
+    "semantics": "Undirected import pairs; one source + direct imports set per file with >=2 imports. Direction is retained in attrs. External dependencies are stubs."
+  },
+  "dataset_json_sha256": "070f91d0e2b28e049a7a91394f634c802e9dd39ff4b0cea9b8d6e1cdb01d0878",
+  "nodes": 9384,
+  "hypergraph_edges_including_pairs": 44906,
+  "memberships": 118066,
+  "render": {
+    "renderer": "Native Bevy viewer; primary-window GPU readbacks",
+    "projection": "star",
+    "width": 1920,
+    "height": 1080,
+    "structural_initialization": {
+      "topology_seed_steps": 256,
+      "normalized_refinement_steps": 64
+    },
+    "warmup_steps_after_initialization": 0,
+    "layout_frozen": true,
+    "camera_clock": "Elapsed wall-clock seconds; dropped captures do not accelerate navigation",
+    "requested_duration_seconds": 24,
+    "reference_frames": 720,
+    "reference_fps": 30,
+    "saved_bmp_frames": 541,
+    "max_outstanding_readbacks": 3,
+    "first_capture_seconds": 0.0,
+    "last_capture_seconds": 23.978983,
+    "titles_labels_and_hud": false,
+    "max_lines": 0,
+    "line_opacity": 0.06,
+    "all_group_hull_surfaces_enabled": true,
+    "hull_opacity": 0.008,
+    "arity_fading": true,
+    "outline_group_budget": 64,
+    "outline_group_arity_range": [
+      3,
+      24
+    ],
+    "outline_selection": "Ascending stable ID hash, then ID; deterministic and independent of scene order",
+    "outline_opacity": 0.22,
+    "max_hull_vertices": 24,
+    "geometry_note": "Large-group meshes use a bounded approximation. Dataset and layout retain all memberships."
+  },
+  "capture_evidence": {
+    "timestamps": {
+      "file": "mathlib-realtime-timing.csv",
+      "bytes": 7286,
+      "sha256": "73062148fefd1af2681798c9535244c5cc70a0dc587cbdd9b06db4ea4ad2ed08"
+    },
+    "frame_report": {
+      "file": "../benchmarks/mathlib-realtime-capture.csv",
+      "sha256": "6590678a15ff4589243424f8bba33ef3b2f2a51090dda79ce6da13684b80ed5c"
+    },
+    "measurement_scope": "Native frame intervals include screenshot readback and disk overhead; no unrecorded viewer FPS or moving-layout performance claim."
+  },
+  "video": {
+    "file": "mathlib-realtime.mp4",
+    "bytes": 15670957,
+    "sha256": "57fe2a7b8935609f1bd4b40ac5a35f7f26c502d4675c178eed88bfa8846e48c5",
+    "width": 1920,
+    "height": 1080,
+    "duration_seconds": 24,
+    "codec": "H.264",
+    "timing": "Variable presentation timestamps from realtime capture"
+  },
+  "gif": {
+    "file": "mathlib-realtime.gif",
+    "bytes": 15744213,
+    "sha256": "34463e3170a8d65d408e3c3b1ca89788f5a60c64a28e9042806f1603b4dbb35b",
+    "width": 799,
+    "height": 450,
+    "frames": 288,
+    "requested_max_width": 800,
+    "sampling_fps": 12,
+    "duration_seconds": 24,
+    "loop": "infinite",
+    "timing": "Alternating 0.08/0.09-second delays; cumulative centisecond rounding"
+  },
+  "capture_source_sha256": {
+    "src/main.rs": "0eb4569225e03fb7185833a07e70f77f1e9335c09db6c1ccc057817fbf4c0f3a",
+    "crates/hyper-viz-bevy/Cargo.toml": "7370cca2bcc1be5687f2694cbd42437282e3a30b76c8bdeedec3b8aaf1c8f5dc",
+    "crates/hyper-viz-bevy/src/showcase.rs": "52459ee095659bcd2025db5c8f8609a0738474738041d56de777bb4111ce31bb",
+    "crates/hyper-viz-bevy/src/hyperedge_hull.rs": "ba6a82cb7f1c41338f49d9fbd1b3d4c92f5f3f84ffbbc2ce82e1aae866ff2501",
+    "scripts/encode_video.swift": "b66f0a0ebeffd281d76023ea37cad16c07ec66ddde600bf7f49a65bf1ea24994",
+    "scripts/encode_gif.swift": "42d79e512de32efa30acc5cbe66ce71350ed7d95448a043ae5df4a8bd922beb5"
+  }
+}

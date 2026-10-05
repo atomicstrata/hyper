@@ -1,8 +1,10 @@
 # Mathlib source dependency atlas
 
-This demo renders the actual mathlib source import graph with the native Bevy
-viewer. The MP4 is a deterministic frame capture, not evidence of 30 FPS live
-performance. Live measurements use a separate run with no screenshot readbacks.
+This case study renders the actual Mathlib4 source import graph with the native
+Bevy viewer. The clean navigation recording uses a wall-clock camera and retains
+its capture timestamps. The earlier annotated tour is an offline frame sequence.
+Neither recording establishes a hardware-independent performance guarantee.
+Live measurements use separate runs with no screenshot readbacks.
 
 ## Dataset
 
@@ -26,6 +28,54 @@ module dependencies, not theorem/proof dependencies. The exporter reads Lean's
 module header (including `public`, `meta`, `import all`, and nested comments);
 it does not infer dependencies from names appearing in theorem text. Duplicate
 imports within one file are deduplicated. There are no synthetic replicated nodes.
+
+## Clean realtime navigation
+
+The October 5 recording keeps all 9,384 vertices, 37,356 import lines, and 7,550
+dependency-group hulls enabled throughout an orbit and zoom. Structural positions
+are initialized from connectivity and settled before recording; the force layout
+is paused while the camera moves. Titles, counters, panels, labels, and the progress
+bar are hidden. Hull fill opacity is `0.008` (with arity fading), and 64
+small groups receive subtle outlines, chosen reproducibly by hyperedge ID. Every
+group surface remains enabled; the outline budget only limits extra boundary lines.
+
+[Looping GIF](media/mathlib-realtime.gif) ·
+[1080p video](media/mathlib-realtime.mp4) ·
+[Capture metadata](media/mathlib-realtime-manifest.json) ·
+[Frame timestamps](media/mathlib-realtime-timing.csv) ·
+[Native capture report](benchmarks/mathlib-realtime-capture.csv).
+
+After generating the dataset below, run from the repository root:
+
+```sh
+cargo build --locked --release
+HYPER_VIZ_SESSION=off target/release/hyper target/mathlib/graph.json \
+  --projection star --tour --clean-tour --structural-tour --realtime-tour \
+  --frames 720 --fps 30 --warmup 0 \
+  --tour-hull-opacity 0.008 --tour-hull-outlines \
+  --capture target/mathlib/realtime-frames \
+  --report target/mathlib/realtime-capture.csv
+
+# macOS encoders; the frame directory and output files must be new.
+swift scripts/encode_video.swift target/mathlib/realtime-frames \
+  docs/media/mathlib-realtime.mp4 30 target/mathlib/realtime-frames/timing.csv
+swift scripts/encode_gif.swift docs/media/mathlib-realtime.mp4 \
+  docs/media/mathlib-realtime.gif 800 12
+```
+
+`--realtime-tour` makes `--frames / --fps` the wall-clock navigation duration
+(24 seconds here), rather than demanding 720 captures. Readbacks save uncompressed
+BMP frames and `timing.csv`; the video encoder preserves those timestamps, and the
+GIF samples the resulting video at 12 fps, alternating centisecond delays to
+preserve the complete 24-second duration. Missing captures do not speed up the
+camera. GPU readback and disk writes add recording overhead, so the capture report
+is not a measurement of the viewer without recording. `--clean-tour` and
+`--structural-tour` also work with the existing offline PNG capture mode.
+`--tour-hull-opacity` accepts a finite value from 0 to 1; omitting it keeps the
+original tour opacity. `--tour-hull-outlines` enables up to 64 outlines of groups
+with 3–24 members, including in large datasets where regular overview wireframes
+are suppressed. The rendered meshes for larger groups retain the viewer’s
+24-vertex cap; all group memberships remain in the dataset and layout.
 
 ## Reproduce
 
@@ -62,7 +112,7 @@ HYPER_VIZ_SESSION=off target/release/hyper target/mathlib/graph.json \
 mkdir -p docs/media
 swift scripts/encode_video.swift target/mathlib/frames docs/media/mathlib.mp4 30
 
-# Looping README GIF, preserving the full 24-second tour at 640×360 / 10 fps.
+# Historical annotated GIF, preserving the 24-second tour at 640×360 / 10 fps.
 swift scripts/encode_gif.swift docs/media/mathlib.mp4 docs/media/mathlib.gif 640 10
 
 # Alternative with FFmpeg on any platform:
@@ -70,9 +120,10 @@ ffmpeg -framerate 30 -i target/mathlib/frames/%06d.png \
   -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart docs/media/mathlib.mp4
 ```
 
-The README uses the looping GIF as its inline preview and links it to the 1080p
-MP4. The GIF encoder also uses only macOS system frameworks; its output path must
-not already exist.
+The earlier annotated [GIF](media/mathlib.gif) and [MP4](media/mathlib.mp4)
+remain available as historical evidence. The README now previews the clean
+navigation recording above. The GIF encoder uses only macOS system frameworks;
+its output path must not already exist.
 
 The tour uses star-centroid projection: all 9,384 real/stub vertices are rendered,
 without adding invisible bipartite hubs. The same dataset in bipartite projection

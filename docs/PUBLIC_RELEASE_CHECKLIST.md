@@ -47,7 +47,7 @@ watched reloads, view-mode configuration, and main's scientific onboarding.
 | Check | Local result |
 |---|---|
 | Core Rust tests | 82 unit + 9 HIF integration tests passed |
-| Native Rust tests | 79 passed, including HIF watch and dependency-mode reload/remapping |
+| Native Rust tests | 84 passed, including HIF watch, dependency-mode reload/remapping, realtime capture, and bounded hull outlines |
 | Rust doctests | 3 core + 2 native passed |
 | Formatting / whitespace | `cargo fmt --all -- --check` and `git diff --check` passed |
 | Clippy | Entire workspace, all targets, warnings denied |
@@ -57,8 +57,9 @@ watched reloads, view-mode configuration, and main's scientific onboarding.
 | Scientific interoperability | XGI example preserved its 3 nodes and 1 edge |
 | Exporter / benchmark aggregation | 9 standard-library tests passed |
 | Packaging | macOS arm64 abi3 wheel, standalone source distribution, and wheel built from that source passed content checks |
-| CLI / core example | Help, version, and headless example passed |
+| CLI / core example | 3 CLI argument tests, help, version, and headless example passed |
 | Native HIF smoke | Three GPU-rendered PNG frames and timing report produced on macOS arm64 |
+| Mathlib navigation capture | 24-second wall-clock orbit/zoom of the complete dataset, translucent group surfaces, timestamped 1080p video and looping GIF |
 | Python/native process smoke | Real viewer launch, lifetime, explicit close, and temporary snapshot cleanup passed |
 | Documentation links | Local Markdown file targets resolve |
 | Independent review | Reload/return crash reproduced and fixed; regression observed failing before the fix, then passing |

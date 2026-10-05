@@ -34,16 +34,25 @@ guard let destination = CGImageDestinationCreateWithURL(output as CFURL, UTType.
 CGImageDestinationSetProperties(destination, [
     kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]
 ] as CFDictionary)
-let frameProperties = [kCGImagePropertyGIFDictionary: [
-    kCGImagePropertyGIFDelayTime: 1.0 / Double(fps),
-    kCGImagePropertyGIFUnclampedDelayTime: 1.0 / Double(fps)
-]] as CFDictionary
+let gifDuration = (Double(count) * 100.0 / Double(fps)).rounded() / 100.0
+var encodedWidth = 0, encodedHeight = 0
 for frame in 0..<count {
     try autoreleasepool {
         let time = CMTime(seconds: Double(frame) / Double(fps), preferredTimescale: 600)
         let image = try generator.copyCGImage(at: time, actualTime: nil)
+        encodedWidth = image.width
+        encodedHeight = image.height
+        // GIF delays have centisecond precision. Round cumulative boundaries,
+        // not each delay, to avoid speeding up 12/24/30 fps clips on export.
+        let start = (Double(frame) * 100.0 / Double(fps)).rounded()
+        let end = (Double(frame + 1) * 100.0 / Double(fps)).rounded()
+        let delay = (end - start) / 100.0
+        let frameProperties = [kCGImagePropertyGIFDictionary: [
+            kCGImagePropertyGIFDelayTime: delay,
+            kCGImagePropertyGIFUnclampedDelayTime: delay
+        ]] as CFDictionary
         CGImageDestinationAddImage(destination, image, frameProperties)
     }
 }
 guard CGImageDestinationFinalize(destination) else { fail("GIF encoding failed") }
-print("Encoded \(count) frames, \(width)×\(height), \(duration) seconds, infinite loop: \(output.path)")
+print("Encoded \(count) frames, \(encodedWidth)×\(encodedHeight), \(gifDuration) seconds, infinite loop: \(output.path)")
