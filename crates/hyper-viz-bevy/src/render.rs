@@ -68,14 +68,15 @@ impl Plugin for RenderPlugin {
             .add_systems(Startup, setup_assets)
             // Apply the scene replacement and remap entities before any consumer
             // reads node indices, including the egui label pass later this frame.
+            // This also runs in Dependencies: returning to Spatial can happen
+            // during egui, before the next PreUpdate has a chance to remap.
             .add_systems(
                 PreUpdate,
                 sync_graph_nodes
                     .after(crate::explorer_state::sync_explorer)
                     .after(crate::graph::poll_live_scene)
                     .after(crate::graph::poll_graph_watch)
-                    .run_if(resource_exists::<GraphLayout>)
-                    .run_if(crate::explorer_state::spatial_mode),
+                    .run_if(resource_exists::<GraphLayout>),
             )
             .add_systems(
                 Update,
@@ -125,6 +126,7 @@ fn sync_graph_nodes(
     settings: Res<LayoutSettings>,
     render_settings: Res<NodeRenderSettings>,
     assets: Res<GraphAssets>,
+    mode: Option<Res<crate::explorer_state::ExplorerState>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     epoch: Res<GraphSceneEpoch>,
     mut last_epoch: Local<Option<u64>>,
@@ -165,7 +167,14 @@ fn sync_graph_nodes(
             Mesh3d(mesh.clone()),
             MeshMaterial3d(mat),
             Transform::from_translation(pos).with_scale(Vec3::splat(spec.radius)),
-            Visibility::default(),
+            if mode
+                .as_ref()
+                .is_some_and(|state| state.mode != crate::ViewMode::Spatial)
+            {
+                Visibility::Hidden
+            } else {
+                Visibility::Inherited
+            },
         ));
     }
 
@@ -371,6 +380,84 @@ mod tests {
         app.world_mut()
             .spawn((SceneNodeEntity { index: 99 }, MeshMaterial3d(material)));
         app.update();
+    }
+
+    #[test]
+    fn scene_reloads_remap_entities_while_dependency_view_is_active() {
+        let scene = |names: &[&str]| {
+            let mut graph = Hypergraph::new().with_id("mode-reload");
+            for name in names {
+                graph = graph.vertex(*name, *name, "person");
+            }
+            project(&graph, Projection::StarCentroid)
+        };
+        let settings = LayoutSettings::default();
+        let (tx, rx) = mpsc::channel();
+        let mut app = App::new();
+        app.insert_resource(GraphLayout::from_scene(scene(&["Alice", "Bob"]), &settings))
+            .insert_resource(settings)
+            .insert_resource(LiveSceneReceiver(Mutex::new(rx)))
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<crate::explorer_state::ExplorerState>()
+            .init_resource::<Assets<Mesh>>()
+            .init_resource::<Assets<StandardMaterial>>()
+            .add_plugins(RenderPlugin)
+            .add_systems(PreUpdate, poll_live_scene.before(sync_graph_nodes));
+        app.world_mut()
+            .resource_mut::<crate::explorer_state::ExplorerState>()
+            .choose_mode(crate::ViewMode::Spatial);
+        app.world_mut().run_schedule(Startup);
+        app.world_mut().run_schedule(PreUpdate);
+        assert_eq!(
+            app.world_mut()
+                .query::<&SceneNodeEntity>()
+                .iter(app.world())
+                .count(),
+            2
+        );
+
+        app.world_mut()
+            .resource_mut::<crate::explorer_state::ExplorerState>()
+            .choose_mode(crate::ViewMode::Dependencies);
+        tx.send(scene(&["Bob"])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        let nodes: Vec<_> = app
+            .world_mut()
+            .query::<(&SceneNodeKey, &SceneNodeEntity)>()
+            .iter(app.world())
+            .map(|(key, node)| (key.0.clone(), node.index))
+            .collect();
+        assert_eq!(
+            nodes,
+            vec![("Bob".to_owned(), 0)],
+            "A mode switch later in this frame must see remapped indices"
+        );
+
+        tx.send(scene(&["Bob", "Dave"])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        let nodes: Vec<_> = app
+            .world_mut()
+            .query::<(&SceneNodeKey, &Visibility)>()
+            .iter(app.world())
+            .filter(|(key, _)| key.0 == "Dave")
+            .map(|(key, visibility)| (key.0.clone(), *visibility))
+            .collect();
+        assert_eq!(
+            nodes,
+            vec![("Dave".to_owned(), Visibility::Hidden)],
+            "New spatial entities must remain hidden while the dependency canvas is active"
+        );
+
+        tx.send(scene(&[])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        assert_eq!(
+            app.world_mut()
+                .query::<&SceneNodeEntity>()
+                .iter(app.world())
+                .count(),
+            0,
+            "Returning to Spatial after an empty reload must not leave stale label entities"
+        );
     }
 
     #[test]
