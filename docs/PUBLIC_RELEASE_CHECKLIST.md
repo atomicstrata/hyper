@@ -18,6 +18,8 @@ maintainer actions.
       [desktop packaging guide](DESKTOP_PACKAGE.md) cover supported platforms,
       companion versions, wheel/source packaging, and release procedures.
 - [x] Source-only layout features are distinguished from published `0.1.2` wheels.
+- [x] Rust workspace, Python core, and desktop companion versions are aligned
+      at `0.2.0`, with an exact viewer dependency and [release notes](../CHANGELOG.md).
 - [x] [CONTRIBUTING](../CONTRIBUTING.md) documents Rust/Python development checks.
 - [x] MIT OR Apache-2.0 licenses, NOTICE, bundled HIF schema/license, and Python
       wheel license files are present.
@@ -76,9 +78,9 @@ or guarantee native appearance or responsiveness on every supported desktop.
 
 - [ ] Merge the reviewed PR after its current GitHub checks succeed.
 - [ ] Decide whether to make the repository public, keep it private, or extract further.
-- [ ] If publishing updated Python/viewer packages, select a new version, update
-      matching metadata, and follow the tag-based release guide. Existing `0.1.2`
-      artifacts do not include the new layout controls.
+- [ ] If publishing the prepared `0.2.0` Python/viewer packages, follow the
+      tag-based release guide after validating the release commit. Existing
+      `0.1.2` artifacts do not include the new layout controls.
 - [ ] If publishing Rust crates, explicitly remove `publish = false` as part of
       a separately reviewed release and confirm crate metadata/dependency versions.
 

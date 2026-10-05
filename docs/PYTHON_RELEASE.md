@@ -2,8 +2,11 @@
 
 `hypergraph-viz` provides the `hyper_viz` import, HIF bindings, typing, and a
 launcher. `hypergraph-viz-viewer` provides the native desktop executable.
-Both packages are published at `0.1.2`; `hypergraph-viz[viewer]` pins the companion to the core
-version. Installing the core alone does not install Bevy or a viewer.
+This checkout prepares `0.2.0` for both packages; it is not published yet.
+The preceding published release is `0.1.2`. `hypergraph-viz[viewer]` pins the
+companion to the core version. Installing the core alone does not install Bevy
+or a viewer. See the [release notes](../CHANGELOG.md) for the new features and
+Rust API migration notes.
 
 PyPI treats hyphens and underscores as equivalent. The original `hyper-viz` /
 `hyper_viz` distribution name was rejected as too similar to an existing project.
@@ -45,11 +48,11 @@ and [publishing instructions](https://docs.pypi.org/trusted-publishers/using-a-p
    `crates/hyper-viz-python/pyproject.toml`. Regenerate `Cargo.lock`, update the
    exact `[viewer]` dependency, and update release-tag documentation URLs.
 3. Tag the validated commit. Prefer a merged release commit; an explicitly
-   selected validated PR commit can also be released. For `0.1.2`:
+   selected validated PR commit can also be released. For `0.2.0`:
 
    ```sh
-   git tag python-v0.1.2 <validated-commit>
-   git push origin python-v0.1.2
+   git tag python-v0.2.0 <validated-commit>
+   git push origin python-v0.2.0
    ```
 
 The tag workflow builds and tests that exact source again. Versions must match
@@ -78,11 +81,12 @@ found; it remains unchanged, and the corrected release uses `0.1.2`.
 
 ## Verify the published packages
 
-Use a fresh standard CPython 3.10+ environment and the normal PyPI index:
+After publishing `0.2.0`, use a fresh standard CPython 3.10+ environment and
+the normal PyPI index:
 
 ```sh
 python -m venv /tmp/hyper-release-check
-/tmp/hyper-release-check/bin/python -m pip install --only-binary=:all: "hypergraph-viz[viewer]==0.1.2"
+/tmp/hyper-release-check/bin/python -m pip install --only-binary=:all: "hypergraph-viz[viewer]==0.2.0"
 /tmp/hyper-release-check/bin/python - <<'PY'
 import os
 import subprocess
@@ -90,7 +94,7 @@ from importlib.metadata import version
 from hyper_viz import HifDocument
 from hyper_viz._viewer import _resolve_executable
 
-assert version("hypergraph-viz") == version("hypergraph-viz-viewer") == "0.1.2"
+assert version("hypergraph-viz") == version("hypergraph-viz-viewer") == "0.2.0"
 document = HifDocument.from_json('{"incidences":[{"node":"a","edge":"e"}]}')
 assert 's:a' in document.to_hypergraph_json()
 os.environ["PATH"] = ""  # Discovery works without activation.

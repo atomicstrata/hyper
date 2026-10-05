@@ -192,8 +192,9 @@ selection, and focus are keyed by graph ID. Layout positions are not stored.
 
 ## Native dependency canvas
 
-The structural layout controls and dependency canvas described here require
-this source revision. Published `0.1.2` wheels predate these features.
+The structural layout controls and dependency canvas described here are part of
+the upcoming `0.2.0` release. Build this checkout until that release is published;
+published `0.1.2` wheels predate these features. See the [release notes](../CHANGELOG.md).
 
 Auto mode keeps the full spatial viewer. The optional dependency canvas requires
 `--view dependencies`. Its search selects one exact
