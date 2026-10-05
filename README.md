@@ -10,12 +10,6 @@ groups, and explore neighborhoods with search, picking, and lasso selection.
 [Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
 [Use Rust](#use-from-rust) · [Documentation](#documentation)
 
-[![Mathlib module dependency groups in Hyper's native 3D viewer](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
-
-[Full-resolution Mathlib demo](docs/media/mathlib.mp4) ·
-[Reproduce the demo](docs/mathlib-demo.md).
-The recording uses a settled layout; it is not a live-layout performance test.
-
 ## Try the viewer
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
@@ -154,41 +148,20 @@ Notebook embedding, live Python updates, and direct scientific-library object
 adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
 for browser plans.
 
-## Full Mathlib Spatial view
+## Layout and exploration
 
-This workflow describes the upcoming `0.2.0` release; see the
-[release notes](CHANGELOG.md). Previously published `0.1.2` viewer wheels predate
-these layout controls; build this checkout to use them until `0.2.0` is published.
+Choose bipartite, clique, or star projection to inspect the same memberships
+from different views. Search, picking, lasso selection, and neighborhood focus
+help you explore individual nodes and overlapping groups; display settings and
+saved sessions keep the view manageable.
 
-Generate `target/mathlib/graph.json` using the [dataset instructions](docs/mathlib-demo.md#reproduce), then launch a fresh interactive view:
-
-```sh
-cargo build --release
-HYPER_VIZ_SESSION=off target/release/hyper --projection star \
-  --view spatial target/mathlib/graph.json
-```
-
-Large star-import graphs start with **Normalized** forces and connectivity-based
-spectral positions, followed by 64 bounded refinement steps and paused simulation.
-All 9,384 Mathlib vertices, 37,356 import lines and 7,550 dependency-group hulls
-remain enabled. Subject kinds color vertices; they do not determine these positions.
-Generic graphs and the scripted video tour retain Legacy forces.
-
-The Layout panel exposes Legacy / Normalized / LinLog models, independent pair
-and set attraction, hub and large-set normalization, derived-group influence,
-movement limits, vertex size and optional line/hull fading. After changing weights,
-choose **Rebuild structural layout** to recompute positions and pause for inspection.
-Press Space to continue the forces. **Full graph overview** restores all geometry
-and frames the graph while preserving positions. The optional dependency explorer
-remains available explicitly through `--view dependencies`.
-
-See the [controls, ranges, defaults and algorithm overview](docs/mathlib-demo.md#full-spatial-overview),
-[headless API configuration](docs/API.md#hyper-viz-surface), and
-[comparisons and native measurements](docs/benchmarks/module-explorer.md#structural-spatial-follow-up).
-The structural initializer is an approximate connectivity embedding; dense overlap
-and the existing 24-member hull surface approximation remain.
-
-[View the current interactive Spatial screenshot](docs/media/mathlib-structural.png).
+The upcoming `0.2.0` release adds connectivity-based initialization and tunable
+Legacy, Normalized, and LinLog layouts. An optional dependency canvas explores
+graphs with validated import-direction attributes through bounded traversal,
+filters, and shortest paths. See the [viewer guide](docs/VIEWER.md),
+[Rust layout and query APIs](docs/API.md), and [release notes](CHANGELOG.md).
+Build this checkout to use these additions until `0.2.0` is published;
+published `0.1.2` wheels predate them.
 
 ## Use from Rust
 
@@ -245,12 +218,26 @@ See the [viewer guide](docs/VIEWER.md) for more commands, and the
 
 </details>
 
-## Documentation
+## Use cases and benchmarks
 
-The [Mathlib Spatial guide](docs/mathlib-demo.md#full-spatial-overview) explains
-the structural layout algorithms, controls, and tuning. The
-[validation report](docs/benchmarks/module-explorer.md#structural-spatial-follow-up)
-records native measurements, model comparisons, and limitations.
+Hyper works with group relationships such as coauthorship, biochemical
+reactions, collaboration networks, and software dependencies. The Python
+quick start above demonstrates overlapping coauthor groups.
+
+One larger case study explores **Mathlib module imports** and their dependency
+groups. It provides a reproducible dataset and a workload for evaluating layout
+and rendering behavior.
+
+[![Mathlib dependency case study in Hyper's native viewer](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
+
+[Case study and reproduction](docs/mathlib-demo.md) ·
+[Full-resolution recording](docs/media/mathlib.mp4) ·
+[Layout comparisons and native measurements](docs/benchmarks/module-explorer.md).
+The recording uses a settled layout; it is not a live-layout performance test.
+The [ecosystem benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md)
+cover additional workloads, methods, and limitations.
+
+## Documentation
 
 | Guide | What you'll find |
 |---|---|
