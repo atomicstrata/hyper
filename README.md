@@ -16,19 +16,21 @@ groups, and explore neighborhoods with search, picking, and lasso selection.
 
 ## Try the viewer
 
-### For agents
+<details>
+<summary>Ask a coding agent to run it</summary>
 
-Paste this prompt:
+Paste this prompt into an agent working on your machine:
 
 ```text
-Install uv if `uv` is not on PATH: https://docs.astral.sh/uv/getting-started/installation/
-
-Open Hyper's built-in coauthorship demo. Do not clone a repository or install Rust:
-
-uvx --python 3.12 --from hypergraph-viz-viewer hyper
-
-Needs a desktop session and working graphics drivers. Wheels: Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+), Windows x86_64. The window opens on the machine running the command. To open a HIF file, append its path.
+Read https://github.com/atomicstrata/hyper/blob/main/AGENTS.md and open Hyper's
+built-in demo. Install uv first if it is not on PATH. Do not clone the
+repository or install Rust.
 ```
+
+[AGENTS.md](AGENTS.md) carries the commands, the platform matrix, and the
+desktop-session constraint, so the agent does not have to infer them.
+
+</details>
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
 the built-in coauthorship demo:
