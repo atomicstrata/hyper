@@ -16,6 +16,22 @@ groups, and explore neighborhoods with search, picking, and lasso selection.
 
 ## Try the viewer
 
+<details>
+<summary>Ask a coding agent to run it</summary>
+
+Paste this prompt into an agent working on your machine:
+
+```text
+Read https://github.com/atomicstrata/hyper/blob/main/AGENTS.md and open Hyper's
+built-in demo. Install uv first if it is not on PATH. Do not clone the
+repository or install Rust.
+```
+
+[AGENTS.md](AGENTS.md) carries the commands, the platform matrix, and the
+desktop-session constraint, so the agent does not have to infer them.
+
+</details>
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
 the built-in coauthorship demo:
 
