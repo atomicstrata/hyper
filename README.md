@@ -2,7 +2,9 @@
 
 **A native 3D hypergraph viewer for Python workflows and Rust applications.**
 
-[![Realtime navigation through the Mathlib dependency case study](docs/media/mathlib-realtime.gif)](docs/media/mathlib-realtime.mp4)
+<a href="docs/media/mathlib-realtime.mp4">
+  <img src="docs/media/mathlib-realtime.gif" alt="Realtime navigation through the Mathlib dependency case study" width="100%">
+</a>
 
 A hypergraph represents a group relationship as one edge connecting any number
 of nodes: authors on a paper, participants in an interaction, or modules in a
