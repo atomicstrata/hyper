@@ -189,3 +189,34 @@ JSON file.
 Override the file with `HYPER_VIZ_SESSION=/path/to/session.json`, or set
 `HYPER_VIZ_SESSION=off` to disable persistence. Preferences are global; camera,
 selection, and focus are keyed by graph ID. Layout positions are not stored.
+
+## Native dependency canvas
+
+The structural layout controls and dependency canvas described here are part of
+the upcoming `0.2.0` release. Build this checkout until that release is published;
+published `0.1.2` wheels predate these features. See the [release notes](../CHANGELOG.md).
+
+Auto mode keeps the full spatial viewer. The optional dependency canvas requires
+`--view dependencies`. Its search selects one exact
+module; independent import/dependent depths, filters, expansion, shortest paths,
+and bounded history support local exploration. See the [Mathlib workflow](mathlib-demo.md#explore-imports-and-dependents).
+Force a mode with `--view spatial`
+or `--view dependencies`, and select an initial module with `--module ID`.
+
+Embedding hosts can use `HyperVisualizerPlugin::with_view_mode(ViewMode::Spatial)`
+or `VisualizerConfig::with_view_mode` and `with_module`. Build a configured app
+without running it using `visualizer_app_with_config(scene, config)`.
+Session version remains `hyperviz.session.v1`; explorer fields are optional and
+stable-ID scopes survive reordered scenes. `HYPER_VIZ_SESSION=off` also ignores
+saved window size. Search and direction caches rebuild after scene replacement.
+
+For star-projected import graphs with at least 1,000 vertices, a fresh interactive
+session seeds connectivity-based positions, performs 64 refinement steps, and
+starts paused with Normalized forces and all geometry enabled. Saved layout
+preferences are applied before initialization when persistence is enabled.
+**Full graph overview** restores every line and hull at low opacity and pauses
+layout while retaining positions. **Rebuild structural layout** recalculates
+positions with the chosen weights. Force controls span several orders of
+magnitude with numeric entry. Generic graphs and tours retain Legacy forces.
+See the [spatial workflow](mathlib-demo.md#full-spatial-overview) for ranges,
+defaults, formulas, and measured limitations.

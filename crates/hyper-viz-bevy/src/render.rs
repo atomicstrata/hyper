@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use hyper_viz::{Emphasis, apply_motion_rgba, emphasis_radius_scale, emphasize, link_style_for};
 
 use crate::animation::{StatusBursts, motion_for, node_motion};
-use crate::focus::{AttentionMode, FocusScope, apply_attention_rgba};
+use crate::focus::{AttentionMode, apply_attention_rgba};
 use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
 use crate::hyperedge_hull::HyperedgeHullSettings;
 use crate::interaction::{PointerTarget, SelectionState};
@@ -68,9 +68,12 @@ impl Plugin for RenderPlugin {
             .add_systems(Startup, setup_assets)
             // Apply the scene replacement and remap entities before any consumer
             // reads node indices, including the egui label pass later this frame.
+            // This also runs in Dependencies: returning to Spatial can happen
+            // during egui, before the next PreUpdate has a chance to remap.
             .add_systems(
                 PreUpdate,
                 sync_graph_nodes
+                    .after(crate::explorer_state::sync_explorer)
                     .after(crate::graph::poll_live_scene)
                     .after(crate::graph::poll_graph_watch)
                     .run_if(resource_exists::<GraphLayout>),
@@ -78,8 +81,13 @@ impl Plugin for RenderPlugin {
             .add_systems(
                 Update,
                 (
-                    update_node_positions.run_if(resource_exists::<GraphLayout>),
-                    draw_links.run_if(resource_exists::<GraphLayout>),
+                    update_node_positions
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
+                    draw_links
+                        .after(crate::spatial_visibility::cache_lines)
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
                     highlight_selected,
                 ),
             );
@@ -118,6 +126,7 @@ fn sync_graph_nodes(
     settings: Res<LayoutSettings>,
     render_settings: Res<NodeRenderSettings>,
     assets: Res<GraphAssets>,
+    mode: Option<Res<crate::explorer_state::ExplorerState>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     epoch: Res<GraphSceneEpoch>,
     mut last_epoch: Local<Option<u64>>,
@@ -158,7 +167,14 @@ fn sync_graph_nodes(
             Mesh3d(mesh.clone()),
             MeshMaterial3d(mat),
             Transform::from_translation(pos).with_scale(Vec3::splat(spec.radius)),
-            Visibility::default(),
+            if mode
+                .as_ref()
+                .is_some_and(|state| state.mode != crate::ViewMode::Spatial)
+            {
+                Visibility::Hidden
+            } else {
+                Visibility::Inherited
+            },
         ));
     }
 
@@ -207,13 +223,13 @@ fn draw_links(
     pointer: Option<Res<PointerTarget>>,
     sel_state: Option<Res<SelectionState>>,
     attention: Option<Res<AttentionMode>>,
-    focus: Option<Res<FocusScope>>,
+    cache: Res<crate::spatial_visibility::LineCache>,
     bursts: Res<StatusBursts>,
     time: Res<Time>,
     mut gizmos: Gizmos,
 ) {
     let elapsed = time.elapsed_secs();
-    let hide_hubs = hull_settings.as_ref().is_some_and(|s| s.hide_hubs);
+    let _ = hull_settings;
     let hovered_he = pointer.and_then(|p| match *p {
         PointerTarget::Hyperedge(i) => Some(i),
         _ => None,
@@ -223,94 +239,34 @@ fn draw_links(
         .map(|s| s.hyperedges.iter().copied().collect())
         .unwrap_or_default();
     let attention_on = attention.is_some_and(|mode| mode.on);
-    let in_scope = |index: usize| focus.as_ref().is_none_or(|scope| scope.contains(index));
-
-    if hide_hubs {
-        let mut drawn = 0;
-        for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
-            if he.member_indices.len() != 2 {
-                continue;
-            }
-            let (Some(p1), Some(p2)) = (
-                layout.position_at(he.member_indices[0]),
-                layout.position_at(he.member_indices[1]),
-            ) else {
-                continue;
-            };
-            if !in_scope(he.member_indices[0]) || !in_scope(he.member_indices[1]) {
-                continue;
-            }
-            if drawn >= line_settings.budget() {
-                break;
-            }
-            drawn += 1;
-            let mut style = link_style_for(Some(&he.id), Some(&he.status));
-            apply_link_emphasis(
-                &mut style,
-                Emphasis::from_flags(
-                    hovered_he == Some(he_index),
-                    selected_hes.contains(&he_index),
-                ),
-            );
-            apply_link_status_motion(&mut style, Some(&he.status), Some(&he.id), elapsed, &bursts);
-            style.color = apply_attention_rgba(style.color, &he.status, attention_on);
-            style.color.a *= line_settings.opacity;
-            gizmos.line(
-                p1,
-                p2,
-                Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a),
-            );
-        }
-        return;
-    }
-
-    let he_indices: HashMap<&str, usize> = layout
-        .scene
-        .hyperedges
-        .iter()
-        .enumerate()
-        .map(|(i, he)| (he.id.as_str(), i))
-        .collect();
-    let mut drawn = 0;
-    for link in &layout.scene.links {
-        let (src, tgt) = (link.source, link.target);
-        let (Some(p1), Some(p2)) = (layout.position_at(src), layout.position_at(tgt)) else {
-            continue;
-        };
-        if !in_scope(src) || !in_scope(tgt) {
-            continue;
-        }
-
-        if drawn >= line_settings.budget() {
-            break;
-        }
-        drawn += 1;
-        let he_idx = link
-            .hyperedge_id
-            .as_deref()
-            .and_then(|id| he_indices.get(id))
-            .copied();
-        let mut style = link_style_for(link.hyperedge_id.as_deref(), link.status.as_deref());
-        apply_link_emphasis(
-            &mut style,
-            Emphasis::from_flags(
-                he_idx.is_some_and(|i| hovered_he == Some(i)),
-                he_idx.is_some_and(|i| selected_hes.contains(&i)),
-            ),
+    for &(line, p1, p2) in &cache.segments {
+        let edge = line.hyperedge.and_then(|i| layout.scene.hyperedges.get(i));
+        let mut style =
+            link_style_for(edge.map(|e| e.id.as_str()), edge.map(|e| e.status.as_str()));
+        let emphasis = Emphasis::from_flags(
+            line.hyperedge.is_some_and(|i| hovered_he == Some(i)),
+            line.hyperedge.is_some_and(|i| selected_hes.contains(&i)),
         );
+        apply_link_emphasis(&mut style, emphasis);
+        if emphasis == Emphasis::Rest {
+            style.color.a *= layout.layout.pair_opacity(line.source, line.target);
+        }
         apply_link_status_motion(
             &mut style,
-            link.status.as_deref(),
-            link.hyperedge_id.as_deref(),
+            edge.map(|e| e.status.as_str()),
+            edge.map(|e| e.id.as_str()),
             elapsed,
             &bursts,
         );
-        if let Some(status) = link.status.as_deref() {
-            style.color = apply_attention_rgba(style.color, status, attention_on);
+        if let Some(edge) = edge {
+            style.color = apply_attention_rgba(style.color, &edge.status, attention_on);
         }
         style.color.a *= line_settings.opacity;
-        let color = Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a);
-        gizmos.line(p1, p2, color);
+        gizmos.line(
+            p1,
+            p2,
+            Color::srgba(style.color.r, style.color.g, style.color.b, style.color.a),
+        );
     }
 }
 
@@ -358,8 +314,12 @@ fn highlight_selected(
     attention: Option<Res<AttentionMode>>,
     bursts: Option<Res<StatusBursts>>,
     time: Res<Time>,
+    mode: Option<Res<crate::explorer_state::ExplorerState>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    if mode.is_some_and(|state| state.mode != crate::ViewMode::Spatial) {
+        return;
+    }
     let Some(layout) = layout else {
         return;
     };
@@ -399,6 +359,106 @@ mod tests {
     use crate::graph::{LiveSceneReceiver, poll_live_scene};
     use hyper_viz::{Hypergraph, Projection, project};
     use std::sync::{Mutex, mpsc};
+
+    #[test]
+    fn material_updates_stop_while_dependency_entities_await_reload() {
+        let scene = Hypergraph::new()
+            .vertex("a", "a", "person")
+            .project(Projection::StarCentroid);
+        let layout = GraphLayout::from_scene(scene, &LayoutSettings::default());
+        let mut app = App::new();
+        let mut materials = Assets::<StandardMaterial>::default();
+        let material = materials.add(StandardMaterial::default());
+        app.init_resource::<Time>()
+            .insert_resource(layout)
+            .insert_resource(materials)
+            .insert_resource(crate::explorer_state::ExplorerState::default())
+            .add_systems(Update, highlight_selected);
+        app.world_mut()
+            .resource_mut::<crate::explorer_state::ExplorerState>()
+            .mode = crate::ViewMode::Dependencies;
+        app.world_mut()
+            .spawn((SceneNodeEntity { index: 99 }, MeshMaterial3d(material)));
+        app.update();
+    }
+
+    #[test]
+    fn scene_reloads_remap_entities_while_dependency_view_is_active() {
+        let scene = |names: &[&str]| {
+            let mut graph = Hypergraph::new().with_id("mode-reload");
+            for name in names {
+                graph = graph.vertex(*name, *name, "person");
+            }
+            project(&graph, Projection::StarCentroid)
+        };
+        let settings = LayoutSettings::default();
+        let (tx, rx) = mpsc::channel();
+        let mut app = App::new();
+        app.insert_resource(GraphLayout::from_scene(scene(&["Alice", "Bob"]), &settings))
+            .insert_resource(settings)
+            .insert_resource(LiveSceneReceiver(Mutex::new(rx)))
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<crate::explorer_state::ExplorerState>()
+            .init_resource::<Assets<Mesh>>()
+            .init_resource::<Assets<StandardMaterial>>()
+            .add_plugins(RenderPlugin)
+            .add_systems(PreUpdate, poll_live_scene.before(sync_graph_nodes));
+        app.world_mut()
+            .resource_mut::<crate::explorer_state::ExplorerState>()
+            .choose_mode(crate::ViewMode::Spatial);
+        app.world_mut().run_schedule(Startup);
+        app.world_mut().run_schedule(PreUpdate);
+        assert_eq!(
+            app.world_mut()
+                .query::<&SceneNodeEntity>()
+                .iter(app.world())
+                .count(),
+            2
+        );
+
+        app.world_mut()
+            .resource_mut::<crate::explorer_state::ExplorerState>()
+            .choose_mode(crate::ViewMode::Dependencies);
+        tx.send(scene(&["Bob"])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        let nodes: Vec<_> = app
+            .world_mut()
+            .query::<(&SceneNodeKey, &SceneNodeEntity)>()
+            .iter(app.world())
+            .map(|(key, node)| (key.0.clone(), node.index))
+            .collect();
+        assert_eq!(
+            nodes,
+            vec![("Bob".to_owned(), 0)],
+            "A mode switch later in this frame must see remapped indices"
+        );
+
+        tx.send(scene(&["Bob", "Dave"])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        let nodes: Vec<_> = app
+            .world_mut()
+            .query::<(&SceneNodeKey, &Visibility)>()
+            .iter(app.world())
+            .filter(|(key, _)| key.0 == "Dave")
+            .map(|(key, visibility)| (key.0.clone(), *visibility))
+            .collect();
+        assert_eq!(
+            nodes,
+            vec![("Dave".to_owned(), Visibility::Hidden)],
+            "New spatial entities must remain hidden while the dependency canvas is active"
+        );
+
+        tx.send(scene(&[])).unwrap();
+        app.world_mut().run_schedule(PreUpdate);
+        assert_eq!(
+            app.world_mut()
+                .query::<&SceneNodeEntity>()
+                .iter(app.world())
+                .count(),
+            0,
+            "Returning to Spatial after an empty reload must not leave stale label entities"
+        );
+    }
 
     #[test]
     fn live_updates_keep_every_node_available_for_labels() {

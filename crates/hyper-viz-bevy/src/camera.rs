@@ -25,9 +25,13 @@ impl Plugin for CameraPlugin {
             .add_systems(
                 Update,
                 (
-                    release_text_focus_for_orbit,
-                    auto_fit_camera.run_if(resource_exists::<GraphLayout>),
-                    apply_frame_request.run_if(resource_exists::<GraphLayout>),
+                    release_text_focus_for_orbit.run_if(crate::explorer_state::spatial_mode),
+                    auto_fit_camera
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
+                    apply_frame_request
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
                 ),
             );
     }
@@ -91,7 +95,7 @@ fn auto_fit_camera(
         *fitted_epoch = Some(epoch.0);
         return;
     }
-    if layout.iterations() < 20 {
+    if layout.running && layout.iterations() < 20 {
         return;
     }
     // Fit once. Live reloads used to re-frame every epoch and yank the camera.
@@ -175,4 +179,35 @@ fn apply_camera_fit(cam_q: &mut Query<&mut PanOrbitCamera>, positions: &[Vec3]) 
     cam.radius = Some(radius);
     cam.force_update = true;
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn paused_initial_layout_frames_without_waiting_for_simulation_steps() {
+        let scene = hyper_viz::Hypergraph::new()
+            .vertex("a", "a", "module")
+            .vertex("b", "b", "module")
+            .project(hyper_viz::Projection::StarCentroid);
+        let mut layout = GraphLayout::from_scene(scene, &crate::graph::LayoutSettings::default());
+        layout.running = false;
+        layout.layout.positions = vec![
+            hyper_viz::Vec3::new(-1000., 0., 0.),
+            hyper_viz::Vec3::new(1000., 0., 0.),
+        ];
+        let mut app = App::new();
+        app.insert_resource(layout)
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<FocusScope>()
+            .init_resource::<HyperedgeHullSettings>()
+            .add_systems(Update, auto_fit_camera);
+        let camera = app.world_mut().spawn(PanOrbitCamera::default()).id();
+        app.update();
+        let orbit = app.world().get::<PanOrbitCamera>(camera).unwrap();
+        let (_, expected_radius) =
+            camera_fit(&[Vec3::new(-1000., 0., 0.), Vec3::new(1000., 0., 0.)]).unwrap();
+        assert_eq!(orbit.target_radius, expected_radius);
+    }
 }

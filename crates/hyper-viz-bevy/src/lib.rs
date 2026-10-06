@@ -35,8 +35,13 @@
 
 mod animation;
 mod camera;
+mod explorer_canvas;
+mod explorer_state;
+mod explorer_ui;
 mod focus;
 mod graph;
+mod spatial_visibility;
+pub use hyper_viz::session::ViewMode;
 mod hyperedge_hull;
 mod inspect;
 mod interaction;
@@ -71,6 +76,10 @@ pub struct VisualizerConfig {
     pub title: String,
     pub width: u32,
     pub height: u32,
+    /// Auto keeps Spatial; Dependencies selects the optional native canvas.
+    pub view_mode: ViewMode,
+    /// Exact initial vertex ID for dependency exploration; unknown IDs are ignored.
+    pub initial_module: Option<String>,
 }
 
 impl Default for VisualizerConfig {
@@ -79,6 +88,8 @@ impl Default for VisualizerConfig {
             title: "Hypergraph".to_string(),
             width: 1600,
             height: 900,
+            view_mode: ViewMode::Auto,
+            initial_module: None,
         }
     }
 }
@@ -89,6 +100,18 @@ impl VisualizerConfig {
             title: title.into(),
             ..Self::default()
         }
+    }
+
+    /// Select the standalone view; Auto currently behaves as Spatial.
+    pub fn with_view_mode(mut self, mode: ViewMode) -> Self {
+        self.view_mode = mode;
+        self
+    }
+
+    /// Set an exact starting vertex ID for the dependency canvas.
+    pub fn with_module(mut self, id: impl Into<String>) -> Self {
+        self.initial_module = Some(id.into());
+        self
     }
 
     pub fn with_size(mut self, width: u32, height: u32) -> Self {
@@ -155,6 +178,12 @@ impl HyperVisualizerPlugin {
         self
     }
 
+    /// Select the embedded view; Auto currently behaves as Spatial.
+    pub fn with_view_mode(mut self, mode: ViewMode) -> Self {
+        self.settings.view_mode = mode;
+        self
+    }
+
     pub fn with_projection(mut self, projection: Projection) -> Self {
         self.settings.projection = projection;
         self
@@ -180,7 +209,36 @@ impl HyperVisualizerPlugin {
 
 impl Plugin for HyperVisualizerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(self.settings.clone())
+        let mut explorer = explorer_state::ExplorerState::default();
+        explorer.requested = self.settings.view_mode;
+        app.init_resource::<spatial_visibility::LineCache>()
+            .add_systems(
+                Update,
+                spatial_visibility::cache_lines
+                    .after(graph::step_layout)
+                    .run_if(resource_exists::<graph::GraphLayout>)
+                    .run_if(explorer_state::spatial_mode),
+            )
+            .insert_resource(explorer)
+            .add_systems(
+                PreUpdate,
+                explorer_state::sync_explorer
+                    .after(graph::poll_live_scene)
+                    .after(graph::poll_graph_watch),
+            )
+            .add_systems(
+                bevy_egui::EguiPrimaryContextPass,
+                explorer_ui::explorer_panel
+                    .run_if(resource_exists::<graph::GraphLayout>)
+                    .run_if(not(resource_exists::<showcase::ShowcaseConfig>)),
+            )
+            .add_systems(
+                Update,
+                explorer_ui::spatial_visibility
+                    .before(hyperedge_hull::update_hub_visibility)
+                    .run_if(not(resource_exists::<showcase::ShowcaseConfig>)),
+            )
+            .insert_resource(self.settings.clone())
             .init_resource::<graph::GraphSceneEpoch>()
             .add_plugins(focus::FocusPlugin)
             .add_plugins(camera::CameraPlugin)
@@ -193,7 +251,9 @@ impl Plugin for HyperVisualizerPlugin {
             .add_systems(Startup, graph::init_graph)
             .add_systems(
                 Update,
-                graph::step_layout.run_if(resource_exists::<graph::GraphLayout>),
+                graph::step_layout
+                    .run_if(resource_exists::<graph::GraphLayout>)
+                    .run_if(explorer_state::spatial_mode),
             );
 
         if self.watch {
@@ -342,12 +402,24 @@ pub fn visualizer_app(scene: HypergraphScene) -> App {
     )
 }
 
+/// Build the native app with explicit mode and initial module selection.
+pub fn visualizer_app_with_config(scene: HypergraphScene, config: VisualizerConfig) -> App {
+    visualizer_app_with(HyperVisualizerPlugin::from_scene(scene), config, false)
+}
+
 fn visualizer_app_with(
     plugin: HyperVisualizerPlugin,
     config: VisualizerConfig,
     quiet_bevy: bool,
 ) -> App {
-    let (width, height) = session::saved_window_size().unwrap_or((config.width, config.height));
+    let mut plugin = plugin.with_view_mode(config.view_mode);
+    plugin.settings.initial_module = config.initial_module;
+    let saved_size = if session::session_enabled() {
+        session::saved_window_size()
+    } else {
+        None
+    };
+    let (width, height) = saved_size.unwrap_or((config.width, config.height));
     let window = WindowPlugin {
         primary_window: Some(Window {
             title: config.title,

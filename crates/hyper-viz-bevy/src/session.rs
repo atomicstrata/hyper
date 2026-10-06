@@ -36,6 +36,7 @@ pub struct SessionStore {
     pub session: ViewerSession,
     pub last_json: String,
     pub enabled: bool,
+    pub has_saved_session: bool,
 }
 
 #[derive(Resource, Debug, Default)]
@@ -58,16 +59,15 @@ pub struct SessionPlugin;
 impl Plugin for SessionPlugin {
     fn build(&self, app: &mut App) {
         let enabled = session_enabled();
-        let session = if enabled {
-            load_session().unwrap_or_default()
-        } else {
-            ViewerSession::default()
-        };
+        let loaded = if enabled { load_session() } else { None };
+        let has_saved_session = loaded.is_some();
+        let session = loaded.unwrap_or_default();
         let last_json = session_to_json(&session).unwrap_or_default();
         app.insert_resource(SessionStore {
             session,
             last_json,
             enabled,
+            has_saved_session,
         })
         .init_resource::<SessionDirty>()
         .init_resource::<SkipAutoFit>()
@@ -141,10 +141,16 @@ fn apply_saved_session(
     if store.session.views.is_empty() {
         if let Some(loaded) = load_session() {
             store.session = loaded;
+            store.has_saved_session = true;
             if let Ok(json) = session_to_json(&store.session) {
                 store.last_json = json;
             }
         }
+    }
+    if !store.has_saved_session {
+        apply.prefs_done = true;
+        apply.view_done = true;
+        return;
     }
     if !apply.prefs_done {
         apply_prefs(&store.session.prefs, &mut settings, &mut labels, &mut hulls);
@@ -188,7 +194,7 @@ fn apply_prefs(
     hulls.opacity = prefs.hulls.opacity;
 }
 
-fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
+pub(crate) fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
     settings.iterations_per_frame = prefs.iterations_per_frame.max(1);
     settings.config.dt = prefs.dt;
     settings.config.damping = prefs.damping;
@@ -199,6 +205,8 @@ fn apply_layout_prefs(prefs: &LayoutPrefs, settings: &mut LayoutSettings) {
     settings.config.ideal_length = prefs.ideal_length;
     settings.config.max_tree_depth = prefs.max_tree_depth;
     settings.config.centroid_attraction = prefs.centroid_attraction;
+    settings.config.topology = prefs.topology.clone();
+    settings.config.topology.normalize();
 }
 
 fn apply_label_prefs(prefs: &LabelPrefs, labels: &mut NodeRenderSettings) {
@@ -245,6 +253,12 @@ fn restore_view(
         restore_focus_ids(focus, &layout.scene, view.focus_node_ids.as_deref());
         localize.isolated = focus.is_active();
     }
+
+    focus.hyperedges = view.focus_hyperedge_ids.as_ref().map(|ids| {
+        scene_hyperedge_indices(&layout.scene, ids)
+            .into_iter()
+            .collect()
+    });
 
     if let Some(camera) = &view.camera
         && let Ok((mut transform, mut cam)) = cameras.single_mut()
@@ -336,11 +350,12 @@ fn capture_session(
     focus: Res<FocusScope>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&PanOrbitCamera, &Transform)>,
+    explorer: Option<Res<crate::explorer_state::ExplorerState>>,
 ) {
     if !store.enabled || !apply.view_done {
         return;
     }
-    let next = build_session(
+    let mut next = build_session(
         &store.session,
         &settings,
         &layout,
@@ -354,6 +369,16 @@ fn capture_session(
         windows.single().ok(),
         cameras.single().ok(),
     );
+    if let Some(explorer) = explorer
+        && let Some(view) = next.views.get_mut(&view_key(&layout.scene.meta.id))
+    {
+        view.explorer = Some(hyper_viz::session::ExplorerSession {
+            mode: explorer.mode,
+            snapshot: explorer.snapshot(),
+            history: explorer.history.clone(),
+            cursor: explorer.cursor,
+        });
+    }
     let Ok(json) = session_to_json(&next) else {
         return;
     };
@@ -388,6 +413,11 @@ fn build_session(
     let fallback = &previous.prefs;
     session.prefs = ViewerPrefs {
         layout: LayoutPrefs {
+            topology: {
+                let mut topology = settings.config.topology.clone();
+                topology.normalize();
+                topology
+            },
             iterations_per_frame: settings.iterations_per_frame,
             running: layout.running,
             dt: finite_or(settings.config.dt, fallback.layout.dt),
@@ -455,11 +485,17 @@ fn capture_view(
         .and_then(|(cam, transform)| camera_prefs_from_live(cam, transform))
         .or_else(|| previous.and_then(|view| view.camera.clone()));
     ViewerView {
+        explorer: previous.and_then(|v| v.explorer.clone()),
         camera,
         focus_node_ids: focus.nodes.as_ref().map(|nodes| {
             let mut ids: Vec<usize> = nodes.iter().copied().collect();
             ids.sort_unstable();
             scene_node_ids(&layout.scene, &ids)
+        }),
+        focus_hyperedge_ids: focus.hyperedges.as_ref().map(|edges| {
+            let mut indices: Vec<_> = edges.iter().copied().collect();
+            indices.sort();
+            scene_hyperedge_ids(&layout.scene, &indices)
         }),
         selected_node_ids: scene_node_ids(&layout.scene, &sel_state.base_selection),
         selected_hyperedge_ids: scene_hyperedge_ids(&layout.scene, &sel_state.hyperedges),
@@ -652,6 +688,125 @@ mod tests {
     use super::*;
     use hyper_viz::{Hypergraph, Projection, project};
 
+    #[test]
+    fn saved_weights_drive_paused_startup_before_positions_are_built() {
+        let mut graph = Hypergraph::new();
+        for i in 0..1000 {
+            graph = graph.vertex(format!("m{i}"), format!("m{i}"), "module");
+        }
+        for i in 1..1000 {
+            let mut edge = hyper_viz::Hyperedge::new(
+                format!("import{i}"),
+                ["m0".to_string(), format!("m{i}")],
+            )
+            .with_kind("import");
+            edge.attrs.insert("source".into(), "m0".into());
+            edge.attrs.insert("target".into(), format!("m{i}").into());
+            graph.add_hyperedge(edge);
+        }
+        graph = graph.hyperedge("set", ["m0", "m1", "m2"], "set");
+        let scene = graph.project(Projection::StarCentroid);
+        let mut session = ViewerSession::default();
+        session.prefs.layout.running = false;
+        session.prefs.layout.gravity = 0.00002;
+        session.prefs.layout.repulsion = 300.;
+        session.prefs.layout.topology.model = hyper_viz::LayoutModel::LinLog;
+        session.prefs.layout.topology.pair_attraction = 0.013;
+        session.prefs.layout.topology.derived_set_influence = 0.037;
+        let mut expected_settings = LayoutSettings::default();
+        apply_layout_prefs(&session.prefs.layout, &mut expected_settings);
+        let mut expected = GraphLayout::from_scene(scene.clone(), &expected_settings);
+        expected.layout.config = expected_settings.config;
+        expected.rebuild_structural();
+        let mut app = App::new();
+        app.insert_resource(crate::InitialScene(scene))
+            .init_resource::<LayoutSettings>()
+            .insert_resource(SessionStore {
+                session,
+                enabled: true,
+                has_saved_session: true,
+                ..Default::default()
+            })
+            .init_resource::<SessionApply>()
+            .init_resource::<NodeRenderSettings>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<crate::render::LinkRenderSettings>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<LassoState>()
+            .init_resource::<LocalizeQuery>()
+            .init_resource::<SelectionState>()
+            .init_resource::<FocusScope>()
+            .init_resource::<SkipAutoFit>()
+            .add_systems(Startup, crate::graph::init_graph)
+            .add_systems(PreUpdate, apply_saved_session);
+        app.update();
+        let actual = app.world().resource::<GraphLayout>();
+        assert!(!actual.running);
+        assert_eq!(
+            actual.layout.config.topology,
+            expected.layout.config.topology
+        );
+        assert_eq!(
+            actual.layout.positions, expected.layout.positions,
+            "Paused geometry must use restored weights"
+        );
+        assert_eq!(actual.iterations(), 64);
+    }
+    #[test]
+    fn no_saved_session_preserves_live_first_launch_preferences() {
+        let mut settings = LayoutSettings::default();
+        settings.config.gravity = 0.001;
+        settings.config.centroid_attraction = 0.0005;
+        let scene = hyper_viz::Hypergraph::new()
+            .vertex("a", "a", "module")
+            .project(hyper_viz::Projection::StarCentroid);
+        let layout = GraphLayout::from_scene(scene, &settings);
+        let mut app = App::new();
+        app.insert_resource(settings)
+            .insert_resource(layout)
+            .insert_resource(SessionStore {
+                enabled: true,
+                ..Default::default()
+            })
+            .init_resource::<SessionApply>()
+            .init_resource::<NodeRenderSettings>()
+            .insert_resource(HyperedgeHullSettings {
+                enabled: false,
+                ..Default::default()
+            })
+            .init_resource::<AttentionMode>()
+            .init_resource::<LassoState>()
+            .init_resource::<LocalizeQuery>()
+            .init_resource::<SelectionState>()
+            .init_resource::<FocusScope>()
+            .init_resource::<SkipAutoFit>()
+            .add_systems(Update, apply_saved_session);
+        app.update();
+        assert_eq!(
+            app.world().resource::<LayoutSettings>().config.gravity,
+            0.001
+        );
+        assert!(!app.world().resource::<HyperedgeHullSettings>().enabled);
+    }
+
+    #[test]
+    fn applying_topology_preferences_keeps_model_and_sanitizes_invalid_weights() {
+        let mut prefs = LayoutPrefs::default();
+        prefs.topology.model = hyper_viz::LayoutModel::LinLog;
+        prefs.topology.derived_set_influence = 0.037;
+        prefs.topology.max_displacement = f32::NAN;
+        let mut settings = LayoutSettings::default();
+        apply_layout_prefs(&prefs, &mut settings);
+        assert_eq!(
+            settings.config.topology.model,
+            hyper_viz::LayoutModel::LinLog
+        );
+        assert_eq!(settings.config.topology.derived_set_influence, 0.037);
+        assert_eq!(
+            settings.config.topology.max_displacement,
+            hyper_viz::TopologySettings::default().max_displacement
+        );
+    }
     #[test]
     fn env_off_disables_persistence() {
         assert!(session_env_enabled(None));

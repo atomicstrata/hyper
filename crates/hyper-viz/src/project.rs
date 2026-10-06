@@ -29,13 +29,17 @@ impl Projection {
 }
 
 pub fn project(graph: &Hypergraph, projection: Projection) -> HypergraphScene {
-    project_inner(graph, projection)
+    let mut scene = project_inner(graph, projection);
+    scene
+        .warnings
+        .extend(crate::dependency::import_warnings(&scene));
+    scene
 }
 
 impl Hypergraph {
     /// Project this hypergraph into a render-agnostic [`HypergraphScene`].
     pub fn project(&self, projection: Projection) -> HypergraphScene {
-        project_inner(self, projection)
+        project(self, projection)
     }
 }
 
@@ -56,6 +60,7 @@ fn scene_meta(graph: &Hypergraph) -> SceneMeta {
         } else {
             graph.meta.title.clone()
         },
+        attrs: graph.meta.attrs.clone(),
     }
 }
 
@@ -86,6 +91,7 @@ fn scene_vertex_node(index: SceneIndex, vertex: &Vertex) -> SceneNode {
         },
         hyperedge_id: None,
         status: vertex.status.clone(),
+        attrs: vertex.attrs.clone(),
     }
 }
 
@@ -98,7 +104,7 @@ fn hub_label(edge: &Hyperedge) -> String {
 
 fn scene_hyperedge(
     edge: &Hyperedge,
-    hub_index: SceneIndex,
+    hub_index: Option<SceneIndex>,
     member_indices: Vec<SceneIndex>,
 ) -> SceneHyperedge {
     SceneHyperedge {
@@ -108,6 +114,7 @@ fn scene_hyperedge(
         label: hub_label(edge),
         kind: edge.kind.clone(),
         status: edge.status.clone(),
+        attrs: edge.attrs.clone(),
     }
 }
 
@@ -134,6 +141,7 @@ fn project_bipartite(graph: &Hypergraph) -> HypergraphScene {
             label: hub_label(edge),
             hyperedge_id: Some(edge.id.clone()),
             status: edge.status.clone(),
+            attrs: edge.attrs.clone(),
         });
 
         let mut member_indices = Vec::new();
@@ -155,7 +163,7 @@ fn project_bipartite(graph: &Hypergraph) -> HypergraphScene {
             });
         }
 
-        hyperedges.push(scene_hyperedge(edge, hub_index, member_indices));
+        hyperedges.push(scene_hyperedge(edge, Some(hub_index), member_indices));
     }
 
     HypergraphScene {
@@ -198,8 +206,7 @@ fn project_clique(graph: &Hypergraph) -> HypergraphScene {
             }
         }
 
-        let hub_index = member_indices.first().copied().unwrap_or(0);
-        hyperedges.push(scene_hyperedge(edge, hub_index, member_indices));
+        hyperedges.push(scene_hyperedge(edge, None, member_indices));
     }
 
     HypergraphScene {
@@ -229,7 +236,7 @@ fn project_star_centroid(graph: &Hypergraph) -> HypergraphScene {
             member_indices.push(member_index);
         }
 
-        hyperedges.push(scene_hyperedge(edge, 0, member_indices));
+        hyperedges.push(scene_hyperedge(edge, None, member_indices));
     }
 
     HypergraphScene {

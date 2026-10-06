@@ -18,7 +18,7 @@ use crate::render::SceneNodeEntity;
 const TOPOLOGY_INTERVAL: u32 = 8;
 const WIREFRAME_ALL_LIMIT: usize = 64;
 
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, PartialEq)]
 pub struct HyperedgeHullSettings {
     pub enabled: bool,
     pub opacity: f32,
@@ -60,13 +60,19 @@ impl Plugin for HyperedgeHullPlugin {
         app.init_resource::<HyperedgeHullSettings>().add_systems(
             Update,
             (
-                sync_hyperedge_hulls.run_if(resource_exists::<GraphLayout>),
+                sync_hyperedge_hulls
+                    .after(crate::graph::step_layout)
+                    .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode),
                 draw_hull_wireframes
                     .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode)
                     .run_if(|settings: Res<HyperedgeHullSettings>| {
                         settings.enabled && settings.wireframe
                     }),
-                update_hub_visibility.run_if(resource_exists::<GraphLayout>),
+                update_hub_visibility
+                    .run_if(resource_exists::<GraphLayout>)
+                    .run_if(crate::explorer_state::spatial_mode),
             ),
         );
     }
@@ -94,8 +100,9 @@ fn sync_hyperedge_hulls(
     focus: Res<FocusScope>,
     time: Res<Time>,
     mut frame: Local<u32>,
-    mut last_epoch: Local<u64>,
+    revisions: (Local<u64>, Local<Option<(u64, u64)>>),
 ) {
+    let (mut last_epoch, mut last_iterations) = revisions;
     if !settings.enabled {
         for (entity, _, _, _) in existing.iter() {
             commands.entity(entity).despawn();
@@ -103,10 +110,16 @@ fn sync_hyperedge_hulls(
         return;
     }
 
-    *frame = frame.wrapping_add(1);
-    let rebuild_topo = (layout.running && (*frame % TOPOLOGY_INTERVAL == 1))
-        || epoch.0 != *last_epoch
-        || settings.is_changed();
+    let revision = (layout.iterations(), layout.positions_revision);
+    let positions_changed = *last_iterations != Some(revision);
+    let explicitly_reinitialized = last_iterations.is_some_and(|previous| previous.1 != revision.1);
+    *last_iterations = Some(revision);
+    if positions_changed {
+        *frame = frame.wrapping_add(1);
+    }
+    let rebuild_topo = explicitly_reinitialized
+        || (positions_changed && (*frame % TOPOLOGY_INTERVAL == 1))
+        || epoch.0 != *last_epoch;
     *last_epoch = epoch.0;
 
     let selected_hubs: HashSet<usize> = sel_state
@@ -136,34 +149,28 @@ fn sync_hyperedge_hulls(
     }
 
     for (he_index, hyperedge) in layout.scene.hyperedges.iter().enumerate() {
-        if !focus.contains(hyperedge.hub_index) {
+        if hyperedge.member_indices.len() < 3 || !focus.contains_hyperedge(&layout.scene, he_index)
+        {
             continue;
         }
         if !attention_keeps(parse_status(&hyperedge.status), attention.on) {
             continue;
         }
-        let mut all_scene_indices = Vec::new();
-        let mut all_positions = Vec::new();
-        for idx in &hyperedge.member_indices {
-            let Some(pos) = layout.position_at(*idx) else {
-                continue;
-            };
-            all_scene_indices.push(*idx);
-            all_positions.push([pos.x, pos.y, pos.z]);
-        }
-
-        // Hull the real member positions, then pad the shell a little so nested
-        // sets do not z-fight. Do not scale by full arity: 0.02 * n on a 400-member
-        // folder explodes the hull into empty space.
-        let inflate = nest_inflate(all_positions.len());
+        let inflate = nest_inflate(hyperedge.member_indices.len());
 
         let emphasis = Emphasis::from_flags(
             hovered_he == Some(he_index),
-            selected_hubs.contains(&hyperedge.hub_index)
+            hyperedge
+                .hub_index
+                .is_some_and(|hub| selected_hubs.contains(&hub))
                 || sel_state.hyperedges.contains(&he_index),
         );
-        let style =
-            hull_style_emphasized(&hyperedge.id, &hyperedge.status, settings.opacity, emphasis);
+        let opacity = if emphasis == Emphasis::Rest {
+            settings.opacity * layout.layout.set_opacity(hyperedge.member_indices.len())
+        } else {
+            settings.opacity
+        };
+        let style = hull_style_emphasized(&hyperedge.id, &hyperedge.status, opacity, emphasis);
         let motion = bursts.as_deref().map_or(StatusMotion::default(), |bursts| {
             motion_for(
                 &hyperedge.status,
@@ -198,7 +205,7 @@ fn sync_hyperedge_hulls(
             if can_skin {
                 if let Ok(mut cache) = caches.get_mut(entity) {
                     cache.wire_color = wire;
-                    if layout.running {
+                    if positions_changed {
                         cache.positions = skin_hull_positions(&cache.member_scene_indices, &layout);
                         inflate_from_centroid(&mut cache.positions, inflate);
                         if let Some(mesh) = meshes.get_mut(&mesh_handle) {
@@ -218,6 +225,7 @@ fn sync_hyperedge_hulls(
                 continue;
             }
 
+            let (all_scene_indices, all_positions) = member_positions(hyperedge, &layout);
             let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
                 commands.entity(entity).despawn();
                 continue;
@@ -234,6 +242,7 @@ fn sync_hyperedge_hulls(
             continue;
         }
 
+        let (all_scene_indices, all_positions) = member_positions(hyperedge, &layout);
         let Some(mut hull_mesh) = hull_from_points(&all_positions) else {
             continue;
         };
@@ -255,6 +264,16 @@ fn sync_hyperedge_hulls(
     for (entity, _, _) in live.into_values() {
         commands.entity(entity).despawn();
     }
+}
+
+fn member_positions(
+    edge: &hyper_viz::SceneHyperedge,
+    layout: &GraphLayout,
+) -> (Vec<usize>, Vec<[f32; 3]>) {
+    edge.member_indices
+        .iter()
+        .filter_map(|i| layout.position_at(*i).map(|p| (*i, p.to_array())))
+        .unzip()
 }
 
 fn skin_hull_positions(scene_indices: &[usize], layout: &GraphLayout) -> Vec<[f32; 3]> {
@@ -289,6 +308,7 @@ fn cache_from_hull(
 }
 
 fn draw_hull_wireframes(
+    tour_outlines: Option<Res<crate::showcase::TourHullOutlines>>,
     hulls: Query<(&HyperedgeHullEntity, &HullWireCache)>,
     sel_state: Res<SelectionState>,
     pointer: Option<Res<PointerTarget>>,
@@ -306,15 +326,28 @@ fn draw_hull_wireframes(
             .scene
             .hyperedges
             .get(entity.hyperedge_index)
-            .is_some_and(|he| !focus.contains(he.hub_index))
+            .is_some_and(|_| !focus.contains_hyperedge(&layout.scene, entity.hyperedge_index))
         {
             continue;
         }
         let emphasized = hovered == Some(entity.hyperedge_index)
             || sel_state.hyperedges.contains(&entity.hyperedge_index);
-        if hull_count > WIREFRAME_ALL_LIMIT && !emphasized {
+        let tour_sample = tour_outlines
+            .as_ref()
+            .is_some_and(|outlines| outlines.0.contains(&entity.hyperedge_index));
+        // Dense interactive views retain their hover/selection-only behavior.
+        // Captures can opt into a small stable sample, never all wireframes.
+        if !emphasized
+            && (tour_outlines.is_some() && !tour_sample
+                || tour_outlines.is_none() && hull_count > WIREFRAME_ALL_LIMIT)
+        {
             continue;
         }
+        let color = if tour_sample {
+            cache.wire_color.with_alpha(0.22)
+        } else {
+            cache.wire_color
+        };
         for &(a, b) in &cache.edges {
             let Some(p1) = cache.positions.get(a as usize) else {
                 continue;
@@ -322,16 +355,12 @@ fn draw_hull_wireframes(
             let Some(p2) = cache.positions.get(b as usize) else {
                 continue;
             };
-            gizmos.line(
-                Vec3::from_array(*p1),
-                Vec3::from_array(*p2),
-                cache.wire_color,
-            );
+            gizmos.line(Vec3::from_array(*p1), Vec3::from_array(*p2), color);
         }
     }
 }
 
-fn update_hub_visibility(
+pub(crate) fn update_hub_visibility(
     settings: Res<HyperedgeHullSettings>,
     layout: Res<GraphLayout>,
     focus: Res<FocusScope>,
@@ -411,6 +440,145 @@ fn inflate_from_centroid(points: &mut [[f32; 3]], scale: f32) {
 mod tests {
     use super::*;
 
+    #[test]
+    fn paused_hulls_and_style_edits_emit_no_mesh_changes_and_skip_dyads() {
+        use bevy::asset::{AssetApp, AssetEvent, AssetPlugin};
+        use bevy::ecs::message::MessageCursor;
+        use hyper_viz::{Hypergraph, Projection};
+        let scene = Hypergraph::new()
+            .vertex("a", "a", "v")
+            .vertex("b", "b", "v")
+            .vertex("c", "c", "v")
+            .vertex("d", "d", "v")
+            .hyperedge("set", ["a", "b", "c", "d"], "set")
+            .hyperedge("pair", ["a", "b"], "pair")
+            .project(Projection::StarCentroid);
+        let mut layout = GraphLayout::from_scene(scene, &crate::graph::LayoutSettings::default());
+        layout.running = false;
+        layout.layout.positions = vec![
+            hyper_viz::Vec3::new(0., 0., 0.),
+            hyper_viz::Vec3::new(1., 0., 0.),
+            hyper_viz::Vec3::new(0., 1., 0.),
+            hyper_viz::Vec3::new(0., 0., 1.),
+        ];
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>()
+            .insert_resource(layout)
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<SelectionState>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<FocusScope>()
+            .add_systems(Update, sync_hyperedge_hulls);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query::<&HyperedgeHullEntity>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        let mut cursor = MessageCursor::<AssetEvent<Mesh>>::default();
+        cursor
+            .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+            .for_each(|_| ());
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+        app.world_mut()
+            .resource_mut::<HyperedgeHullSettings>()
+            .opacity = 0.001;
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+        app.update();
+        assert_eq!(
+            cursor
+                .read(app.world().resource::<Messages<AssetEvent<Mesh>>>())
+                .count(),
+            0
+        );
+    }
+
+    #[test]
+    fn paused_explicit_rebuild_recalculates_members_and_triangles() {
+        use bevy::asset::{AssetApp, AssetPlugin};
+        use hyper_viz::{Hypergraph, Projection};
+        let mut graph = Hypergraph::new();
+        for i in 0..32 {
+            graph = graph.vertex(format!("v{i}"), format!("v{i}"), "same");
+        }
+        graph = graph.hyperedge("all", (0..32).map(|i| format!("v{i}")), "all");
+        let mut layout = GraphLayout::from_scene(
+            graph.project(Projection::StarCentroid),
+            &crate::graph::LayoutSettings::default(),
+        );
+        crate::graph::seed_neutral(&mut layout);
+        layout.running = false;
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>()
+            .insert_resource(layout)
+            .init_resource::<GraphSceneEpoch>()
+            .init_resource::<HyperedgeHullSettings>()
+            .init_resource::<SelectionState>()
+            .init_resource::<AttentionMode>()
+            .init_resource::<FocusScope>()
+            .add_systems(Update, sync_hyperedge_hulls);
+        app.update();
+        let old = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap()
+            .clone();
+        {
+            let mut layout = app.world_mut().resource_mut::<GraphLayout>();
+            layout.layout.config.topology.model = hyper_viz::LayoutModel::Normalized;
+            layout.rebuild_structural();
+        }
+        let layout = app.world().resource::<GraphLayout>();
+        let he = &layout.scene.hyperedges[0];
+        let (all_indices, points) = member_positions(he, layout);
+        let expected = hull_from_points(&points).unwrap();
+        let fresh = cache_from_hull(&expected, &all_indices, old.wire_color);
+        assert!(
+            old.member_scene_indices != fresh.member_scene_indices || old.indices != fresh.indices,
+            "Fixture must require a different topology"
+        );
+        app.update();
+        let actual = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(
+            actual.member_scene_indices, fresh.member_scene_indices,
+            "Explicit rebuild must resample hull members"
+        );
+        assert_eq!(
+            actual.indices, fresh.indices,
+            "Paused rebuild must recompute triangles"
+        );
+        app.update();
+        let stable = app
+            .world_mut()
+            .query::<&HullWireCache>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(stable.indices, fresh.indices);
+    }
     #[test]
     fn nest_inflate_matches_small_arity_and_caps_large_sets() {
         assert!((nest_inflate(3) - 1.08).abs() < 1e-5);

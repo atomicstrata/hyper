@@ -400,6 +400,7 @@ mod tests {
             kind: "person".into(),
             label: "Alice".into(),
             hyperedge_id: None,
+            attrs: Default::default(),
             status: String::new(),
         };
         let hub = SceneNode {
@@ -409,6 +410,7 @@ mod tests {
             kind: "hyperedge".into(),
             label: "Paper A".into(),
             hyperedge_id: Some("e:1".into()),
+            attrs: Default::default(),
             status: String::new(),
         };
         assert_ne!(
@@ -444,6 +446,7 @@ mod tests {
             kind: "worktree".into(),
             label: "main".into(),
             hyperedge_id: None,
+            attrs: Default::default(),
             status: String::new(),
         };
         let backlog = SceneNode {

@@ -2,6 +2,10 @@
 
 **A native 3D hypergraph viewer for Python workflows and Rust applications.**
 
+<a href="docs/media/mathlib-realtime.mp4">
+  <img src="docs/media/mathlib-realtime.gif" alt="Realtime navigation through the Mathlib dependency case study" width="100%">
+</a>
+
 A hypergraph represents a group relationship as one edge connecting any number
 of nodes: authors on a paper, participants in an interaction, or modules in a
 dependency group. Hyper lets you inspect those memberships, find overlapping
@@ -9,12 +13,6 @@ groups, and explore neighborhoods with search, picking, and lasso selection.
 
 [Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
 [Use Rust](#use-from-rust) · [Documentation](#documentation)
-
-[![Mathlib module dependency groups in Hyper's native 3D viewer](docs/media/mathlib.gif)](docs/media/mathlib.mp4)
-
-[Full-resolution Mathlib demo](docs/media/mathlib.mp4) ·
-[Reproduce the demo](docs/mathlib-demo.md).
-The recording uses a settled layout; it is not a live-layout performance test.
 
 ## Try the viewer
 
@@ -154,6 +152,21 @@ Notebook embedding, live Python updates, and direct scientific-library object
 adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
 for browser plans.
 
+## Layout and exploration
+
+Choose bipartite, clique, or star projection to inspect the same memberships
+from different views. Search, picking, lasso selection, and neighborhood focus
+help you explore individual nodes and overlapping groups; display settings and
+saved sessions keep the view manageable.
+
+The upcoming `0.2.0` release adds connectivity-based initialization and tunable
+Legacy, Normalized, and LinLog layouts. An optional dependency canvas explores
+graphs with validated import-direction attributes through bounded traversal,
+filters, and shortest paths. See the [viewer guide](docs/VIEWER.md),
+[Rust layout and query APIs](docs/API.md), and [release notes](CHANGELOG.md).
+Build this checkout to use these additions until `0.2.0` is published;
+published `0.1.2` wheels predate them.
+
 ## Use from Rust
 
 The `hyper-viz` core handles JSON I/O, projections, and 3D force layout without
@@ -208,6 +221,25 @@ See the [viewer guide](docs/VIEWER.md) for more commands, and the
 [Python build instructions](docs/HIF.md#python-installation) for extension development.
 
 </details>
+
+## Use cases and benchmarks
+
+Hyper works with group relationships such as coauthorship, biochemical
+reactions, collaboration networks, and software dependencies. The Python
+quick start above demonstrates overlapping coauthor groups.
+
+One larger case study explores **Mathlib module imports** and their dependency
+groups. It provides a reproducible dataset and a workload for evaluating layout
+and rendering behavior.
+
+
+[Case study and reproduction](docs/mathlib-demo.md) ·
+[Full-resolution recording](docs/media/mathlib-realtime.mp4) ·
+[Layout comparisons and native measurements](docs/benchmarks/module-explorer.md).
+The recording follows realtime camera motion through a settled layout, with
+capture overhead included; it is not a live-layout performance test.
+The [ecosystem benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md)
+cover additional workloads, methods, and limitations.
 
 ## Documentation
 

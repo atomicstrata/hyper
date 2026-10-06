@@ -27,11 +27,13 @@
 //! assert_eq!(layout.positions.len(), scene.node_count());
 //! ```
 
+pub mod dependency;
 pub mod error;
 pub mod hif;
 pub mod hull;
 pub mod io;
 pub mod layout;
+pub mod module;
 pub mod motion;
 pub mod project;
 pub mod query;
@@ -39,7 +41,11 @@ pub mod scene;
 pub mod schema;
 pub mod semantics;
 pub mod session;
+pub mod topology;
 
+pub use dependency::{
+    DependencyIndex, DependencyScope, DirectedImport, ScopeOptions, TraversalDepth,
+};
 pub use error::VizError;
 pub use hif::{
     HifDocument, HifEdge, HifError, HifErrorKind, HifId, HifIncidence, HifNode, load_hif,
@@ -51,6 +57,7 @@ pub use io::{
     save_json,
 };
 pub use layout::{ForceLayout3D, LayoutConfig, Vec3, layout_edges_from_scene};
+pub use module::{ModuleCategory, ModuleFilters, module_categories};
 pub use motion::{
     ONE_SHOT_CAP, ONE_SHOT_SECS, StatusMotion, apply_motion_rgba, hyperedge_status_key, id_phase,
     looping_status, one_shot_ids, one_shot_motion, scene_status_snapshot, status_motion,
@@ -60,7 +67,7 @@ pub use project::{Projection, project};
 pub use query::{SceneHits, ScoredHit, scene_hits};
 pub use scene::{
     HypergraphScene, LinkKind, NodeRole, SceneHyperedge, SceneId, SceneIndex, SceneLink, SceneMeta,
-    SceneNode, neighborhood, scenes_equivalent,
+    SceneNode, hyperedge_in_scope, neighborhood, scenes_equivalent,
 };
 pub use schema::{GRAPH_VERSION, GraphMeta, Hyperedge, Hypergraph, Vertex, sample_coauthorship};
 pub use semantics::{
@@ -73,6 +80,7 @@ pub use session::{
     NavigationPrefs, SESSION_VERSION, ViewerPrefs, ViewerSession, ViewerView, parse_session,
     session_to_json, view_key,
 };
+pub use topology::{LayoutModel, TopologySettings};
 
 /// Common types for host applications that build, project, and lay out a hypergraph.
 pub mod prelude {

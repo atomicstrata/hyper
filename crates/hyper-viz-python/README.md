@@ -80,7 +80,7 @@ compiler or repository checkout is needed on these platforms. A desktop session
 and graphics driver are required. Linux viewer wheels require glibc 2.28+;
 macOS wheels target 11.0+. Notebook kernels on remote machines cannot open a
 window on your laptop; see the
-[notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/NOTEBOOK_ROADMAP.md).
+[notebook prototype roadmap](https://github.com/atomicstrata/hyper/blob/python-v0.2.0/docs/NOTEBOOK_ROADMAP.md).
 
 Save the following as `explore.py` alongside `dataset.hif.json`, then run
 `uv run explore.py`:
@@ -114,6 +114,6 @@ Malformed HIF raises `HifValidationError`. Both exceptions carry `location`
 and `reason`; file failures raise `OSError`. Direct scientific object adapters,
 notebook embedding, headless layout bindings, and live Python updates are deferred.
 
-See the [integration guide](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/docs/HIF.md)
-and [XGI example](https://github.com/atomicstrata/hyper/blob/python-v0.1.2/crates/hyper-viz-python/examples/xgi_interop.py).
+See the [integration guide](https://github.com/atomicstrata/hyper/blob/python-v0.2.0/docs/HIF.md)
+and [XGI example](https://github.com/atomicstrata/hyper/blob/python-v0.2.0/crates/hyper-viz-python/examples/xgi_interop.py).
 Hyper is licensed under MIT OR Apache-2.0; the bundled HIF schema is MIT-licensed.

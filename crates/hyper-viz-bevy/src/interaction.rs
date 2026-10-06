@@ -148,19 +148,27 @@ impl Plugin for InteractionPlugin {
                     remap_selection_on_reload,
                     keyboard_controls
                         .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode)
                         .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
                     pointer_hover
+                        .after(crate::spatial_visibility::cache_lines)
                         .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode)
                         .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
                     click_selection
                         .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode)
                         .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
                     lasso_interaction
                         .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode)
                         .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
                     disable_orbit_on_lasso
+                        .run_if(crate::explorer_state::spatial_mode)
                         .run_if(not(resource_exists::<crate::showcase::ShowcaseConfig>)),
-                    apply_selection_state.run_if(resource_exists::<GraphLayout>),
+                    apply_selection_state
+                        .run_if(resource_exists::<GraphLayout>)
+                        .run_if(crate::explorer_state::spatial_mode),
                 ),
             );
     }
@@ -173,12 +181,19 @@ fn remap_selection_on_reload(
     mut sel_state: ResMut<SelectionState>,
     mut focus: ResMut<FocusScope>,
     mut focus_ids: Local<Option<HashSet<String>>>,
+    mut focus_edge_ids: Local<Option<HashSet<String>>>,
 ) {
     let Some(layout) = layout else {
         return;
     };
     if *last_epoch == Some(epoch.0) {
         sel_state.remember_ids(&layout.scene);
+        *focus_edge_ids = focus.hyperedges.as_ref().map(|edges| {
+            edges
+                .iter()
+                .filter_map(|i| layout.scene.hyperedges.get(*i).map(|e| e.id.clone()))
+                .collect()
+        });
         *focus_ids = focus.nodes.as_ref().map(|nodes| {
             nodes
                 .iter()
@@ -192,6 +207,16 @@ fn remap_selection_on_reload(
         return;
     }
     sel_state.remap_ids(&layout.scene);
+    focus.hyperedges = focus_edge_ids.as_ref().map(|ids| {
+        layout
+            .scene
+            .hyperedges
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| ids.contains(&e.id))
+            .map(|(i, _)| i)
+            .collect()
+    });
     if let Some(ids) = focus_ids.as_ref() {
         let remapped: HashSet<usize> = ids
             .iter()
@@ -304,6 +329,7 @@ fn pointer_hover(
     lasso: Res<LassoState>,
     mut target: ResMut<PointerTarget>,
     focus: Res<FocusScope>,
+    cache: Res<crate::spatial_visibility::LineCache>,
 ) {
     if lasso.enabled || pointer_over_ui(&mut contexts) {
         *target = PointerTarget::None;
@@ -361,9 +387,11 @@ fn pointer_hover(
 
     let hulls_on = hull_settings.as_ref().is_none_or(|s| s.enabled);
     let mut hull_hits: Vec<(usize, usize, f32)> = Vec::new();
-    if hulls_on {
+    if hulls_on && hull_settings.as_ref().is_none_or(|s| s.opacity > 0.) {
         for (entity, cache) in hulls.iter() {
-            if cache.indices.len() < 3 {
+            if cache.indices.len() < 3
+                || !focus.contains_hyperedge(&layout.scene, entity.hyperedge_index)
+            {
                 continue;
             }
             let mut best_t: Option<f32> = None;
@@ -382,29 +410,19 @@ fn pointer_hover(
                     .scene
                     .hyperedges
                     .get(entity.hyperedge_index)
-                    .is_some_and(|he| focus.contains(he.hub_index))
+                    .is_some_and(|_| {
+                        focus.contains_hyperedge(&layout.scene, entity.hyperedge_index)
+                    })
             {
                 hull_hits.push((entity.hyperedge_index, cache.member_scene_indices.len(), t));
             }
         }
     }
-    for (he_index, he) in layout.scene.hyperedges.iter().enumerate() {
-        if he.member_indices.len() != 2 {
-            continue;
-        }
-        let (Some(p1), Some(p2)) = (
-            layout.position_at(he.member_indices[0]),
-            layout.position_at(he.member_indices[1]),
-        ) else {
-            continue;
-        };
-        if !focus.contains(he.hub_index)
-            && !he.member_indices.iter().all(|idx| focus.contains(*idx))
+    for &(line, p1, p2) in &cache.segments {
+        if let Some(i) = line.hyperedge
+            && let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius)
         {
-            continue;
-        }
-        if let Some(t) = ray_segment_hit(ray, p1, p2, pick_radius) {
-            hull_hits.push((he_index, 2, t));
+            hull_hits.push((i, 2, t));
         }
     }
 
@@ -434,7 +452,8 @@ fn pointer_hover(
                     }
                 }
                 if !hide_hubs
-                    && let Some(entity) = entity_by_index.get(he.hub_index).copied().flatten()
+                    && let Some(hub) = he.hub_index
+                    && let Some(entity) = entity_by_index.get(hub).copied().flatten()
                 {
                     keep.insert(entity);
                 }

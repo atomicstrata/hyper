@@ -46,9 +46,15 @@ cargo run -p hyper-viz --example project_scene
 | Module | What it does |
 |---|---|
 | `schema` | `Hypergraph`, `Vertex`, `Hyperedge` (`hypergraph.v1`) |
-| `io` | JSON load/save (`hypergraph.v1`); quarantined legacy host-export import |
+| `io` | Native/HIF auto-detection or explicit format; native save; quarantined legacy import |
+| `hif` | Offline-validated scientific document interchange and viewer conversion |
 | `project` | `Bipartite`, `CliqueExpansion`, `StarCentroid` → `HypergraphScene` |
 | `layout` | Headless 3D force layout (`ForceLayout3D`) |
+| `topology` | Normalized/LinLog attraction, sparse connectivity-based initialization |
+| `dependency` | Validated directed imports, scopes, expansion, shortest paths |
+| `module` | Optional Mathlib category detection and traversal filters |
+| `scene` | Render-independent nodes, optional hubs, attributes, scene comparison |
+| `query` / `session` / `motion` | Search, portable preferences, status animation |
 | `hull` | Convex hull from member positions (arity ≥ 3) |
 | `semantics` | Kind/id colors, status, hover/selected **emphasis** |
 
@@ -73,3 +79,19 @@ let hull = hull_style_emphasized("paper-a", "active", 0.28, Emphasis::Selected);
 ```bash
 cargo test -p hyper-viz
 ```
+
+### Scene API migration
+
+Projected scenes now retain graph, vertex, and hyperedge `attrs`. Include
+`attrs: Default::default()` in manual scene struct literals. `SceneHyperedge`
+uses `hub_index: Option<usize>`: bipartite hubs are `Some(index)`, while star
+and clique projections use `None`. Do not treat a member vertex as a hub.
+New attributes and optional hubs default when reading older scene JSON;
+`hypergraph.v1` input and `hyperviz.session.v1` sessions keep their versions.
+
+`DependencyIndex` validates explicit arity-two `kind: "import"` source/target
+attributes, preserves duplicate source edge IDs, and supports directed scopes and
+shortest paths. Set membership never implies direction. Malformed imports remain
+available for generic inspection and generate warnings. `ScopeOptions` bounds
+visible nodes; `ModuleFilters` can stop traversal through Mathlib categories.
+See `examples/inspect_dependencies.rs` for a headless query.

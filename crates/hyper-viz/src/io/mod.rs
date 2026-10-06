@@ -1,7 +1,7 @@
 //! JSON load/save for the public `hypergraph.v1` interchange format.
 //!
 //! A quarantined one-way importer for a legacy host export prefix lives in
-//! [`legacy_export`] and is not part of the public domain model.
+//! the internal `legacy_export` module and is not part of the public domain model.
 
 mod legacy_export;
 

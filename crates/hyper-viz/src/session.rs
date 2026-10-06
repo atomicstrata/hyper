@@ -62,6 +62,7 @@ pub struct LayoutPrefs {
     pub ideal_length: f32,
     pub max_tree_depth: usize,
     pub centroid_attraction: f32,
+    pub topology: crate::TopologySettings,
 }
 
 impl Default for LayoutPrefs {
@@ -78,6 +79,7 @@ impl Default for LayoutPrefs {
             ideal_length: 30.0,
             max_tree_depth: 14,
             centroid_attraction: 0.008,
+            topology: crate::TopologySettings::default(),
         }
     }
 }
@@ -134,8 +136,10 @@ pub struct WindowPrefs {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct ViewerView {
+    pub explorer: Option<ExplorerSession>,
     pub camera: Option<CameraPrefs>,
     pub focus_node_ids: Option<Vec<String>>,
+    pub focus_hyperedge_ids: Option<Vec<String>>,
     pub selected_node_ids: Vec<String>,
     pub selected_hyperedge_ids: Vec<String>,
     pub find_query: String,
@@ -176,9 +180,115 @@ pub fn view_key(graph_id: &str) -> String {
     }
 }
 
+/// Native view selection persisted without changing the session version.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ViewMode {
+    /// Uses Spatial until the user explicitly selects another view.
+    #[default]
+    Auto,
+    /// Full 3D hypergraph, force layout, picking, and neighborhood focus.
+    Spatial,
+    /// Optional directed-import canvas, pausing spatial work while active.
+    Dependencies,
+}
+
+/// Stable-ID explorer state; resolve IDs again after replacing the scene.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExplorerSnapshot {
+    pub center: Option<String>,
+    pub target: Option<String>,
+    pub options: crate::ScopeOptions,
+    pub filters: crate::ModuleFilters,
+    pub expanded_ids: Vec<String>,
+    pub pan: [f32; 2],
+    pub zoom: f32,
+}
+impl Default for ExplorerSnapshot {
+    fn default() -> Self {
+        Self {
+            center: None,
+            target: None,
+            options: Default::default(),
+            filters: Default::default(),
+            expanded_ids: Vec::new(),
+            pan: [0., 0.],
+            zoom: 1.,
+        }
+    }
+}
+impl ExplorerSnapshot {
+    /// Bound options, pan/zoom, and expanded-ID count before restoring the view.
+    pub fn normalize(&mut self) {
+        self.options.normalize();
+        if self.pan.iter().any(|v| !v.is_finite()) {
+            self.pan = [0., 0.];
+        }
+        self.zoom = if self.zoom.is_finite() {
+            self.zoom.clamp(0.1, 4.)
+        } else {
+            1.
+        };
+        self.expanded_ids.truncate(1000);
+    }
+}
+/// Per-graph explorer snapshot and navigation history (the native UI keeps 32 entries).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExplorerSession {
+    pub mode: ViewMode,
+    pub snapshot: ExplorerSnapshot,
+    pub history: Vec<ExplorerSnapshot>,
+    pub cursor: usize,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn topology_preferences_round_trip_and_legacy_sessions_keep_legacy_forces() {
+        let old = parse_session(
+            r#"{"version":"hyperviz.session.v1","prefs":{"layout":{"gravity":0.001}}}"#,
+        )
+        .unwrap();
+        assert_eq!(old.prefs.layout.topology.model, crate::LayoutModel::Legacy);
+        let mut session = ViewerSession::default();
+        session.prefs.layout.topology.model = crate::LayoutModel::Normalized;
+        session.prefs.layout.topology.derived_set_influence = 0.037;
+        let restored = parse_session(&session_to_json(&session).unwrap()).unwrap();
+        assert_eq!(
+            restored.prefs.layout.topology,
+            session.prefs.layout.topology
+        );
+    }
+    #[test]
+    fn explorer_fields_and_small_opacity_round_trip_without_version_change() {
+        let old = parse_session(r#"{"version":"hyperviz.session.v1","views":{"old":{}}}"#).unwrap();
+        assert!(old.views["old"].explorer.is_none());
+        let mut session = ViewerSession::default();
+        session.prefs.hulls.opacity = 0.001;
+        let explorer = ExplorerSession {
+            mode: ViewMode::Dependencies,
+            snapshot: ExplorerSnapshot {
+                center: Some("Mathlib.Topology.Basic".into()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        session.views.insert(
+            "mathlib".into(),
+            ViewerView {
+                explorer: Some(explorer),
+                focus_hyperedge_ids: Some(vec!["import:a:b".into()]),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            parse_session(&session_to_json(&session).unwrap()).unwrap(),
+            session
+        );
+    }
 
     #[test]
     fn round_trip_keeps_prefs_and_per_graph_view() {
