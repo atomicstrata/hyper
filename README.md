@@ -16,6 +16,20 @@ groups, and explore neighborhoods with search, picking, and lasso selection.
 
 ## Try the viewer
 
+### For agents
+
+Paste this prompt:
+
+```text
+Install uv if `uv` is not on PATH: https://docs.astral.sh/uv/getting-started/installation/
+
+Open Hyper's built-in coauthorship demo. Do not clone a repository or install Rust:
+
+uvx --python 3.12 --from hypergraph-viz-viewer hyper
+
+Needs a desktop session and working graphics drivers. Wheels: Linux x86_64 (glibc 2.28+), macOS arm64/x86_64 (11.0+), Windows x86_64. The window opens on the machine running the command. To open a HIF file, append its path.
+```
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open
 the built-in coauthorship demo:
 
