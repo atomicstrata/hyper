@@ -61,7 +61,7 @@ jobs:
         run: |
           PYTHONPATH=scripts:scripts/benchmarks python -m unittest \
             scripts/test_mathlib_graph.py scripts/benchmarks/test_datasets.py \
-            scripts/benchmarks/test_summarize.py
+            scripts/benchmarks/test_summarize.py scripts/releases/test_build_python_sdist.py
 
       - name: CLI help and version
         run: |
