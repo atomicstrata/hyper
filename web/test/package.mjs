@@ -32,7 +32,7 @@ try {
   run(process.execPath, ['--input-type=module', '-e', `import {createHyperViewer} from '${metadata.name}'; if(typeof createHyperViewer !== 'function') throw Error('Missing ESM export');`]);
   const publicRoot = join(consumer, 'public');
   const assets = join(publicRoot, 'base/hyper');
-  run(process.execPath, [join(installed, 'bin/copy-assets.mjs'), assets]);
+  run('npm', ['exec', '--offline', '--', 'hyper-copy-assets', assets]);
   const manifest = JSON.parse(await readFile(join(assets, 'renderers.json'), 'utf8'));
   assert.equal(manifest.version, metadata.version);
   const notices = await readFile(join(assets, 'licenses/THIRD_PARTY_NOTICES.txt'), 'utf8');
