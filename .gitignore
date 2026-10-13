@@ -19,3 +19,8 @@ scripts/benchmarks/browser/node_modules/
 
 /web/.build-*/
 /web/dist.previous/
+/web/*.tgz
+/web/LICENSE
+/web/LICENSE-MIT
+/web/LICENSE-APACHE
+/web/NOTICE

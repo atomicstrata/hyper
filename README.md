@@ -193,7 +193,10 @@ explicit disposal. A two-view demo is included.
 
 See the [browser SDK guide](docs/BROWSER.md) for build commands, the typed API,
 hosting requirements and browser verification. This source-built SDK is not yet
-published as an npm package. Notebook widget integration remains separate work.
+published as an npm package. The prepared package is `@atomicstrata/hyper`;
+see its [README](web/README.md) and [release guide](docs/NPM_RELEASE.md) for
+installation, asset hosting and verified tarballs. Notebook widget integration
+remains separate work.
 
 ## Use from Rust
 

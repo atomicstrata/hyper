@@ -3,17 +3,37 @@
 The browser SDK reuses Hyper's Rust core and Bevy renderer. It supports several
 independent direct-canvas viewers on one page, with separate WASM instances,
 graphs, cameras, settings, input and lifecycle. WebGPU is preferred; a separate
-WebGL2 build provides startup fallback. This SDK is built from source and is not
-currently published to npm or PyPI.
+WebGL2 build provides startup fallback. The npm package is prepared as
+`@atomicstrata/hyper`; publication is a separate release step.
+
+## Use the npm package
+
+The package contains prebuilt renderers, ESM JavaScript and TypeScript
+declarations. Consumers do not need Rust. After publication:
+
+```sh
+npm install @atomicstrata/hyper
+npx hyper-copy-assets public/hyper
+```
+
+Import `createHyperViewer` from `@atomicstrata/hyper` and pass the hosted
+`manifestUrl` (for example `/hyper/renderers.json`). Bundlers do not copy dynamic
+renderer assets automatically. Re-run the asset command during your app build
+after package upgrades. See the [package README](../web/README.md) for complete
+consumer and subpath examples and the [npm release guide](NPM_RELEASE.md) for
+tarball verification, CI artifacts and trusted publishing setup. Before the
+first registry release, install the verified local/CI `.tgz` instead.
 
 ## Build and try the demo
 
 Requires Rust 1.89+, Node.js 22+, npm, and wasm-bindgen-cli matching the
-`wasm-bindgen` version in Cargo.lock (currently 0.2.127):
+`wasm-bindgen` version in Cargo.lock (currently 0.2.127), plus cargo-about 0.9.2
+for bundled dependency/font notices:
 
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.127 --locked
+cargo install cargo-about --version 0.9.2 --locked --features cli
 npm ci --prefix web
 npm run build --prefix web
 npm run serve --prefix web
@@ -24,6 +44,8 @@ Open [the two-view demo](http://localhost:8080/demo/). Use
 JSON and a HIF fixture containing distinct integer/string IDs and an empty edge.
 The backend build outputs are assembled before replacing the previous `web/dist`.
 `WASM_BINDGEN` can point to an existing matching executable.
+`CARGO_ABOUT` can similarly point to a cargo-about binary. Generated notices
+ship in `dist/licenses/` and are retained by the asset-copy CLI.
 
 ## JavaScript and TypeScript
 
@@ -138,6 +160,7 @@ asset deployment; Hyper does not publish or deploy this build automatically.
 
 ```sh
 npm test --prefix web
+npm run test:package --prefix web
 web/node_modules/.bin/tsc --noEmit --strict --lib ES2022,DOM web/src/index.d.ts
 cargo test --locked -p hyper-viz-web --lib
 cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgpu
@@ -162,9 +185,14 @@ views, restrictive CSP and scoped device loss. The actual two-view demo's
 loading, pause, disposal and remount controls also passed. This records one
 browser/platform; it does not establish Safari, Firefox or mobile coverage.
 
-Repository verification passed 192 Rust tests, 21 SDK JavaScript tests, 17 Python
+Repository verification passed 192 Rust tests, 24 SDK/package JavaScript tests, 17 Python
 API/launcher tests, nine Python utility tests, both WASM clippy targets, workspace
 clippy/docs, formatting, TypeScript declarations, generated Python stubs and
 headless examples. The local Python extension needed installed Rust 1.98 to
 avoid a macOS LINKEDIT load error from the Rust 1.89 dylib; native Rust checks
 and the browser artifacts used the repository toolchain.
+
+The npm tarball also passed a clean consumer install, ESM bundling, TypeScript
+NodeNext/Bundler checks, asset-copy checks and rendering under a subpath on both
+hardware backends. Software WebGL2 was verified separately with SwiftShader;
+the consumer harness checks adapter evidence before labeling a hardware pass.

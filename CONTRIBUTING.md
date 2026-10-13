@@ -35,11 +35,13 @@ RUSTDOCFLAGS="-D warnings" cargo doc --locked --workspace --no-deps
 # Standard-library exporter and benchmark aggregation checks
 PYTHONPATH=scripts:scripts/benchmarks python3 -m unittest \
   scripts/test_mathlib_graph.py scripts/benchmarks/test_datasets.py \
-  scripts/benchmarks/test_summarize.py
+  scripts/benchmarks/test_summarize.py scripts/releases/test_build_python_sdist.py
 
 # Browser SDK (Node.js 22+ and the wasm32-unknown-unknown target)
 npm ci --prefix web
 npm test --prefix web
+# After building both renderers, verify the actual npm tarball and clean consumer.
+npm run test:package --prefix web
 cargo test --locked -p hyper-viz-web --lib
 cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgpu
 cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgl2

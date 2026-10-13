@@ -4,10 +4,12 @@ import {fileURLToPath} from 'node:url';
 import {dirname, resolve, join} from 'node:path';
 import {build} from 'esbuild';
 import {packageBackend, publish} from './artifacts.mjs';
+import {generateNotices} from './notices.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const web=join(root,'web');
 const profile=process.env.HYPER_WEB_PROFILE ?? 'web-release';
 const bindgen=process.env.WASM_BINDGEN ?? 'wasm-bindgen';
+const metadata=JSON.parse(await readFile(join(web,'package.json'),'utf8'));
 function run(command,args) {
   return new Promise((resolve,reject)=>{
     const child=spawn(command,args,{cwd:root,stdio:'inherit'});
@@ -20,7 +22,7 @@ try { await run(bindgen,['--version']); }
 catch { throw Error(`Install wasm-bindgen-cli ${version} or set WASM_BINDGEN to its executable`); }
 const staging=await mkdtemp(join(web,'.build-'));
 try {
-  const manifest={};
+  const manifest={schema:1,version:metadata.version};
   for(const backend of ['webgpu','webgl2']) {
     await run('cargo',['build','--locked','-p','hyper-viz-web','--target','wasm32-unknown-unknown',
       '--profile',profile,'--no-default-features','--features',backend]);
@@ -36,8 +38,10 @@ try {
   await cp(join(root,'fixtures/sample.json'),join(staging,'demo/sample.json'));
   await cp(join(root,'fixtures/notebook-small.hif.json'),join(staging,'demo/sample.hif.json'));
   await rm(join(staging,'generated'),{recursive:true});
+  await generateNotices(root,staging);
   // Both backends must succeed before replacing the previous output.
   const dist=join(web,'dist');
   await publish(staging,dist);
+  for (const name of ['LICENSE','LICENSE-MIT','LICENSE-APACHE','NOTICE']) await cp(join(root,name),join(web,name));
   console.log(`Browser SDK built at ${dist}`);
 } finally {await rm(staging,{recursive:true,force:true});}
