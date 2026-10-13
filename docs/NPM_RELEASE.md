@@ -66,6 +66,11 @@ See [npm's trusted publisher guide](https://docs.npmjs.com/trusted-publishers/).
 ## Subsequent approved releases
 
 Update the npm version and lockfile in a PR, rebuild, and verify the candidate.
+Review `web/README.md` (shipped on npm) and the root README at the same time:
+keep the release status, install examples, API/settings and hosting instructions
+consistent with the package. Keep the package README usable for both candidate
+tarballs and registry releases. Update the root README's release status after
+verifying that the first registry publication is available.
 The version belongs to this package; it need not track Python releases. After
 merging and deciding to release, create and push `npm-v<version>` at that commit:
 

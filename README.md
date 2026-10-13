@@ -12,7 +12,7 @@ dependency group. Hyper lets you inspect those memberships, find overlapping
 groups, and explore neighborhoods with search, picking, and lasso selection.
 
 [Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
-[Use Rust](#use-from-rust) · [Use the browser SDK](#use-in-a-browser) · [Documentation](#documentation)
+[Use JavaScript / TypeScript](#use-in-a-browser) · [Use Rust](#use-from-rust) · [Documentation](#documentation)
 
 ## Try the viewer
 
@@ -186,17 +186,68 @@ published `0.1.2` wheels predate them.
 
 ## Use in a browser
 
-Build the browser SDK from this checkout to embed Hyper in JavaScript/TypeScript
-applications. It supports multiple independent canvas viewers, a WebGPU renderer
-with a separate WebGL2 startup fallback, graph updates, selection events, and
-explicit disposal. A two-view demo is included.
+`@atomicstrata/hyper` embeds Hyper in browser applications with ESM JavaScript,
+TypeScript declarations, and prebuilt WebGPU/WebGL2 WASM renderers. Consumers
+need no Rust compiler. Each canvas has an independent graph, camera, selection,
+settings, and lifecycle; applications provide their own HTML controls.
 
-See the [browser SDK guide](docs/BROWSER.md) for build commands, the typed API,
-hosting requirements and browser verification. This source-built SDK is not yet
-published as an npm package. The prepared package is `@atomicstrata/hyper`;
-see its [README](web/README.md) and [release guide](docs/NPM_RELEASE.md) for
-installation, asset hosting and verified tarballs. Notebook widget integration
-remains separate work.
+The initial npm release is prepared but **not published yet**. Install a verified
+`atomicstrata-hyper-0.2.0.tgz` from the
+[Browser SDK CI artifact](https://github.com/atomicstrata/hyper/actions/workflows/browser.yml)
+or a local build:
+
+```sh
+npm install /absolute/path/to/atomicstrata-hyper-0.2.0.tgz
+npx hyper-copy-assets public/hyper
+```
+
+After registry publication, use `npm install @atomicstrata/hyper` instead.
+The asset command requires Node.js 22+ and copies the manifest, both backends,
+and notices into the app's static directory. Run it during application builds
+and after package upgrades.
+
+For a bundled application serving those assets at `/hyper/`, add a sized canvas:
+
+```html
+<div style="width:100%;height:500px">
+  <canvas id="graph" tabindex="0" style="display:block;width:100%;height:100%"></canvas>
+</div>
+```
+
+In the app's client-side JavaScript module:
+
+```js
+import {createHyperViewer} from '@atomicstrata/hyper';
+
+const viewer = await createHyperViewer({
+  canvas: document.querySelector('#graph'),
+  backend: 'auto',
+  manifestUrl: '/hyper/renderers.json',
+});
+await viewer.loadJson(`{
+  "version":"hypergraph.v1",
+  "vertices":[{"id":"alice","label":"Alice"},{"id":"bob","label":"Bob"}],
+  "hyperedges":[{"id":"team","vertices":["alice","bob"]}]
+}`);
+await viewer.frame();
+const unsubscribe = viewer.on('selectionchange', selection => console.log(selection));
+
+// Before removing the view:
+// unsubscribe();
+// await viewer.dispose();
+```
+
+Keep dataset JSON as text to preserve large HIF integer IDs. Bundlers do not
+copy renderer assets automatically; configure `manifestUrl` for your deployment
+base. HTTPS/localhost and working browser graphics are required. Hardware
+verification covers Chrome on macOS; other browser/platform combinations remain
+unverified. A two-view demo is included in source/CI SDK builds. Notebook widget
+integration remains separate work.
+
+Start with the [package README](web/README.md) for the complete quick start,
+multiple viewers, settings, events, cleanup, subpath hosting and troubleshooting.
+The [browser guide](docs/BROWSER.md) covers source builds and the demo; the
+[npm release guide](docs/NPM_RELEASE.md) covers candidate tarballs and publishing.
 
 ## Use from Rust
 
@@ -280,6 +331,8 @@ cover additional workloads, methods, and limitations.
 | [Python and HIF](docs/HIF.md) | Interchange, Python API, scientific semantics, and source builds |
 | [Rust API](docs/API.md) | Build graphs, run layouts, and embed the viewer |
 | [Browser SDK](docs/BROWSER.md) | Embedding, multiple viewers, WebGPU/WebGL2, lifecycle and hosting |
+| [JavaScript / TypeScript package](web/README.md) | npm/tarball installation, full API/settings, assets, events, cleanup, and troubleshooting |
+| [npm release](docs/NPM_RELEASE.md) | Candidate verification, CI artifacts, scope setup and trusted publishing |
 | [Architecture](docs/ARCHITECTURE.md) | Crate responsibilities and integration boundaries |
 | [Benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md) | Measured results, methods, and limitations |
 

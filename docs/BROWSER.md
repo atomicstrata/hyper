@@ -49,6 +49,11 @@ ship in `dist/licenses/` and are retained by the asset-copy CLI.
 
 ## JavaScript and TypeScript
 
+The [package README](../web/README.md) is the consumer reference: a complete
+bundled-app quick start, creation options, all methods/settings, HIF ID examples,
+multiple viewers, framework lifecycle guidance and troubleshooting. This guide
+focuses on building Hyper itself and serving its static demo or ESM output.
+
 Serve the entire `web/dist` directory. Import its `index.mjs`; TypeScript
 interfaces are in `index.d.ts`. No framework, backend or CDN is required.
 
@@ -137,7 +142,10 @@ their existing session location and defaults.
 
 ## Hosting
 
-Serve `renderers.json`, both `renderers/` directories and `index.mjs` together.
+For direct ESM hosting, serve `renderers.json`, both `renderers/` directories,
+`licenses/` and `index.mjs` together. For a bundled npm consumer, deploy the
+asset-copy output and pass its manifest URL; the application bundle supplies
+the SDK's JavaScript entry.
 Use `application/wasm` for WASM and a JavaScript MIME type for `.mjs`. Hashed
 renderer assets can be cached immutably; revalidate the SDK and manifest together.
 Both backend artifacts must be deployed from the same build. The current
@@ -186,7 +194,7 @@ loading, pause, disposal and remount controls also passed. This records one
 browser/platform; it does not establish Safari, Firefox or mobile coverage.
 
 Repository verification passed 192 Rust tests, 24 SDK/package JavaScript tests, 17 Python
-API/launcher tests, nine Python utility tests, both WASM clippy targets, workspace
+API/launcher tests, ten Python utility/packaging tests, both WASM clippy targets, workspace
 clippy/docs, formatting, TypeScript declarations, generated Python stubs and
 headless examples. The local Python extension needed installed Rust 1.98 to
 avoid a macOS LINKEDIT load error from the Rust 1.89 dylib; native Rust checks
