@@ -65,12 +65,14 @@ original HIF identities in Python. Do not use row indexes or plain object keys
 that collapse integer/string identities. For future large integer IDs, transmit
 integer identity as a tagged decimal string rather than a JavaScript Number.
 
-## Step 2: test Bevy/WASM reuse before choosing the 3D frontend
+## Step 2: use the browser SDK as the Bevy/WASM baseline
 
-Run a separate feasibility probe; do not assume the desktop dependency graph
-compiles for the browser. The current `hyper-viz-bevy` manifest selects visual
-Bevy features and desktop window backends, including Wayland, while excluding
-audio and gamepads. The core's dependency features also need inspection.
+The source-built [browser SDK](BROWSER.md) now provides separate WebGPU/WebGL2
+artifacts, multiple independent canvas viewers, typed selection/state events,
+and explicit disposal. Desktop and browser dependency features are separated.
+Use that implementation as the Bevy baseline; notebook asset delivery,
+anywidget transport and each notebook host's lifecycle still need their own
+integration checks. This does not introduce a Python notebook extra or widget API.
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -83,7 +85,7 @@ browser build need not include the complete schema validator. If required,
 separate portable scene/layout code from platform-specific dependencies through
 explicit features rather than hiding incompatibility.
 
-Build a small browser entry point with a dedicated feature set and a canvas
+Use the SDK browser entry point with its dedicated feature set and a canvas
 owned by the widget. Test WebGL2 first for broad compatibility; assess WebGPU
 separately. Verify shader/asset delivery, pointer and keyboard focus, resizing,
 multiple canvases, and teardown. Confirm a second view can start after the first

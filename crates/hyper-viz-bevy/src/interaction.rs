@@ -250,6 +250,7 @@ fn modifier_down(keys: &ButtonInput<KeyCode>, left: KeyCode, right: KeyCode) -> 
 
 #[allow(clippy::too_many_arguments)]
 fn keyboard_controls(
+    external: Res<crate::ui::ExternalUi>,
     keys: Res<ButtonInput<KeyCode>>,
     mut layout: ResMut<GraphLayout>,
     mut attention: ResMut<AttentionMode>,
@@ -259,6 +260,9 @@ fn keyboard_controls(
     mut localize: ResMut<LocalizeQuery>,
     mut contexts: bevy_egui::EguiContexts,
 ) {
+    if external.keyboard_captured {
+        return;
+    }
     let cmd = modifier_down(&keys, KeyCode::SuperLeft, KeyCode::SuperRight);
     let ctrl = modifier_down(&keys, KeyCode::ControlLeft, KeyCode::ControlRight);
     let shift = modifier_down(&keys, KeyCode::ShiftLeft, KeyCode::ShiftRight);

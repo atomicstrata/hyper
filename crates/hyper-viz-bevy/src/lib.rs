@@ -1,4 +1,4 @@
-//! Native 3D interactive hypergraph viewer (Bevy 0.18 + egui).
+//! 3D interactive hypergraph viewer for native and browser hosts (Bevy 0.18 + egui).
 //!
 //! Optional companion to [`hyper_viz`]. Hosts that only need schema, projection,
 //! or headless layout should depend on `hyper-viz` and skip this crate.
@@ -55,6 +55,17 @@ pub use search::{SearchPage, SearchProvider, SearchRow};
 pub mod benchmark;
 pub mod showcase;
 mod ui;
+
+/// State shared by native egui and embedding frontends.
+pub mod host {
+    pub use crate::focus::{AttentionMode, FocusScope, FrameRequest, toggle_focus};
+    pub use crate::graph::{GraphLayout, GraphSceneEpoch, LayoutSettings};
+    pub use crate::hyperedge_hull::HyperedgeHullSettings;
+    pub use crate::interaction::{LassoState, LocalizeQuery, SelectionState};
+    pub use crate::node_visual::{NodeLabelMode, NodeRenderSettings};
+    pub use crate::session::{SessionConfig, restore_session_on_first_graph};
+    pub use crate::ui::ExternalUi;
+}
 
 pub use render::LinkRenderSettings;
 
@@ -364,13 +375,7 @@ pub fn run_visualizer_live_with_search_modes(
     shutdown: Option<Arc<AtomicBool>>,
     providers: Vec<(String, SearchProvider)>,
 ) {
-    let mut plugin = HyperVisualizerPlugin::from_scene(initial)
-        .with_live(rx)
-        .with_search(providers);
-    if let Some(flag) = shutdown {
-        plugin = plugin.with_shutdown(flag);
-    }
-    visualizer_app_with(plugin, VisualizerConfig::default(), true).run();
+    visualizer_app_live(initial, rx, shutdown, providers).run();
 }
 
 /// Run the viewer with in-process scene updates (any host can push scenes).
@@ -379,11 +384,24 @@ pub fn run_visualizer_live(
     rx: Receiver<HypergraphScene>,
     shutdown: Option<Arc<AtomicBool>>,
 ) {
+    visualizer_app_live(initial, rx, shutdown, Vec::new()).run();
+}
+
+/// Live viewer app, not yet running, so a host can add its own plugins.
+pub fn visualizer_app_live(
+    initial: HypergraphScene,
+    rx: Receiver<HypergraphScene>,
+    shutdown: Option<Arc<AtomicBool>>,
+    search: Vec<(String, SearchProvider)>,
+) -> App {
     let mut plugin = HyperVisualizerPlugin::from_scene(initial).with_live(rx);
+    if !search.is_empty() {
+        plugin = plugin.with_search(search);
+    }
     if let Some(flag) = shutdown {
         plugin = plugin.with_shutdown(flag);
     }
-    visualizer_app_with(plugin, VisualizerConfig::default(), true).run();
+    visualizer_app_with(plugin, VisualizerConfig::default(), true)
 }
 
 pub fn run_from_graph(graph: Hypergraph) {

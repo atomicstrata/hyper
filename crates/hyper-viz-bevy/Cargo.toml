@@ -1,6 +1,6 @@
 [package]
 name = "hyper-viz-bevy"
-description = "Native 3D interactive hypergraph viewer (Bevy + egui)"
+description = "3D interactive hypergraph viewer for native and browser hosts (Bevy + egui)"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -28,14 +28,16 @@ hyper-viz = { workspace = true }
 bevy = { version = "0.18", default-features = false, features = [
     "default_app", "2d_bevy_render", "3d_bevy_render", "ui_bevy_render", "scene", "picking",
     "std", "android-game-activity", "android_shared_stdcxx", "bevy_winit",
-    "default_font", "multi_threaded", "webgl2", "x11", "wayland", "sysinfo_plugin", "bmp",
+    "default_font", "bmp",
 ] }
-bevy_egui = "0.39"
+bevy_egui = { version = "0.39", default-features = false, features = ["default_fonts", "render"] }
 bevy_panorbit_camera = { version = "0.34", features = ["bevy_egui"] }
 winit = "0.30"
 tracing = { workspace = true }
 
 [features]
+webgpu = ["bevy/webgpu"]
+webgl2 = ["bevy/webgl2"]
 benchmark = ["dep:serde_json"]
 
 [[bin]]
@@ -43,8 +45,13 @@ name = "ecosystem-benchmark"
 path = "src/bin/ecosystem_benchmark.rs"
 required-features = ["benchmark"]
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bevy = { version = "0.18", default-features = false, features = ["multi_threaded", "x11", "wayland", "sysinfo_plugin"] }
+bevy_egui = { version = "0.39", default-features = false, features = ["manage_clipboard", "open_url", "bevy_ui", "picking"] }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version = "0.3", features = ["Window", "Storage"] }
+bevy = { version = "0.18", default-features = false, features = ["web"] }
+web-sys = { version = "0.3", features = ["Performance", "Window", "Storage"] }
 
 [[example]]
 name = "view"

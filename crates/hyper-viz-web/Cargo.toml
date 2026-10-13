@@ -1,0 +1,34 @@
+[package]
+name = "hyper-viz-web"
+description = "Embeddable browser hypergraph viewer with independent WASM runtimes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["webgpu"]
+webgpu = ["hyper-viz-bevy/webgpu"]
+webgl2 = ["hyper-viz-bevy/webgl2"]
+
+[dependencies]
+hyper-viz.workspace = true
+hyper-viz-bevy.workspace = true
+bevy = { version = "0.18", default-features = false }
+bevy_panorbit_camera = { version = "0.34", features = ["bevy_egui"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+wgpu = { version = "27", default-features = false }
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await"] }
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+winit = "0.30"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlCanvasElement", "HtmlElement"] }

@@ -1,6 +1,6 @@
 # Hyper
 
-**A native 3D hypergraph viewer for Python workflows and Rust applications.**
+**A 3D hypergraph viewer for Python, Rust, and browser applications.**
 
 <a href="docs/media/mathlib-realtime.mp4">
   <img src="docs/media/mathlib-realtime.gif" alt="Realtime navigation through the Mathlib dependency case study" width="100%">
@@ -12,7 +12,7 @@ dependency group. Hyper lets you inspect those memberships, find overlapping
 groups, and explore neighborhoods with search, picking, and lasso selection.
 
 [Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
-[Use Rust](#use-from-rust) · [Documentation](#documentation)
+[Use Rust](#use-from-rust) · [Use the browser SDK](#use-in-a-browser) · [Documentation](#documentation)
 
 ## Try the viewer
 
@@ -166,7 +166,8 @@ interchange and viewer launching; Rust exposes projections and layout too.
 The viewer opens a native window, including when launched from Python.
 Notebook embedding, live Python updates, and direct scientific-library object
 adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
-for browser plans.
+for planned notebook integration. For standalone web applications, use the
+[browser SDK](docs/BROWSER.md).
 
 ## Layout and exploration
 
@@ -182,6 +183,17 @@ filters, and shortest paths. See the [viewer guide](docs/VIEWER.md),
 [Rust layout and query APIs](docs/API.md), and [release notes](CHANGELOG.md).
 Build this checkout to use these additions until `0.2.0` is published;
 published `0.1.2` wheels predate them.
+
+## Use in a browser
+
+Build the browser SDK from this checkout to embed Hyper in JavaScript/TypeScript
+applications. It supports multiple independent canvas viewers, a WebGPU renderer
+with a separate WebGL2 startup fallback, graph updates, selection events, and
+explicit disposal. A two-view demo is included.
+
+See the [browser SDK guide](docs/BROWSER.md) for build commands, the typed API,
+hosting requirements and browser verification. This source-built SDK is not yet
+published as an npm package. Notebook widget integration remains separate work.
 
 ## Use from Rust
 
@@ -264,6 +276,7 @@ cover additional workloads, methods, and limitations.
 | [Viewer](docs/VIEWER.md) | Setup, controls, projections, display settings, and saved sessions |
 | [Python and HIF](docs/HIF.md) | Interchange, Python API, scientific semantics, and source builds |
 | [Rust API](docs/API.md) | Build graphs, run layouts, and embed the viewer |
+| [Browser SDK](docs/BROWSER.md) | Embedding, multiple viewers, WebGPU/WebGL2, lifecycle and hosting |
 | [Architecture](docs/ARCHITECTURE.md) | Crate responsibilities and integration boundaries |
 | [Benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md) | Measured results, methods, and limitations |
 

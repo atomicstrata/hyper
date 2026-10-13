@@ -11,3 +11,11 @@ scripts/benchmarks/browser/node_modules/
 # Editable maturin builds place the extension in the Python source package.
 /crates/hyper-viz-python/python/hyper_viz/*.so
 /crates/hyper-viz-python/python/hyper_viz/*.pyd
+
+# Browser SDK build artifacts and local execution notes.
+/web/node_modules/
+/web/dist/
+/.superpowers/
+
+/web/.build-*/
+/web/dist.previous/

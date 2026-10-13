@@ -37,6 +37,13 @@ PYTHONPATH=scripts:scripts/benchmarks python3 -m unittest \
   scripts/test_mathlib_graph.py scripts/benchmarks/test_datasets.py \
   scripts/benchmarks/test_summarize.py
 
+# Browser SDK (Node.js 22+ and the wasm32-unknown-unknown target)
+npm ci --prefix web
+npm test --prefix web
+cargo test --locked -p hyper-viz-web --lib
+cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgpu
+cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgl2
+
 # Headless example
 cargo run -p hyper-viz --example project_scene
 

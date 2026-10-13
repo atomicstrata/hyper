@@ -1,6 +1,6 @@
 # hyper-viz-bevy
 
-Native 3D interactive hypergraph viewer (Bevy 0.18 + egui). Depends on
+3D interactive hypergraph viewer for native and browser hosts (Bevy 0.18 + egui). Depends on
 `hyper-viz` only — no memory-engine coupling.
 
 Optional: other Rust projects that only need schema / layout should depend on
@@ -87,3 +87,15 @@ view pauses spatial work; returning restores the previous simulation state.
 
 See [Mathlib exploration](../../docs/mathlib-demo.md#explore-imports-and-dependents)
 and `examples/module_benchmark.rs` for normal-canvas measurements.
+
+## Browser hosts
+
+Use [the browser SDK](../../docs/BROWSER.md) for JavaScript/TypeScript embedding
+and multiple independent canvas viewers. Rust browser hosts can keep composing
+`HyperVisualizerPlugin` in their own app. The `webgpu` and `webgl2` features
+select browser backends; build browser entry points separately for each backend.
+`host::ExternalUi` hides HUD windows without hiding labels/lasso.
+Insert `host::SessionConfig` before the plugin to control persistence and
+namespace browser sessions. A host loading its first graph after startup can
+set `defer_initial_view` and call `host::restore_session_on_first_graph` after
+installing that scene, before processing subsequent selection commands.

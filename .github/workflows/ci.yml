@@ -48,6 +48,9 @@ jobs:
       - name: test hyper-viz-bevy (lib)
         run: cargo test --locked -p hyper-viz-bevy --lib
 
+      - name: test browser bridge (lib)
+        run: cargo test --locked -p hyper-viz-web --lib
+
       - name: clippy
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
 

@@ -25,11 +25,19 @@ const LOCALIZE_APPLY: usize = 32;
 const LOCALIZE_EDIT_ID: &str = "localize_query";
 const LOCALIZE_BAR_WIDTH: f32 = 420.0;
 
+/// Hide HUD windows while retaining canvas labels and lasso drawing.
+#[derive(Resource, Default)]
+pub struct ExternalUi {
+    pub enabled: bool,
+    pub keyboard_captured: bool,
+}
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin::default())
+        app.init_resource::<ExternalUi>()
+            .add_plugins(EguiPlugin::default())
             .add_plugins(FrameTimeDiagnosticsPlugin::default())
             .add_systems(
                 EguiPrimaryContextPass,
@@ -59,7 +67,7 @@ fn ui_panels(
     mut focus: ResMut<FocusScope>,
     mut frame: ResMut<FrameRequest>,
     mut localize: ResMut<LocalizeQuery>,
-    pointer: Res<PointerTarget>,
+    host: (Res<PointerTarget>, Res<ExternalUi>),
     label_q: Query<(
         &SceneNodeEntity,
         &Transform,
@@ -132,6 +140,10 @@ fn ui_panels(
         }
     }
 
+    if host.1.enabled {
+        return;
+    }
+
     let viewport = ctx.viewport_rect();
     let panel_pos = egui::pos2((viewport.right() - 336.0).max(16.0), 48.0);
 
@@ -169,7 +181,7 @@ fn ui_panels(
                                 .filter(|he| he.member_indices.len() == 2)
                                 .count();
                             ui.label(format!("Hulls / dyadic: {hullable} / {dyadic}"));
-                            ui.label(format!("Hover: {}", pointer_label(&layout, *pointer)));
+                            ui.label(format!("Hover: {}", pointer_label(&layout, *host.0)));
                             ui.label(format!("Scene nodes: {}", layout.node_count));
                             ui.label(format!("Links: {}", layout.link_count));
                             ui.horizontal(|ui| {

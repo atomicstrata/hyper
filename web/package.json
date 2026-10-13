@@ -1,0 +1,14 @@
+{
+  "name": "@hypergraph-viz/browser",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "exports": {".": {"types": "./dist/index.d.ts", "import": "./dist/index.mjs"}},
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node build.mjs",
+    "serve": "node serve.mjs",
+    "test:browser": "node test/browser.mjs"
+  },
+  "devDependencies": {"esbuild": "0.28.2", "playwright": "1.63.0", "typescript": "5.9.3"}
+}

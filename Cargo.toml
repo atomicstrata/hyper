@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/hyper-viz", "crates/hyper-viz-bevy", "crates/hyper-viz-python"]
+members = ["crates/hyper-viz", "crates/hyper-viz-bevy", "crates/hyper-viz-python", "crates/hyper-viz-web"]
 
 [workspace.package]
 version = "0.2.0"
@@ -38,3 +38,10 @@ hyper-viz = { workspace = true }
 hyper-viz-bevy = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[profile.web-release]
+inherits = "release"
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

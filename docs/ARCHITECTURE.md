@@ -114,3 +114,13 @@ from the maintainer's visibility and publication decisions.
 - No service credentials or private API endpoints belong in this tree.
 - Optional env vars are local viewer prefs only (`RUST_LOG`, `HYPER_VIZ_SESSION`).
 - See [`.env.example`](../.env.example).
+
+## Browser embedding
+
+`hyper-viz-web` composes the existing core and Bevy plugin into a browser app.
+`web/` packages an ESM/TypeScript API and independent WebGPU/WebGL2 artifacts.
+Each viewer gets a fresh bindings factory and WASM instance; only compiled
+modules are cached. Commands modify canonical Bevy resources and acknowledge
+after application. Metadata crosses the JS boundary at up to 5 Hz; selection
+changes are immediate and layout coordinates stay inside the renderer.
+See [the browser guide](BROWSER.md) and [am-next migration](AM_NEXT_BROWSER_MIGRATION.md).

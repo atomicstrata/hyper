@@ -158,12 +158,12 @@ impl GraphLayout {
 
     /// Connectivity initialization plus bounded refinement, independent of labels.
     pub fn rebuild_structural(&mut self) {
-        let start = std::time::Instant::now();
+        let start = Mono::now();
         self.layout.seed_from_topology(&self.scene, 256);
         for _ in 0..64 {
             self.layout.step();
         }
-        self.initialization_ms = start.elapsed().as_secs_f64() * 1000.;
+        self.initialization_ms = start.elapsed_secs() * 1000.;
         self.positions_revision += 1;
         self.running = false;
     }
@@ -395,17 +395,55 @@ pub fn step_layout(mut layout: ResMut<GraphLayout>) {
         return;
     }
 
-    let start = std::time::Instant::now();
+    let start = Mono::now();
     let mut steps = 0;
     for _ in 0..layout.iterations_per_frame.max(1) {
         layout.layout.step();
         steps += 1;
-        if start.elapsed().as_secs_f64() >= 0.008 {
+        if start.elapsed_secs() >= 0.008 {
             break;
         }
     }
     layout.last_steps = steps;
-    layout.last_step_ms = start.elapsed().as_secs_f64() * 1000.;
+    layout.last_step_ms = start.elapsed_secs() * 1000.;
+}
+
+/// `std::time::Instant` panics on wasm32-unknown-unknown. The browser clock is `performance.now`.
+struct Mono {
+    #[cfg(not(target_arch = "wasm32"))]
+    start: std::time::Instant,
+    #[cfg(target_arch = "wasm32")]
+    start_ms: f64,
+}
+
+impl Mono {
+    fn now() -> Self {
+        Self {
+            #[cfg(not(target_arch = "wasm32"))]
+            start: std::time::Instant::now(),
+            #[cfg(target_arch = "wasm32")]
+            start_ms: wasm_now_ms(),
+        }
+    }
+
+    fn elapsed_secs(&self) -> f64 {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.start.elapsed().as_secs_f64()
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            (wasm_now_ms() - self.start_ms) / 1000.0
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn wasm_now_ms() -> f64 {
+    web_sys::window()
+        .and_then(|window| window.performance())
+        .map(|perf| perf.now())
+        .unwrap_or(0.0)
 }
 
 /// Neutral stable-ID positions for force-model comparisons.

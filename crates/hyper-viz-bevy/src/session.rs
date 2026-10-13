@@ -31,12 +31,33 @@ const FLUSH_SECS: f32 = if cfg!(target_arch = "wasm32") {
 #[cfg(target_arch = "wasm32")]
 const STORAGE_KEY: &str = "hyperviz.session.v1";
 
+/// Optional persistence policy for an embedded viewer. Insert before the viewer plugin.
+#[derive(Resource, Clone, Debug)]
+pub struct SessionConfig {
+    pub enabled: bool,
+    /// Browser localStorage key. None retains the standalone viewer's key.
+    pub storage_key: Option<String>,
+    /// Wait for a host's first real graph before restoring its camera/selection.
+    pub defer_initial_view: bool,
+}
+
+impl Default for SessionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: session_enabled(),
+            storage_key: None,
+            defer_initial_view: false,
+        }
+    }
+}
+
 #[derive(Resource, Clone, Debug, Default)]
 pub struct SessionStore {
     pub session: ViewerSession,
     pub last_json: String,
     pub enabled: bool,
     pub has_saved_session: bool,
+    pub storage_key: Option<String>,
 }
 
 #[derive(Resource, Debug, Default)]
@@ -52,14 +73,24 @@ pub struct SkipAutoFit(pub bool);
 struct SessionApply {
     prefs_done: bool,
     view_done: bool,
+    awaiting_graph: bool,
 }
 
 pub struct SessionPlugin;
 
 impl Plugin for SessionPlugin {
     fn build(&self, app: &mut App) {
-        let enabled = session_enabled();
-        let loaded = if enabled { load_session() } else { None };
+        let config = app
+            .world()
+            .get_resource::<SessionConfig>()
+            .cloned()
+            .unwrap_or_default();
+        let enabled = config.enabled;
+        let loaded = if enabled {
+            load_session_key(config.storage_key.as_deref())
+        } else {
+            None
+        };
         let has_saved_session = loaded.is_some();
         let session = loaded.unwrap_or_default();
         let last_json = session_to_json(&session).unwrap_or_default();
@@ -68,10 +99,14 @@ impl Plugin for SessionPlugin {
             last_json,
             enabled,
             has_saved_session,
+            storage_key: config.storage_key,
         })
         .init_resource::<SessionDirty>()
         .init_resource::<SkipAutoFit>()
-        .init_resource::<SessionApply>()
+        .insert_resource(SessionApply {
+            awaiting_graph: config.defer_initial_view,
+            ..Default::default()
+        })
         .add_systems(
             PreUpdate,
             apply_saved_session.run_if(resource_exists::<GraphLayout>),
@@ -92,7 +127,7 @@ pub fn session_enabled() -> bool {
     // wasm has no useful process env; an empty Ok("") would disable persistence.
     #[cfg(target_arch = "wasm32")]
     {
-        return true;
+        true
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -100,6 +135,7 @@ pub fn session_enabled() -> bool {
     }
 }
 
+#[cfg(any(not(target_arch = "wasm32"), test))]
 fn session_env_enabled(raw: Option<&str>) -> bool {
     match raw {
         None => true,
@@ -108,7 +144,11 @@ fn session_env_enabled(raw: Option<&str>) -> bool {
 }
 
 pub fn load_session() -> Option<ViewerSession> {
-    parse_session(&load_raw()?)
+    load_session_key(None)
+}
+
+fn load_session_key(key: Option<&str>) -> Option<ViewerSession> {
+    parse_session(&load_raw(key)?)
 }
 
 pub fn saved_window_size() -> Option<(u32, u32)> {
@@ -138,13 +178,13 @@ fn apply_saved_session(
         return;
     }
     #[cfg(target_arch = "wasm32")]
-    if store.session.views.is_empty() {
-        if let Some(loaded) = load_session() {
-            store.session = loaded;
-            store.has_saved_session = true;
-            if let Ok(json) = session_to_json(&store.session) {
-                store.last_json = json;
-            }
+    if store.session.views.is_empty()
+        && let Some(loaded) = load_session_key(store.storage_key.as_deref())
+    {
+        store.session = loaded;
+        store.has_saved_session = true;
+        if let Ok(json) = session_to_json(&store.session) {
+            store.last_json = json;
         }
     }
     if !store.has_saved_session {
@@ -162,6 +202,9 @@ fn apply_saved_session(
         apply.prefs_done = true;
     }
 
+    if apply.awaiting_graph {
+        return;
+    }
     let Some(view) = store.session.views.get(&view_key(&layout.scene.meta.id)) else {
         apply.view_done = true;
         return;
@@ -178,6 +221,22 @@ fn apply_saved_session(
         &mut cameras,
     );
     apply.view_done = view.camera.is_none() || cameras.iter().next().is_some();
+}
+
+/// Apply deferred view restoration synchronously before subsequent host commands.
+pub fn restore_session_on_first_graph(world: &mut World) {
+    use bevy::ecs::system::RunSystemOnce;
+    let Some(mut apply) = world.get_resource_mut::<SessionApply>() else {
+        return;
+    };
+    if !apply.awaiting_graph {
+        return;
+    }
+    apply.awaiting_graph = false;
+    apply.view_done = false;
+    if let Err(error) = world.run_system_once(apply_saved_session) {
+        tracing::warn!(%error, "session restore failed");
+    }
 }
 
 fn apply_prefs(
@@ -539,7 +598,7 @@ fn persist_store(store: &mut SessionStore, dirty: &mut SessionDirty) {
     if json == store.last_json && !dirty.pending {
         return;
     }
-    if save_raw(&json) {
+    if save_raw(&json, store.storage_key.as_deref()) {
         store.last_json = json;
         dirty.pending = false;
         dirty.elapsed = 0.0;
@@ -598,10 +657,10 @@ fn window_prefs_from_live(window: &Window) -> Option<WindowPrefs> {
     Some(WindowPrefs { width, height })
 }
 
-fn load_raw() -> Option<String> {
+fn load_raw(_key: Option<&str>) -> Option<String> {
     #[cfg(target_arch = "wasm32")]
     {
-        return wasm_get(STORAGE_KEY);
+        wasm_get(_key.unwrap_or(STORAGE_KEY))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -610,10 +669,10 @@ fn load_raw() -> Option<String> {
     }
 }
 
-fn save_raw(json: &str) -> bool {
+fn save_raw(json: &str, _key: Option<&str>) -> bool {
     #[cfg(target_arch = "wasm32")]
     {
-        return wasm_set(STORAGE_KEY, json);
+        wasm_set(_key.unwrap_or(STORAGE_KEY), json)
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -687,6 +746,70 @@ fn wasm_set(key: &str, value: &str) -> bool {
 mod tests {
     use super::*;
     use hyper_viz::{Hypergraph, Projection, project};
+
+    #[test]
+    fn deferred_view_restores_selection_and_camera_after_first_real_graph() {
+        let mut graph = hyper_viz::Hypergraph::new().vertex("a", "A", "node");
+        graph.meta.id = "saved-graph".into();
+        let scene = graph.project(hyper_viz::Projection::Bipartite);
+        let mut session = ViewerSession::default();
+        session.views.insert(
+            view_key("saved-graph"),
+            ViewerView {
+                selected_node_ids: vec!["a".into()],
+                camera: Some(CameraPrefs {
+                    focus: [1., 2., 3.],
+                    radius: 20.,
+                    yaw: 0.7,
+                    pitch: -0.2,
+                    position: None,
+                }),
+                ..Default::default()
+            },
+        );
+        let mut app = App::new();
+        app.insert_resource(GraphLayout::from_scene(
+            hyper_viz::Hypergraph::new().project(hyper_viz::Projection::Bipartite),
+            &LayoutSettings::default(),
+        ))
+        .insert_resource(SessionStore {
+            session,
+            enabled: true,
+            has_saved_session: true,
+            ..Default::default()
+        })
+        .insert_resource(SessionApply {
+            awaiting_graph: true,
+            ..Default::default()
+        })
+        .init_resource::<LayoutSettings>()
+        .init_resource::<NodeRenderSettings>()
+        .init_resource::<HyperedgeHullSettings>()
+        .init_resource::<AttentionMode>()
+        .init_resource::<LassoState>()
+        .init_resource::<LocalizeQuery>()
+        .init_resource::<SelectionState>()
+        .init_resource::<FocusScope>()
+        .init_resource::<SkipAutoFit>()
+        .add_systems(Update, apply_saved_session);
+        let camera = app
+            .world_mut()
+            .spawn((Transform::default(), PanOrbitCamera::default()))
+            .id();
+        app.update();
+        assert!(!app.world().resource::<SessionApply>().view_done);
+        app.world_mut()
+            .insert_resource(GraphLayout::from_scene(scene, &LayoutSettings::default()));
+        restore_session_on_first_graph(app.world_mut());
+        assert_eq!(
+            app.world().resource::<SelectionState>().base_selection,
+            vec![0]
+        );
+        let pose = app.world().get::<PanOrbitCamera>(camera).unwrap();
+        assert_eq!(pose.target_yaw, 0.7);
+        assert_eq!(pose.target_radius, 20.);
+        assert_eq!(pose.target_focus.to_array(), [1., 2., 3.]);
+    }
 
     #[test]
     fn saved_weights_drive_paused_startup_before_positions_are_built() {
