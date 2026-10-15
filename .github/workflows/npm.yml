@@ -1,0 +1,44 @@
+name: npm release
+
+on:
+  push:
+    tags: ['npm-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Match release tag to npm version
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; const p=JSON.parse(fs.readFileSync('web/package.json')); assert.equal(process.env.GITHUB_REF_NAME, 'npm-v'+p.version);"
+
+  build:
+    needs: version
+    uses: ./.github/workflows/browser.yml
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: hyper-browser-npm
+          path: npm-release
+      - name: Publish verified tarball with npm trusted publishing
+        working-directory: npm-release
+        run: npm publish ./*.tgz --access public --provenance

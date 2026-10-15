@@ -191,3 +191,12 @@ and the [architecture](ARCHITECTURE.md) for ownership and refresh rules.
 - No memory-engine traits, claim types, or conversation stores.
 - No required network calls.
 - Legacy host export import is internal to `io` and not a public module.
+
+## Browser API
+
+The ESM SDK's `createHyperViewer` accepts a canvas and returns an isolated viewer
+with graph loading, projection, selection, settings, events and disposal.
+See [the browser API and build guide](BROWSER.md); TypeScript declarations ship
+with the built SDK. Rust browser hosts can still compose
+`HyperVisualizerPlugin` directly and use its supported `host` resources,
+including `ExternalUi` and an optional `SessionConfig`.

@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyper · Browser SDK</title>
+<link rel="stylesheet" href="style.css">
+<header><p class="eyebrow">HYPER / BROWSER SDK</p><h1>One page. Independent graphs.</h1><p>Explore a native graph and a HIF document side by side. Each canvas owns its data, controls and renderer.</p></header>
+<main id="viewers"></main>
+<template id="viewer-template"><section class="viewer"><div class="heading"><h2></h2><span class="backend">Starting…</span></div><div class="surface"><canvas tabindex="0" aria-label="Interactive hypergraph. Drag to orbit, scroll to zoom."></canvas></div><div class="controls"><label>Projection <select class="projection"><option value="bipartite">Bipartite</option><option value="clique">Clique</option><option value="star">Star</option></select></label><button class="frame">Frame</button><button class="pause">Pause layout</button><label class="file">Open JSON<input type="file" accept=".json,application/json"></label><button class="lifecycle">Dispose</button></div><p class="status" role="status">Loading…</p><p class="error" role="alert" hidden></p><pre class="selection">Click a node or hyperedge to inspect its ID.</pre></section></template>
+<footer>Drag to orbit · Scroll to zoom · Click to select · Focus a canvas for keyboard shortcuts</footer>
+<script type="module" src="demo.mjs"></script>
+</html>

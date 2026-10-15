@@ -1,6 +1,6 @@
 # Hyper
 
-**A native 3D hypergraph viewer for Python workflows and Rust applications.**
+**A 3D hypergraph viewer for Python, Rust, and browser applications.**
 
 <a href="docs/media/mathlib-realtime.mp4">
   <img src="docs/media/mathlib-realtime.gif" alt="Realtime navigation through the Mathlib dependency case study" width="100%">
@@ -12,7 +12,7 @@ dependency group. Hyper lets you inspect those memberships, find overlapping
 groups, and explore neighborhoods with search, picking, and lasso selection.
 
 [Try the viewer](#try-the-viewer) · [Use Python](#use-from-python) ·
-[Use Rust](#use-from-rust) · [Documentation](#documentation)
+[Use JavaScript / TypeScript](#use-in-a-browser) · [Use Rust](#use-from-rust) · [Documentation](#documentation)
 
 ## Try the viewer
 
@@ -166,7 +166,8 @@ interchange and viewer launching; Rust exposes projections and layout too.
 The viewer opens a native window, including when launched from Python.
 Notebook embedding, live Python updates, and direct scientific-library object
 adapters are not yet available; see the [notebook roadmap](docs/NOTEBOOK_ROADMAP.md)
-for browser plans.
+for planned notebook integration. For standalone web applications, use the
+[browser SDK](docs/BROWSER.md).
 
 ## Layout and exploration
 
@@ -182,6 +183,70 @@ filters, and shortest paths. See the [viewer guide](docs/VIEWER.md),
 [Rust layout and query APIs](docs/API.md), and [release notes](CHANGELOG.md).
 Build this checkout to use these additions until `0.2.0` is published;
 published `0.1.2` wheels predate them.
+
+## Use in a browser
+
+`@atomicstrata/hyper` embeds Hyper in browser applications with ESM JavaScript,
+TypeScript declarations, and prebuilt WebGPU/WebGL2 WASM renderers. Consumers
+need no Rust compiler. Each canvas has an independent graph, camera, selection,
+settings, and lifecycle; applications provide their own HTML controls.
+
+Install the public [npm package](https://www.npmjs.com/package/@atomicstrata/hyper)
+(initial release `0.2.0`):
+
+```sh
+npm install @atomicstrata/hyper
+npx hyper-copy-assets public/hyper
+```
+
+The asset command requires Node.js 22+ and copies the manifest, both backends,
+and notices into the app's static directory. Run it during application builds
+and after package upgrades. To test an unreleased candidate, install the verified
+`.tgz` from the [Browser SDK CI artifact](https://github.com/atomicstrata/hyper/actions/workflows/browser.yml)
+or a local build instead of the registry package.
+
+For a bundled application serving those assets at `/hyper/`, add a sized canvas:
+
+```html
+<div style="width:100%;height:500px">
+  <canvas id="graph" tabindex="0" style="display:block;width:100%;height:100%"></canvas>
+</div>
+```
+
+In the app's client-side JavaScript module:
+
+```js
+import {createHyperViewer} from '@atomicstrata/hyper';
+
+const viewer = await createHyperViewer({
+  canvas: document.querySelector('#graph'),
+  backend: 'auto',
+  manifestUrl: '/hyper/renderers.json',
+});
+await viewer.loadJson(`{
+  "version":"hypergraph.v1",
+  "vertices":[{"id":"alice","label":"Alice"},{"id":"bob","label":"Bob"}],
+  "hyperedges":[{"id":"team","vertices":["alice","bob"]}]
+}`);
+await viewer.frame();
+const unsubscribe = viewer.on('selectionchange', selection => console.log(selection));
+
+// Before removing the view:
+// unsubscribe();
+// await viewer.dispose();
+```
+
+Keep dataset JSON as text to preserve large HIF integer IDs. Bundlers do not
+copy renderer assets automatically; configure `manifestUrl` for your deployment
+base. HTTPS/localhost and working browser graphics are required. Hardware
+verification covers Chrome on macOS; other browser/platform combinations remain
+unverified. A two-view demo is included in source/CI SDK builds. Notebook widget
+integration remains separate work.
+
+Start with the [package README](web/README.md) for the complete quick start,
+multiple viewers, settings, events, cleanup, subpath hosting and troubleshooting.
+The [browser guide](docs/BROWSER.md) covers source builds and the demo; the
+[npm release guide](docs/NPM_RELEASE.md) covers candidate tarballs and publishing.
 
 ## Use from Rust
 
@@ -264,6 +329,9 @@ cover additional workloads, methods, and limitations.
 | [Viewer](docs/VIEWER.md) | Setup, controls, projections, display settings, and saved sessions |
 | [Python and HIF](docs/HIF.md) | Interchange, Python API, scientific semantics, and source builds |
 | [Rust API](docs/API.md) | Build graphs, run layouts, and embed the viewer |
+| [Browser SDK](docs/BROWSER.md) | Embedding, multiple viewers, WebGPU/WebGL2, lifecycle and hosting |
+| [JavaScript / TypeScript package](web/README.md) | npm/tarball installation, full API/settings, assets, events, cleanup, and troubleshooting |
+| [npm release](docs/NPM_RELEASE.md) | Candidate verification, CI artifacts, scope setup and trusted publishing |
 | [Architecture](docs/ARCHITECTURE.md) | Crate responsibilities and integration boundaries |
 | [Benchmarks](docs/benchmarks/ecosystem-2026-10-03/README.md) | Measured results, methods, and limitations |
 

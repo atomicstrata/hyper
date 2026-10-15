@@ -1,0 +1,57 @@
+name: Browser SDK
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: browser-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm test --prefix web
+      - run: web/node_modules/.bin/tsc --noEmit --strict --lib ES2022,DOM web/src/index.d.ts
+      - run: cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgpu
+      - run: cargo check --locked -p hyper-viz-web --target wasm32-unknown-unknown --no-default-features --features webgl2
+      - name: Install matching wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.127 --locked
+      - name: Install dependency notice generator
+        run: cargo install cargo-about --version 0.9.2 --locked --features cli
+      - run: npm run build --prefix web
+      - name: Verify packed npm consumer
+        run: npm run test:package --prefix web
+      - name: Install browser for software smoke test
+        run: web/node_modules/.bin/playwright install --with-deps chromium
+      - name: Render installed npm package on software WebGL2
+        env:
+          HYPER_SOFTWARE_RENDERING: '1'
+        run: npm run test:package --prefix web -- --browser
+      - name: Pack release candidate
+        working-directory: web
+        run: npm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyper-browser-npm
+          path: web/*.tgz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hyper-browser-sdk
+          path: web/dist
+          if-no-files-found: error

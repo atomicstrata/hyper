@@ -1,0 +1,31 @@
+{
+  "name": "@atomicstrata/hyper",
+  "version": "0.2.1",
+  "description": "Embeddable hypergraph viewer with independent WebGPU and WebGL2 WASM runtimes",
+  "license": "MIT OR Apache-2.0",
+  "author": "Bregy Malpartida <bregy@atomicstrata.ai>",
+  "repository": {"type": "git", "url": "git+https://github.com/atomicstrata/hyper.git", "directory": "web"},
+  "homepage": "https://github.com/atomicstrata/hyper#readme",
+  "bugs": {"url": "https://github.com/atomicstrata/hyper/issues"},
+  "keywords": ["hypergraph", "visualization", "webgpu", "webgl2", "wasm", "bevy"],
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {"types": "./dist/index.d.ts", "import": "./dist/index.mjs"},
+    "./renderers.json": "./dist/renderers.json",
+    "./package.json": "./package.json"
+  },
+  "bin": {"hyper-copy-assets": "./bin/copy-assets.mjs"},
+  "files": ["dist/index.mjs", "dist/index.d.ts", "dist/renderers.json", "dist/renderers/", "dist/licenses/", "bin/", "tools/", "README.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE", "NOTICE"],
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node build.mjs",
+    "serve": "node serve.mjs",
+    "test:browser": "node test/browser.mjs",
+    "test:package": "node test/package.mjs",
+    "prepack": "node tools/validate-package.mjs"
+  },
+  "devDependencies": {"esbuild": "0.28.2", "playwright": "1.63.0", "typescript": "5.9.3"}
+}

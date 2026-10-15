@@ -12,6 +12,9 @@ env:
 
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -48,6 +51,9 @@ jobs:
       - name: test hyper-viz-bevy (lib)
         run: cargo test --locked -p hyper-viz-bevy --lib
 
+      - name: test browser bridge (lib)
+        run: cargo test --locked -p hyper-viz-web --lib
+
       - name: clippy
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
 
@@ -58,7 +64,7 @@ jobs:
         run: |
           PYTHONPATH=scripts:scripts/benchmarks python -m unittest \
             scripts/test_mathlib_graph.py scripts/benchmarks/test_datasets.py \
-            scripts/benchmarks/test_summarize.py
+            scripts/benchmarks/test_summarize.py scripts/releases/test_build_python_sdist.py
 
       - name: CLI help and version
         run: |

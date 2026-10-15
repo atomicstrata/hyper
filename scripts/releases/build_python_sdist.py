@@ -1,6 +1,7 @@
 """Build a standalone core/Python workspace before creating the PyPI sdist."""
 from pathlib import Path
 import argparse
+import re
 import shutil
 import subprocess
 import tempfile
@@ -27,9 +28,11 @@ def build(output: Path) -> None:
             shutil.copy2(root / name, staged / name)
         # This root is a virtual workspace: no CLI or Bevy source is needed.
         workspace = (root / "Cargo.toml").read_text().split("[package]", 1)[0]
-        workspace = workspace.replace(
-            'members = ["crates/hyper-viz", "crates/hyper-viz-bevy", "crates/hyper-viz-python"]',
+        workspace = re.sub(
+            r'(?m)^members\s*=\s*\[[^\]]*\]',
             'members = ["crates/hyper-viz", "crates/hyper-viz-python"]',
+            workspace,
+            count=1,
         )
         workspace = workspace.replace('hyper-viz-bevy = { path = "crates/hyper-viz-bevy" }\n', "")
         (staged / "Cargo.toml").write_text(workspace)
