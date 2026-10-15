@@ -5,6 +5,30 @@ TypeScript declarations and prebuilt WebGPU and WebGL2 artifacts, with no runtim
 npm dependencies or consumer Rust requirement. Its initial version is `0.2.0`.
 Preparing a tarball or updating a PR does not publish a package.
 
+## First release record
+
+`@atomicstrata/hyper@0.2.0` was published publicly on October 14, 2026
+(America/Lima) from the exact `hyper-browser-npm` artifact produced by
+[Browser SDK run 38484982885](https://github.com/atomicstrata/hyper/actions/runs/38484982885),
+source commit `9fa53657e5ca9930a3c3d2d19efd8d6d95ec0b2b`. The public registry's
+`latest` tag is `0.2.0`; its integrity matches that candidate:
+
+```text
+sha512-hYppXbrNj0uKcerSsQ8XXaUrb5wgKhc6ktfdaaTuXjG9w+6QaCtPFV7g9R30mY55mAhdwCX6YWHrYQ/e8b+9EA==
+```
+
+This initial publication used interactive npm authentication and passkey
+approval. It has no GitHub OIDC provenance attestation. After publication, npm
+accepted a trusted publisher for `atomicstrata/hyper`, `npm.yml`, environment
+`npm`, with publish/stage-publish permissions. The GitHub environment permits
+only `npm-v*` tags. The first successful future OIDC release still needs to
+validate that trust configuration within the expiry window below.
+
+Do not push `npm-v0.2.0`: that would attempt to publish an existing immutable
+version. Release workflow and documentation changes are tracked in
+[PR #14](https://github.com/atomicstrata/hyper/pull/14); integrate that PR before
+cutting the next release from the default branch.
+
 ## Build and verify a candidate
 
 Use Node.js 24, repository Rust 1.89 and the matching wasm-bindgen CLI listed in
@@ -46,7 +70,10 @@ revision is pushed.
 ## npm account and trusted publishing setup
 
 An npm account authorized to publish public packages under `@atomicstrata` is
-required. Registry name availability does not establish scope ownership.
+required, with account-level two-factor authentication enabled. Registry name
+availability does not establish scope ownership. Use `npm whoami` to check the
+active login and complete browser/passkey approvals locally; never put npm
+credentials or recovery codes in the repository.
 For a new package, a maintainer may need to bootstrap its first publication
 interactively, using the verified CI tarball:
 
@@ -58,10 +85,34 @@ npm publish atomicstrata-hyper-0.2.0.tgz --access public
 This is a release action, to be run only after the release decision. After the
 package exists, configure its npm trusted publisher for GitHub owner
 `atomicstrata`, repository `hyper`, workflow filename `npm.yml`, and environment
-`npm`. Configure that GitHub environment's reviewers and release restrictions
-as desired. No long-lived npm token is needed by the workflow. npm trusted
+`npm`. The GitHub environment `npm` allows only tags matching `npm-v*`; ordinary
+branches cannot enter the publication job. Repository writers who can create
+matching tags can release. Add environment reviewers if a separate human
+release approval is desired.
+
+Use npm 11.15+ to manage trust configurations, with an existing package and
+write access. For example, use a temporary current CLI without changing the
+global npm installation (Node.js 24.15+):
+
+```sh
+npm exec --yes --package=npm@12.2.0 -- npm trust github @atomicstrata/hyper \
+  --repo atomicstrata/hyper --file npm.yml --env npm --allow-publish
+npm exec --yes --package=npm@12.2.0 -- npm trust list @atomicstrata/hyper
+```
+
+These commands may request browser/passkey approval. The workflow filename is
+`npm.yml`, without its directory. `--allow-publish` explicitly grants direct
+publication; no long-lived npm token is needed by the workflow. npm trusted
 publishing requires npm CLI 11.5.1+ and Node.js 22.14+; the workflow uses Node 24.
-See [npm's trusted publisher guide](https://docs.npmjs.com/trusted-publishers/).
+See [npm's trust CLI reference](https://docs.npmjs.com/cli/v11/commands/npm-trust/)
+and [trusted publisher guide](https://docs.npmjs.com/trusted-publishers/).
+
+A new trust configuration must complete its first successful OIDC publication
+within **two days**, or it expires. Saving or listing the configuration does
+not validate the workflow, and a local bootstrap publication does not validate
+OIDC. If the next approved release is later, delete the expired configuration
+and recreate it immediately before that release. Do not publish a duplicate or
+an unnecessary version just to test authentication.
 
 ## Subsequent approved releases
 

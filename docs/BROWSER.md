@@ -3,13 +3,14 @@
 The browser SDK reuses Hyper's Rust core and Bevy renderer. It supports several
 independent direct-canvas viewers on one page, with separate WASM instances,
 graphs, cameras, settings, input and lifecycle. WebGPU is preferred; a separate
-WebGL2 build provides startup fallback. The npm package is prepared as
-`@atomicstrata/hyper`; publication is a separate release step.
+WebGL2 build provides startup fallback. The public npm package is
+[`@atomicstrata/hyper`](https://www.npmjs.com/package/@atomicstrata/hyper), first
+released as `0.2.0`.
 
 ## Use the npm package
 
 The package contains prebuilt renderers, ESM JavaScript and TypeScript
-declarations. Consumers do not need Rust. After publication:
+declarations. Consumers do not need Rust:
 
 ```sh
 npm install @atomicstrata/hyper
@@ -21,8 +22,8 @@ Import `createHyperViewer` from `@atomicstrata/hyper` and pass the hosted
 renderer assets automatically. Re-run the asset command during your app build
 after package upgrades. See the [package README](../web/README.md) for complete
 consumer and subpath examples and the [npm release guide](NPM_RELEASE.md) for
-tarball verification, CI artifacts and trusted publishing setup. Before the
-first registry release, install the verified local/CI `.tgz` instead.
+tarball verification, CI artifacts and trusted publishing setup. For unreleased
+candidates, install the verified local/CI `.tgz` instead.
 
 ## Build and try the demo
 

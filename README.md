@@ -191,20 +191,19 @@ TypeScript declarations, and prebuilt WebGPU/WebGL2 WASM renderers. Consumers
 need no Rust compiler. Each canvas has an independent graph, camera, selection,
 settings, and lifecycle; applications provide their own HTML controls.
 
-The initial npm release is prepared but **not published yet**. Install a verified
-`atomicstrata-hyper-0.2.0.tgz` from the
-[Browser SDK CI artifact](https://github.com/atomicstrata/hyper/actions/workflows/browser.yml)
-or a local build:
+Install the public [npm package](https://www.npmjs.com/package/@atomicstrata/hyper)
+(initial release `0.2.0`):
 
 ```sh
-npm install /absolute/path/to/atomicstrata-hyper-0.2.0.tgz
+npm install @atomicstrata/hyper
 npx hyper-copy-assets public/hyper
 ```
 
-After registry publication, use `npm install @atomicstrata/hyper` instead.
 The asset command requires Node.js 22+ and copies the manifest, both backends,
 and notices into the app's static directory. Run it during application builds
-and after package upgrades.
+and after package upgrades. To test an unreleased candidate, install the verified
+`.tgz` from the [Browser SDK CI artifact](https://github.com/atomicstrata/hyper/actions/workflows/browser.yml)
+or a local build instead of the registry package.
 
 For a bundled application serving those assets at `/hyper/`, add a sized canvas:
 
