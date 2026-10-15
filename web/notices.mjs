@@ -8,6 +8,11 @@ export async function generateNotices(root, destination) {
   const directory = join(destination, 'licenses');
   await mkdir(directory, {recursive: true});
   const output = join(directory, 'THIRD_PARTY_NOTICES.txt');
+  // cargo-about resolves metadata for every platform before filtering licenses
+  // to WASM. A fresh WASM build alone does not cache native-only dependencies.
+  await execute('cargo', ['fetch', '--locked',
+    '--manifest-path', join(root, 'crates/hyper-viz-web/Cargo.toml')],
+  {cwd: root, maxBuffer: 8 * 1024 * 1024});
   await execute(process.env.CARGO_ABOUT ?? 'cargo-about', ['generate', '--locked', '--offline', '--fail',
     '--no-default-features', '--features', 'webgpu webgl2',
     '--manifest-path', join(root, 'crates/hyper-viz-web/Cargo.toml'),

@@ -29,8 +29,10 @@ version. Release workflow and documentation changes are tracked in
 [PR #14](https://github.com/atomicstrata/hyper/pull/14); integrate that PR before
 cutting the next release from the default branch.
 
-The `0.2.1` release updates npm package metadata and the package README, with
-the same API and renderer implementation as `0.2.0`. It is the first planned
+The `0.2.1` release updates npm package metadata and the package README, and
+fetches locked dependencies before offline license generation so source builds
+work with an initially empty native dependency cache. The API and renderer
+implementation match `0.2.0`. It is the first planned
 publication through the tag-triggered GitHub OIDC workflow. Confirm the workflow
 result, public registry integrity and provenance before recording it as verified.
 
