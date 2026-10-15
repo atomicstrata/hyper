@@ -192,7 +192,7 @@ need no Rust compiler. Each canvas has an independent graph, camera, selection,
 settings, and lifecycle; applications provide their own HTML controls.
 
 Install the public [npm package](https://www.npmjs.com/package/@atomicstrata/hyper)
-(initial release `0.2.0`):
+(current release `0.2.1`; first released as `0.2.0`):
 
 ```sh
 npm install @atomicstrata/hyper

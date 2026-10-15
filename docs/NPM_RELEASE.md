@@ -21,20 +21,40 @@ This initial publication used interactive npm authentication and passkey
 approval. It has no GitHub OIDC provenance attestation. After publication, npm
 accepted a trusted publisher for `atomicstrata/hyper`, `npm.yml`, environment
 `npm`, with publish/stage-publish permissions. The GitHub environment permits
-only `npm-v*` tags. The first successful future OIDC release still needs to
-validate that trust configuration within the expiry window below.
+only `npm-v*` tags. The first OIDC release validated that configuration on
+October 15, 2026, as recorded below.
 
 Do not push `npm-v0.2.0`: that would attempt to publish an existing immutable
-version. Release workflow and documentation changes are tracked in
-[PR #14](https://github.com/atomicstrata/hyper/pull/14); integrate that PR before
-cutting the next release from the default branch.
+version. [PR #14](https://github.com/atomicstrata/hyper/pull/14) merged into
+`main` at `45af33bd4224b85ce740d7df81897b62114e0cdd` before the next release.
+
+## First verified trusted publication: 0.2.1
 
 The `0.2.1` release updates npm package metadata and the package README, and
 fetches locked dependencies before offline license generation so source builds
 work with an initially empty native dependency cache. The API and renderer
-implementation match `0.2.0`. It is the first planned
-publication through the tag-triggered GitHub OIDC workflow. Confirm the workflow
-result, public registry integrity and provenance before recording it as verified.
+implementation match `0.2.0`.
+
+On October 15, 2026 (America/Lima), tag `npm-v0.2.1` published through
+[npm release run 38739045044](https://github.com/atomicstrata/hyper/actions/runs/38739045044)
+at source commit `571a63ab486f29c24b3494b4d5d96597d93b509b`. The complete browser
+build/package gates and software WebGL2 test passed. npm's public `latest` tag
+points to `0.2.1`; the downloaded tarball matches this registry integrity and
+the SHA-1 reported by the Actions publish job:
+
+```text
+sha512-qQLAoenLUXzQjMIrCWpqRlz+S97fT5+cmK1L5DFkwWeyEL1rM+LtWJMBXKpDG858hv6VI1ioPsaoz9lBuBUUEA==
+```
+
+The registry's SLSA provenance identifies this repository, `.github/workflows/npm.yml`,
+tag, source commit and Actions run. A clean registry installation and the shipped
+asset-copy CLI passed; `npm audit signatures` verified both the registry signature
+and provenance attestation. This successful OIDC publication validates the
+trusted publisher and binds its repository identity within the initial two-day
+window. The configuration does not need to be recreated for subsequent releases.
+The exact registry-installed renderers also passed forced WebGPU and WebGL2
+hardware checks in Chrome 153 on Apple M5 Pro/Metal; these are separate from
+CI's software WebGL2 check.
 
 ## Build and verify a candidate
 
@@ -133,8 +153,8 @@ The version belongs to this package; it need not track Python releases. After
 merging and deciding to release, create and push `npm-v<version>` at that commit:
 
 ```sh
-git tag npm-v0.2.1
-git push origin npm-v0.2.1
+git tag npm-v0.2.2
+git push origin npm-v0.2.2
 ```
 
 The npm release workflow requires the tag to match `web/package.json`, reuses
