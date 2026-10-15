@@ -6,13 +6,12 @@ independent graph, camera, selection, settings, WASM memory, and lifecycle.
 The package includes both prebuilt renderers and TypeScript declarations,
 with no runtime npm dependencies or consumer Rust requirement.
 
-For an unpublished release candidate, install the verified `.tgz` from the
+Install the public [npm package](https://www.npmjs.com/package/@atomicstrata/hyper)
+using the quick start below. Unreleased candidates are available as verified
+`.tgz` files in the
 [Browser SDK workflow](https://github.com/atomicstrata/hyper/actions/workflows/browser.yml)'s
-`hyper-browser-npm` artifact or a local build. For example:
-
-```sh
-npm install /absolute/path/to/atomicstrata-hyper-0.2.0.tgz
-```
+`hyper-browser-npm` artifact or from a local build; install a candidate with
+`npm install /absolute/path/to/atomicstrata-hyper-<version>.tgz`.
 
 [Quick start](#quick-start) · [Asset hosting](#asset-hosting-and-bundlers) ·
 [Data and IDs](#load-data-and-select-by-id) · [Multiple viewers](#multiple-viewers) ·
@@ -21,7 +20,7 @@ npm install /absolute/path/to/atomicstrata-hyper-0.2.0.tgz
 ## Quick start
 
 In an existing ESM application, install the package and copy its renderer assets
-into the app's static directory. For a version already published to npm:
+into the app's static directory:
 
 ```sh
 npm install @atomicstrata/hyper

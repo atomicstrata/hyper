@@ -11,7 +11,7 @@ Preparing a tarball or updating a PR does not publish a package.
 (America/Lima) from the exact `hyper-browser-npm` artifact produced by
 [Browser SDK run 38484982885](https://github.com/atomicstrata/hyper/actions/runs/38484982885),
 source commit `9fa53657e5ca9930a3c3d2d19efd8d6d95ec0b2b`. The public registry's
-`latest` tag is `0.2.0`; its integrity matches that candidate:
+`latest` tag initially pointed to `0.2.0`; its integrity matches that candidate:
 
 ```text
 sha512-hYppXbrNj0uKcerSsQ8XXaUrb5wgKhc6ktfdaaTuXjG9w+6QaCtPFV7g9R30mY55mAhdwCX6YWHrYQ/e8b+9EA==
@@ -28,6 +28,11 @@ Do not push `npm-v0.2.0`: that would attempt to publish an existing immutable
 version. Release workflow and documentation changes are tracked in
 [PR #14](https://github.com/atomicstrata/hyper/pull/14); integrate that PR before
 cutting the next release from the default branch.
+
+The `0.2.1` release updates npm package metadata and the package README, with
+the same API and renderer implementation as `0.2.0`. It is the first planned
+publication through the tag-triggered GitHub OIDC workflow. Confirm the workflow
+result, public registry integrity and provenance before recording it as verified.
 
 ## Build and verify a candidate
 
