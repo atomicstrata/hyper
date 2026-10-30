@@ -16,6 +16,11 @@ export async function launchChromeDriver({executablePath = chromeExecutablePath(
     executablePath,
     headless: true,
     args: ['--headless=new', '--mute-audio', '--disable-extensions'],
+    // The sidecar owns shutdown. Puppeteer's own signal handlers close Chrome
+    // and can leave this process waiting on a second browser.close().
+    handleSIGINT: false,
+    handleSIGTERM: false,
+    handleSIGHUP: false,
   });
   const pages = new Map();
   const listeners = new Set();
@@ -76,7 +81,9 @@ export async function launchChromeDriver({executablePath = chromeExecutablePath(
         quality: 50,
         maxWidth: MAX_EDGE,
         maxHeight: MAX_EDGE,
-        everyNthFrame: 3,
+        // A static page may paint only once. Skipping frames would drop that
+        // paint. The listener below keeps the forwarded rate near 5 Hz.
+        everyNthFrame: 1,
       });
     },
     async stopScreencast(targetId) {
@@ -86,7 +93,7 @@ export async function launchChromeDriver({executablePath = chromeExecutablePath(
       await entry.cdp.send('Page.stopScreencast').catch(() => {});
     },
     async close() {
-      await browser.close();
+      await browser.close().catch(() => {});
     },
   };
 }
