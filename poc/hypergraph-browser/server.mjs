@@ -8,6 +8,14 @@ import {chromeExecutablePath, launchChromeDriver} from './chrome.mjs';
 
 // Sends captured page bytes to the browser demo. `still` is one JPEG per vertex.
 // `frame` is the single live screencast. `focus` selects that vertex, or null to stop.
+//
+// Build the viewer once so this demo's WASM frame path exists:
+//   npm run build --prefix web
+// Then start the sidecar and the viewer:
+//   node poc/hypergraph-browser/server.mjs
+//   npm run serve --prefix web
+// Open http://127.0.0.1:8080/demo/browser.html
+
 export async function startPageServer({session, driver, vertices, host = '127.0.0.1', port = 0}) {
   const vertexByTarget = new Map();
   const stills = [];
