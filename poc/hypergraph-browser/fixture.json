@@ -1,0 +1,14 @@
+{
+  "version": "hypergraph.v1",
+  "meta": {"id": "pages", "title": "Hypergraph browser"},
+  "vertices": [
+    {"id": "example", "label": "Example", "kind": "page", "attrs": {"page": "https://example.com/"}},
+    {"id": "image", "label": "Image", "kind": "image", "attrs": {"page": "https://www.w3.org/2008/site/images/logo-w3c-screen-lg.png"}},
+    {"id": "video", "label": "Video", "kind": "video", "attrs": {"page": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"}},
+    {"id": "pdf", "label": "PDF", "kind": "document", "attrs": {"page": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"}},
+    {"id": "org", "label": "Example org", "kind": "page", "attrs": {"page": "https://example.org/"}}
+  ],
+  "hyperedges": [
+    {"id": "web", "label": "Web", "vertices": ["example", "image", "video", "pdf", "org"]}
+  ]
+}

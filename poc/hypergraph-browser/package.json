@@ -1,0 +1,16 @@
+{
+  "name": "hypergraph-browser-poc",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test session.test.mjs server.test.mjs chrome.test.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "24.15.0",
+    "ws": "8.18.3"
+  }
+}

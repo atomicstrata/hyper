@@ -207,6 +207,21 @@ export function createSDK(platform = {}) {
         return command({type:'setSettings',settings});
       },
       getState() { if (disposed) throw Error('Viewer disposed'); return clone(state); },
+      setPageFrame(id, width, height, rgba) {
+        if (disposed) return Promise.reject(Error('Viewer disposed'));
+        if (typeof id !== 'string' || id.length === 0) return Promise.reject(Error('Page frame requires a vertex id'));
+        if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
+          return Promise.reject(Error('Page frame dimensions must be positive integers'));
+        }
+        if (!(rgba instanceof Uint8Array) || rgba.byteLength !== width * height * 4) {
+          return Promise.reject(Error('Page frame RGBA size does not match its dimensions'));
+        }
+        // The renderer drops anything larger than a still. Do not occupy the command queue.
+        if (Math.max(width, height) > 640) return Promise.resolve();
+        try { runtime.postFrame(id, width, height, rgba); }
+        catch (error) { return Promise.reject(asError(error)); }
+        return Promise.resolve();
+      },
       on(type, callback) {
         if (disposed) throw Error('Viewer disposed');
         if (!listeners.has(type) || typeof callback !== 'function') throw Error('Invalid event subscription');

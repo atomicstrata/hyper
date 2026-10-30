@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyper · Hypergraph browser</title>
+<link rel="stylesheet" href="style.css">
+<header>
+  <p class="eyebrow">HYPER / HYPERGRAPH BROWSER</p>
+  <h1>One live page. Stills for the rest.</h1>
+  <p>Each vertex shows a headless Chrome capture of its page. Click one vertex to stream that page. The others keep their last still.</p>
+</header>
+<main>
+  <section class="viewer">
+    <div class="heading"><h2>Pages</h2><span class="backend">Starting…</span></div>
+    <div class="surface"><canvas tabindex="0" aria-label="Hypergraph of web pages. Click a vertex to stream its page."></canvas></div>
+    <p class="status" role="status">Loading…</p>
+    <p class="error" role="alert" hidden></p>
+    <pre class="selection">Click a vertex to focus its page.</pre>
+  </section>
+</main>
+<footer>The sidecar must be running on 127.0.0.1:8765. Audio stays muted.</footer>
+<script type="module" src="browser.mjs"></script>
+</html>
