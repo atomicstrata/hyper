@@ -15,10 +15,13 @@ function setup({gpu = true, fail = false, timeout = false} = {}) {
       loaded.push(String(url));
       return {createBindings:()=>({default:async()=>{}, start:(selector, callback)=>{
         const name=String(url).includes('gpu')?'webgpu':'webgl2';
-        const runtime={send(id,raw) {
+        const runtime={commands:0, frames:[], send(id,raw) {
+          runtime.commands += 1;
           const command=JSON.parse(raw);
           queueMicrotask(()=> callback(JSON.stringify(command.json==='invalid'
             ? {type:'ack',id,error:'Invalid graph'} : {type:'ack',id,state:{selection:{vertices:[String(id)],hyperedges:[]},graph:{vertices:id}}})));
+        }, postFrame(id, width, height, rgba) {
+          runtime.frames.push({id, width, height, byteLength: rgba.byteLength});
         },stop(){queueMicrotask(()=>callback(JSON.stringify({type:'disposed'})));},free(){runtime.freed=true;}};
         runtimes.push(runtime);
         if (!timeout || name==='webgl2') queueMicrotask(()=>callback(JSON.stringify(fail && name==='webgpu'
@@ -99,4 +102,16 @@ test('remounting a canvas with a different backend replaces its incompatible con
   const s=setup();const c=s.canvas();const a=await s.sdk({canvas:c,backend:'webgpu'});await a.dispose();
   const b=await s.sdk({canvas:c,backend:'webgl2'});
   assert.notEqual(b.canvas,c);assert.equal(b.canvas,c.replacement);assert.equal(b.backend,'webgl2');await b.dispose();
+});
+test('page frames bypass the command queue and reject after dispose',async()=>{
+  const s=setup(); const v=await s.sdk({canvas:s.canvas()});
+  const pixels=new Uint8Array(16);
+  await v.setPageFrame('example', 2, 2, pixels);
+  assert.equal(s.runtimes[0].frames.length, 1);
+  assert.equal(s.runtimes[0].frames[0].id, 'example');
+  assert.equal(s.runtimes[0].commands, 0);
+  await v.setPageFrame('big', 641, 1, new Uint8Array(641 * 4));
+  assert.equal(s.runtimes[0].frames.length, 1);
+  await v.dispose();
+  await assert.rejects(v.setPageFrame('example', 2, 2, pixels), /disposed/);
 });

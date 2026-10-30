@@ -64,6 +64,7 @@ impl Plugin for RenderPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<NodeRenderSettings>()
             .init_resource::<LinkRenderSettings>()
+            .init_resource::<crate::page_frame::PageFrames>()
             .init_resource::<crate::animation::StatusBursts>()
             .add_systems(Startup, setup_assets)
             // Apply the scene replacement and remap entities before any consumer
@@ -89,6 +90,10 @@ impl Plugin for RenderPlugin {
                         .run_if(resource_exists::<GraphLayout>)
                         .run_if(crate::explorer_state::spatial_mode),
                     highlight_selected,
+                    crate::page_frame::apply_page_frames,
+                    crate::page_frame::billboard_page_quads
+                        .after(update_node_positions)
+                        .after(crate::page_frame::apply_page_frames),
                 ),
             );
     }

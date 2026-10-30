@@ -46,6 +46,7 @@ mod hyperedge_hull;
 mod inspect;
 mod interaction;
 mod node_visual;
+mod page_frame;
 mod pick;
 mod render;
 mod search;
@@ -63,6 +64,7 @@ pub mod host {
     pub use crate::hyperedge_hull::HyperedgeHullSettings;
     pub use crate::interaction::{LassoState, LocalizeQuery, SelectionState};
     pub use crate::node_visual::{NodeLabelMode, NodeRenderSettings};
+    pub use crate::page_frame::{PageFrames, accepted as page_frame_accepted};
     pub use crate::session::{SessionConfig, restore_session_on_first_graph};
     pub use crate::ui::ExternalUi;
 }

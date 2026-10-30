@@ -9,13 +9,13 @@ use futures_util::future::{AbortHandle, Abortable};
 use hyper_viz::{Hypergraph, Projection};
 use hyper_viz_bevy::{
     HyperVisualizerPlugin,
-    host::{ExternalUi, SessionConfig},
+    host::{ExternalUi, PageFrames, SessionConfig, page_frame_accepted},
 };
 use js_sys::Function;
 use std::{cell::RefCell, rc::Rc};
 thread_local! { static PANIC_CALLBACK: RefCell<Option<Function>> = const { RefCell::new(None) }; }
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -30,10 +30,14 @@ struct Request {
 #[derive(Clone, Resource)]
 struct Inbox(Arc<Mutex<VecDeque<Request>>>);
 
+#[derive(Clone, Resource)]
+struct FrameInbox(Arc<Mutex<HashMap<String, (u32, u32, Vec<u8>)>>>);
+
 /// JS-owned handle. It never holds the Bevy world or a page-wide callback.
 #[wasm_bindgen]
 pub struct BrowserRuntime {
     inbox: Inbox,
+    frames: FrameInbox,
     abort: AbortHandle,
     initializing: Arc<AtomicBool>,
     alive: Arc<AtomicBool>,
@@ -56,6 +60,35 @@ impl BrowserRuntime {
             return Err(JsValue::from_str("Command queue full"));
         }
         queue.push_back(Request { id, command });
+        if let Ok(proxy) = self.proxy.lock()
+            && let Some(proxy) = proxy.as_ref()
+        {
+            let _ = proxy.send_event(WinitUserEvent::WakeUp);
+        }
+        Ok(())
+    }
+
+    /// Latest page image for one vertex. This does not enter the command queue.
+    #[wasm_bindgen(js_name = postFrame)]
+    pub fn post_frame(
+        &self,
+        id: &str,
+        width: u32,
+        height: u32,
+        rgba: &[u8],
+    ) -> Result<(), JsValue> {
+        if !self.alive.load(Ordering::Relaxed) {
+            return Err(JsValue::from_str("Viewer disposed"));
+        }
+        if !page_frame_accepted(id, width, height, rgba.len()) {
+            return Ok(());
+        }
+        let mut frames = self
+            .frames
+            .0
+            .lock()
+            .map_err(|_| JsValue::from_str("Page frame mailbox unavailable"))?;
+        frames.insert(id.to_string(), (width, height, rgba.to_vec()));
         if let Ok(proxy) = self.proxy.lock()
             && let Some(proxy) = proxy.as_ref()
         {
@@ -128,6 +161,7 @@ pub fn start(
         .ok_or_else(|| JsValue::from_str("Canvas unavailable"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
     let inbox = Inbox(Arc::new(Mutex::new(VecDeque::new())));
+    let frames = FrameInbox(Arc::new(Mutex::new(HashMap::new())));
     let alive = Arc::new(AtomicBool::new(true));
     let initializing = Arc::new(AtomicBool::new(true));
     let startup = Rc::new(RefCell::new(Some(callback)));
@@ -135,6 +169,7 @@ pub fn start(
     let (abort, registration) = AbortHandle::new_pair();
     let handle = BrowserRuntime {
         inbox: inbox.clone(),
+        frames: frames.clone(),
         alive: alive.clone(),
         proxy: proxy.clone(),
         abort,
@@ -203,6 +238,7 @@ pub fn start(
         .insert_resource(SourceGraph(graph));
         app.world_mut().resource_mut::<ExternalUi>().enabled = true;
         app.insert_resource(inbox)
+            .insert_resource(frames)
             .insert_non_send_resource(Callbacks {
                 callback,
                 alive,
@@ -299,11 +335,28 @@ fn pump(world: &mut World) {
         return;
     }
     let queue = world.resource::<Inbox>().clone();
+    let frame_inbox = world.resource::<FrameInbox>().clone();
     let requests: Vec<_> = queue
         .0
         .lock()
         .map(|mut q| q.drain(..).collect())
         .unwrap_or_default();
+    let pending_frames = frame_inbox
+        .0
+        .lock()
+        .map(|mut frames| std::mem::take(&mut *frames))
+        .unwrap_or_default();
+    if !pending_frames.is_empty() {
+        if let Some(mut pages) = world.get_resource_mut::<PageFrames>() {
+            for (id, (width, height, rgba)) in pending_frames {
+                pages.submit(&id, width, height, rgba);
+            }
+        } else if let Ok(mut frames) = frame_inbox.0.lock() {
+            for (id, frame) in pending_frames {
+                frames.entry(id).or_insert(frame);
+            }
+        }
+    }
     // Winit routes pointer input per canvas; keyboard shortcuts additionally need focus.
     let focused = {
         let mut windows = world.query::<&Window>();
