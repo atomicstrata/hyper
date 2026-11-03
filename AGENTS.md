@@ -53,3 +53,14 @@ cargo run --locked -p hyper-viz --example project_scene # headless, no window
 The first release build can take several minutes.
 [CONTRIBUTING.md](CONTRIBUTING.md) is authoritative for the test, clippy, fmt,
 and Python checks a change must pass, and for what belongs in this repository.
+
+## Hosted build costs
+
+Keep ordinary Rust/browser CI and Python package-version checks on PRs. The
+Python wheel, source-distribution and desktop platform matrices run only on
+`python-v*` tags or explicit manual dispatch of `python.yml`. Installed-viewer
+integration still requires both native wheel matrices. Run applicable local
+checks from CONTRIBUTING.md before merging and record results in the PR.
+Before publishing, qualify the intended release source on every supported
+platform. Manual qualification never publishes to PyPI; publication keeps its
+existing tag-only condition and environment approval.
