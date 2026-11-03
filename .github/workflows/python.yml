@@ -42,6 +42,7 @@ jobs:
           PYTHON
 
   wheels:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/python-v')
     name: ${{ matrix.target }} / CPython abi3
     needs: metadata
     strategy:
@@ -112,6 +113,7 @@ jobs:
           python -c 'from hyper_viz import HifDocument; assert "s:a" in HifDocument.from_json("{\"incidences\":[{\"node\":\"a\",\"edge\":\"e\"}]}").to_hypergraph_json()'
 
   sdist:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/python-v')
     name: Source distribution
     needs: metadata
     runs-on: ubuntu-latest
@@ -146,6 +148,7 @@ jobs:
 
 
   desktop:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/python-v')
     name: ${{ matrix.target }} / desktop viewer
     needs: metadata
     strategy:
